@@ -170,11 +170,6 @@ button{ font-family:inherit; }
 .segmented button.active{ background:var(--kpi-ticket); color:var(--on-accent); }
 
 /* ---------- Header ---------- */
-.header{
-  display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;
-  padding-bottom:6px;
-}
-.header-title{ font-size:24px; font-weight:800; letter-spacing:.01em; }
 .header-sub{ color:var(--text-secondary); font-size:13px; margin-top:6px; }
 .header-actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .badge{
@@ -271,23 +266,62 @@ details.table-toggle summary{ cursor:pointer; font-size:11.5px; color:var(--kpi-
 .form-field{ display:flex; flex-direction:column; gap:6px; }
 .form-field label{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); }
 
-/* ---------- Footer nav ---------- */
-.nav-footer{
-  margin-top:20px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;
-  border-top:1px solid var(--border); padding-top:16px;
+/* ---------- Site: sidebar + topbar + pages ---------- */
+.site{ display:flex; min-height:100vh; }
+.sidebar{
+  width:248px; flex:0 0 248px; position:sticky; top:0; height:100vh; overflow-y:auto;
+  background:var(--bg-surface); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; gap:14px; padding:20px 14px; z-index:40;
 }
-.nav-footer-label{ font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); margin-right:4px; }
-.nav-link{
-  font-size:12px; font-weight:600; color:var(--text-secondary); text-decoration:none;
-  border:1px solid var(--border); border-radius:999px; padding:6px 12px;
+.sidebar-brand{ display:flex; align-items:center; gap:10px; padding:0 6px 4px; }
+.brand-mark{
+  width:36px; height:36px; flex:0 0 36px; border-radius:10px; background:var(--kpi-ticket); color:var(--on-accent);
+  display:grid; place-items:center; font-family:var(--font-display); font-weight:800; font-size:13px;
 }
-.nav-link:hover{ color:var(--text-primary); border-color:var(--kpi-ticket); }
+.brand-title{ font-family:var(--font-display); font-weight:700; font-size:14.5px; line-height:1.2; }
+.brand-sub{ font-size:11.5px; color:var(--text-muted); margin-top:2px; }
+.sidebar-nav{ display:flex; flex-direction:column; gap:2px; flex:1; }
+.nav-group-label{ font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); padding:14px 10px 6px; }
+.side-link{
+  display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:9px;
+  color:var(--text-secondary); text-decoration:none; font-size:13px; font-weight:600;
+}
+.side-link svg{ width:17px; height:17px; flex:0 0 17px; }
+.side-link:hover{ background:var(--bg-raised); color:var(--text-primary); }
+.side-link.active{ background:var(--bg-raised); color:var(--text-primary); box-shadow:inset 3px 0 0 var(--kpi-ticket); }
+.side-link.active svg{ color:var(--kpi-ticket); }
+.side-link:focus-visible{ outline:2px solid var(--kpi-ticket); outline-offset:1px; }
+.nav-count{ margin-left:auto; font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:999px; background:rgba(250,178,25,.16); color:var(--warn-text); }
+.sidebar-footer{ border-top:1px solid var(--border); padding-top:14px; display:flex; flex-direction:column; gap:8px; }
+.sidebar-file-label{ font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); }
+.sidebar-file-name{ font-size:12px; color:var(--text-secondary); margin-top:3px; word-break:break-word; }
+.sidebar-footer .btn{ width:100%; text-align:left; }
+.site-main{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.topbar{
+  position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:14px 32px; background:var(--bg-page); border-bottom:1px solid var(--border);
+}
+.topbar-titles{ flex:1; min-width:180px; }
+.page-title{ font-size:20px; font-weight:800; letter-spacing:.01em; }
+.page-sub{ font-size:12.5px; color:var(--text-secondary); margin-top:3px; }
+.menu-btn{
+  display:none; place-items:center; width:38px; height:38px; border-radius:9px; cursor:pointer;
+  border:1px solid var(--border); background:var(--bg-raised); color:var(--text-primary);
+}
+.menu-btn svg{ width:20px; height:20px; }
+.menu-btn:focus-visible{ outline:2px solid var(--kpi-ticket); outline-offset:2px; }
+.site-content{ padding:22px 32px 48px; width:100%; max-width:1400px; }
+.sidebar-backdrop{ position:fixed; inset:0; background:rgba(9,4,13,.55); z-index:35; }
+@media (max-width:960px){
+  .sidebar{ position:fixed; left:0; top:0; bottom:0; transform:translateX(-100%); transition:transform .2s ease; }
+  body.sidebar-open .sidebar{ transform:none; box-shadow:0 10px 40px rgba(0,0,0,.35); }
+  .menu-btn{ display:inline-grid; }
+  .topbar{ padding:12px 16px; }
+  .site-content{ padding:16px 16px 40px; }
+}
+@media (prefers-reduced-motion:reduce){ .sidebar{ transition:none; } }
 
 /* ---------- Diagnostics ---------- */
-.diagnostics-overlay{
-  position:fixed; inset:0; background:rgba(9,4,13,.72); display:flex; align-items:flex-start;
-  justify-content:center; padding:32px 16px; overflow-y:auto; z-index:50;
-}
 .diagnostics-panel{
   width:100%; max-width:880px; background:var(--bg-surface); border:1px solid var(--border);
   border-radius:16px; padding:28px; margin-bottom:32px;
@@ -358,7 +392,11 @@ table.data-table tfoot td{ font-weight:700; border-top:1px solid var(--border); 
   @page{ margin:12mm; }
   body{ background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   .app-shell{ max-width:none; padding:0; }
-  .btn, .theme-toggle, .nav-footer, .pager, details.table-toggle summary, .diagnostics-overlay, .check-inline, .save-note{ display:none!important; }
+  .btn, .theme-toggle, .pager, details.table-toggle summary, .check-inline, .save-note,
+  .sidebar, .sidebar-backdrop, .menu-btn{ display:none!important; }
+  .site{ display:block; }
+  .topbar{ position:static; padding:0 0 12px; }
+  .site-content{ padding:12px 0 0; max-width:none; }
   .badge{ cursor:default; }
   .panels-grid{ display:block; }
   .panel, .kpi-card, .filter-bar{ break-inside:avoid; }
@@ -371,7 +409,7 @@ table.data-table tfoot td{ font-weight:700; border-top:1px solid var(--border); 
 </head>
 <body>
 
-<div class="app-shell">
+<div class="app-shell" id="app-shell">
 
   <section id="screen-upload" class="upload-wrap">
     <div class="upload-card">
@@ -411,203 +449,241 @@ table.data-table tfoot td{ font-weight:700; border-top:1px solid var(--border); 
     <div class="diagnostics-panel inline" id="diagnostics-content"></div>
   </section>
 
-  <section id="screen-dashboard" hidden>
-    <div class="header">
-      <div>
-        <div class="header-title" id="dash-title">GESTÃO DE PERDAS FINANCEIRAS</div>
-        <div class="header-sub" id="dash-sub">Visão Executiva</div>
+</div>
+
+<div id="screen-dashboard" class="site" hidden>
+  <aside class="sidebar" id="sidebar" aria-label="Menu principal">
+    <div class="sidebar-brand">
+      <div class="brand-mark" aria-hidden="true">R$</div>
+      <div><div class="brand-title">Gestão de Perdas</div><div class="brand-sub" id="dash-sub">Controle de Reembolsos</div></div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-group-label">Painel</div>
+        <a class="side-link" href="#/visao-geral" data-route="visao-geral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/></svg><span>Visão geral</span></a>
+        <a class="side-link" href="#/diario-semanal" data-route="diario-semanal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span>Diário e semanal</span></a>
+        <a class="side-link" href="#/mensal" data-route="mensal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V10M10 19V5M16 19v-7M22 19H2"/></svg><span>Mensal e composição</span></a>
+        <a class="side-link" href="#/relatorio" data-route="relatorio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span>Relatório diário</span></a>
+      <div class="nav-group-label">Análises</div>
+        <a class="side-link" href="#/canais" data-route="canais"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg><span>Canais e status</span></a>
+        <a class="side-link" href="#/metas" data-route="metas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg><span>Metas e projeções</span></a>
+        <a class="side-link" href="#/lancamentos" data-route="lancamentos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg><span>Lançamentos</span></a>
+      <div class="nav-group-label">Dados</div>
+        <a class="side-link" href="#/diagnostico" data-route="diagnostico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg><span>Diagnóstico</span><span class="nav-count" id="nav-diag-count" hidden></span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <div><div class="sidebar-file-label">Arquivo carregado</div><div class="sidebar-file-name" id="sidebar-file-name"></div></div>
+      <button class="btn btn-ghost btn-sm" id="btn-reimport" type="button">Importar outro arquivo</button>
+      <button class="btn btn-ghost btn-sm theme-toggle" type="button"></button>
+    </div>
+  </aside>
+  <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
+
+  <div class="site-main">
+    <header class="topbar">
+      <button class="menu-btn" id="btn-menu" type="button" aria-label="Abrir menu" aria-controls="sidebar" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+      <div class="topbar-titles">
+        <h1 class="page-title" id="page-title">Visão geral</h1>
+        <div class="page-sub" id="page-sub"></div>
       </div>
       <div class="header-actions">
-        <button class="badge" id="diag-badge"></button>
+        <button class="badge" id="diag-badge" type="button"></button>
         <button class="btn btn-sm" id="btn-export-xlsx" type="button">Exportar Excel</button>
         <button class="btn btn-sm" id="btn-print" type="button">Imprimir / PDF</button>
-        <button class="btn btn-ghost btn-sm theme-toggle" type="button"></button>
-        <button class="btn btn-ghost btn-sm" id="btn-reimport">Reimportar arquivo</button>
       </div>
-    </div>
+    </header>
 
-    <div class="filter-bar">
-      <div class="filter-field">
-        <label class="filter-label" for="filter-mes">Mês</label>
-        <select class="select" id="filter-mes"></select>
-      </div>
-      <div class="filter-field">
-        <span class="filter-label">Métrica</span>
-        <div class="segmented" id="filter-metrica">
-          <button data-value="quantidade">Quantidade</button>
-          <button data-value="valor" class="active">Valor</button>
+    <main class="site-content" id="site-content">
+      <div class="filter-bar" id="filter-bar">
+        <div class="filter-field">
+          <label class="filter-label" for="filter-mes">Mês</label>
+          <select class="select" id="filter-mes"></select>
         </div>
-      </div>
-      <div class="filter-field">
-        <label class="filter-label" for="filter-semana">Semana</label>
-        <select class="select" id="filter-semana"></select>
-      </div>
-      <div class="filter-field">
-        <label class="filter-label" for="filter-categoria">Categoria</label>
-        <select class="select" id="filter-categoria">
-          <option value="todas">Todas</option>
-          <option value="Estorno">Estornos</option>
-          <option value="Cupom">Cupons</option>
-          <option value="Chargeback">Chargebacks</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="kpi-grid">
-      <div class="kpi-card" style="--kpi-accent:var(--kpi-volume)">
-        <div class="kpi-label" id="kpi-volume-label">Volume de Ocorrências</div>
-        <div class="kpi-value" id="kpi-volume-value">–</div>
-        <div class="kpi-sub" id="kpi-volume-sub"></div>
-        <div class="kpi-spark"><canvas id="spark-volume"></canvas></div>
-      </div>
-      <div class="kpi-card" style="--kpi-accent:var(--kpi-impacto)">
-        <div class="kpi-label" id="kpi-impacto-label">Impacto Financeiro</div>
-        <div class="kpi-value" id="kpi-impacto-value">–</div>
-        <div class="kpi-sub" id="kpi-impacto-sub"></div>
-        <div class="kpi-spark"><canvas id="spark-impacto"></canvas></div>
-      </div>
-      <div class="kpi-card" style="--kpi-accent:var(--kpi-ticket)">
-        <div class="kpi-label">Ticket Médio</div>
-        <div class="kpi-value" id="kpi-ticket-value">–</div>
-        <div class="kpi-sub" id="kpi-ticket-sub">Impacto ÷ volume no mês</div>
-        <div class="kpi-spark"><canvas id="spark-ticket"></canvas></div>
-      </div>
-      <div class="kpi-card" style="--kpi-accent:var(--kpi-repr)">
-        <div class="kpi-label">Representatividade no Exercício</div>
-        <div class="kpi-value" id="kpi-repr-value">–</div>
-        <div class="kpi-sub" id="kpi-repr-sub"></div>
-        <div class="kpi-spark"><canvas id="spark-repr"></canvas></div>
-      </div>
-    </div>
-
-    <div class="month-grid-section">
-      <div class="month-grid-section-title">Resumo por mês — clique para filtrar</div>
-      <div class="kpi-month-grid" id="kpi-month-grid"></div>
-    </div>
-
-    <div class="panels-grid">
-
-      <div class="panel" id="panel-daily">
-        <div class="panel-header"><div class="panel-title" id="panel-daily-title">Comportamento diário</div><label class="check-inline" id="chk-comparar-wrap"><input type="checkbox" id="chk-comparar"> Comparar com mês anterior</label></div>
-        <div class="chart-box"><canvas id="chart-daily-main"></canvas></div>
-        <div class="panel-sub-title">Acumulado no mês</div>
-        <div class="chart-box chart-box-sm"><canvas id="chart-daily-cum"></canvas></div>
-        <details class="table-toggle"><summary>Ver dados em tabela</summary><div class="table-wrap" id="table-daily"></div></details>
-      </div>
-
-      <div class="panel" id="panel-monthly">
-        <div class="panel-header"><div class="panel-title" id="panel-monthly-title">Trajetória mensal</div><div class="panel-meta">Jan – Dez</div></div>
-        <div class="chart-box"><canvas id="chart-monthly-main"></canvas></div>
-        <div class="panel-sub-title">Acumulado no ano</div>
-        <div class="chart-box chart-box-sm"><canvas id="chart-monthly-cum"></canvas></div>
-        <details class="table-toggle"><summary>Ver dados em tabela</summary><div class="table-wrap" id="table-monthly"></div></details>
-      </div>
-
-      <div class="panel" id="panel-weekly">
-        <div class="panel-header"><div class="panel-title" id="panel-weekly-title">Comparativo semanal</div><div class="panel-meta">Sem 1 – Sem 5</div></div>
-        <div class="chart-box"><canvas id="chart-weekly"></canvas></div>
-        <details class="table-toggle"><summary>Ver dados em tabela</summary><div class="table-wrap" id="table-weekly"></div></details>
-      </div>
-
-      <div class="panel" id="panel-composition">
-        <div class="panel-header"><div class="panel-title">Composição por categoria e período (R$)</div><div class="panel-meta">ano inteiro</div></div>
-        <div class="table-wrap" id="table-composition"></div>
-      </div>
-
-      <div class="panel" id="panel-top5">
-        <div class="panel-header"><div class="panel-title">Maiores exposições diárias</div><div class="panel-meta" id="panel-top5-meta"></div></div>
-        <div class="table-wrap" id="table-top5"></div>
-      </div>
-
-      <div class="panel" id="panel-indicators">
-        <div class="panel-header"><div class="panel-title">Indicadores-chave do período</div></div>
-        <ul class="indicator-list" id="list-indicators"></ul>
-      </div>
-
-      <div class="panel" id="panel-trend7">
-        <div class="panel-header"><div class="panel-title">Tendência semanal · Impacto financeiro</div><div class="panel-meta">últimos 7 dias corridos</div></div>
-        <div class="chart-box"><canvas id="chart-trend7-main"></canvas></div>
-        <div class="panel-sub-title">Volume (quantidade)</div>
-        <div class="chart-box chart-box-sm"><canvas id="chart-trend7-vol"></canvas></div>
-        <details class="table-toggle"><summary>Ver dados em tabela</summary><div class="table-wrap" id="table-trend7"></div></details>
-      </div>
-
-      <div class="panel" id="panel-daily-report">
-        <div class="panel-header"><div class="panel-title">Relatório Diário</div></div>
-        <div class="form-row">
-          <div class="form-field"><label for="input-relatorio-data">Data</label><input type="date" class="date-input" id="input-relatorio-data"></div>
+        <div class="filter-field">
+          <span class="filter-label">Métrica</span>
+          <div class="segmented" id="filter-metrica">
+            <button data-value="quantidade">Quantidade</button>
+            <button data-value="valor" class="active">Valor</button>
+          </div>
         </div>
-        <div class="table-wrap"><table class="data-table" id="table-relatorio"></table></div>
-        <ul class="indicator-list" id="list-relatorio-extra"></ul>
-        <div class="panel-sub-title">Valor Projetado de Estornos</div>
-        <div class="form-row">
-          <div class="form-field"><label for="input-proj-data">Data futura</label><input type="date" class="date-input" id="input-proj-data"></div>
-          <div class="form-field"><label for="input-proj-valor">Valor projetado (R$)</label><input type="number" step="0.01" class="num-input" id="input-proj-valor" placeholder="0,00"></div>
-          <button class="btn btn-sm" id="btn-save-proj">Salvar</button>
-          <span class="save-note" id="proj-save-note" role="status"></span>
+        <div class="filter-field">
+          <label class="filter-label" for="filter-semana">Semana</label>
+          <select class="select" id="filter-semana"></select>
+        </div>
+        <div class="filter-field">
+          <label class="filter-label" for="filter-categoria">Categoria</label>
+          <select class="select" id="filter-categoria">
+            <option value="todas">Todas</option>
+            <option value="Estorno">Estornos</option>
+            <option value="Cupom">Cupons</option>
+            <option value="Chargeback">Chargebacks</option>
+          </select>
         </div>
       </div>
 
-      <div class="panel" id="panel-canais">
-        <div class="panel-header"><div class="panel-title" id="panel-canais-title">Canais e status</div><div class="panel-meta" id="panel-canais-meta"></div></div>
-        <div class="empty-note" id="canais-empty" hidden></div>
-        <div class="chart-box" id="canais-chart-box"><canvas id="chart-canais"></canvas></div>
-        <div class="panel-sub-title">Por status</div>
-        <div class="table-wrap" id="table-status"></div>
-      </div>
-
-      <div class="panel" id="panel-metas">
-        <div class="panel-header"><div class="panel-title" id="panel-metas-title">Metas e projeções</div><div class="panel-meta">todas as categorias</div></div>
-        <div class="form-row">
-          <div class="form-field"><label for="input-meta">Teto do mês (R$)</label><input type="number" step="0.01" min="0" class="num-input" id="input-meta" placeholder="Sem meta"></div>
-          <button class="btn btn-sm" id="btn-save-meta" type="button">Salvar meta</button>
-          <button class="btn btn-ghost btn-sm" id="btn-clear-meta" type="button">Remover</button>
-          <span class="save-note" id="meta-save-note" role="status"></span>
+      <section class="page" data-page="visao-geral">
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--kpi-accent:var(--kpi-volume)">
+          <div class="kpi-label" id="kpi-volume-label">Volume de Ocorrências</div>
+          <div class="kpi-value" id="kpi-volume-value">–</div>
+          <div class="kpi-sub" id="kpi-volume-sub"></div>
+          <div class="kpi-spark"><canvas id="spark-volume"></canvas></div>
         </div>
-        <div class="meta-progress" id="meta-progress"></div>
-        <div id="meta-alert"></div>
-        <ul class="indicator-list" id="list-forecast"></ul>
-        <div class="panel-sub-title">Projeções de estornos vs. realizado</div>
-        <div class="table-wrap" id="table-projecoes"></div>
-      </div>
-
-      <div class="panel panel-wide" id="panel-lancamentos">
-        <div class="panel-header"><div class="panel-title" id="panel-lanc-title">Lançamentos</div><div class="panel-meta" id="panel-lanc-meta"></div></div>
-        <div class="form-row">
-          <div class="form-field grow"><label for="lanc-busca">Buscar</label><input type="search" class="text-input" id="lanc-busca" placeholder="Pedido, observação, status, canal…"></div>
-          <div class="form-field"><label for="lanc-canal">Canal</label><select class="select" id="lanc-canal"></select></div>
-          <div class="form-field"><label for="lanc-status">Status</label><select class="select" id="lanc-status"></select></div>
-          <label class="check-inline"><input type="checkbox" id="lanc-avisos"> Somente com avisos</label>
-          <button class="btn btn-sm" id="btn-lanc-csv" type="button">Baixar CSV</button>
+        <div class="kpi-card" style="--kpi-accent:var(--kpi-impacto)">
+          <div class="kpi-label" id="kpi-impacto-label">Impacto Financeiro</div>
+          <div class="kpi-value" id="kpi-impacto-value">–</div>
+          <div class="kpi-sub" id="kpi-impacto-sub"></div>
+          <div class="kpi-spark"><canvas id="spark-impacto"></canvas></div>
         </div>
-        <div class="table-wrap"><table class="data-table" id="table-lanc"></table></div>
-        <div class="pager" id="lanc-pager"></div>
+        <div class="kpi-card" style="--kpi-accent:var(--kpi-ticket)">
+          <div class="kpi-label">Ticket Médio</div>
+          <div class="kpi-value" id="kpi-ticket-value">–</div>
+          <div class="kpi-sub" id="kpi-ticket-sub">Impacto ÷ volume no mês</div>
+          <div class="kpi-spark"><canvas id="spark-ticket"></canvas></div>
+        </div>
+        <div class="kpi-card" style="--kpi-accent:var(--kpi-repr)">
+          <div class="kpi-label">Representatividade no Exercício</div>
+          <div class="kpi-value" id="kpi-repr-value">–</div>
+          <div class="kpi-sub" id="kpi-repr-sub"></div>
+          <div class="kpi-spark"><canvas id="spark-repr"></canvas></div>
+        </div>
       </div>
 
-    </div>
+      <div class="month-grid-section">
+        <div class="month-grid-section-title">Resumo por mês — clique para filtrar</div>
+        <div class="kpi-month-grid" id="kpi-month-grid"></div>
+      </div>
 
-    <div class="nav-footer">
-      <span class="nav-footer-label">Ir para</span>
-      <a class="nav-link" href="#panel-daily">Diário</a>
-      <a class="nav-link" href="#panel-monthly">Mensal</a>
-      <a class="nav-link" href="#panel-weekly">Semanal</a>
-      <a class="nav-link" href="#panel-composition">Composição</a>
-      <a class="nav-link" href="#panel-top5">Top 5</a>
-      <a class="nav-link" href="#panel-indicators">Indicadores</a>
-      <a class="nav-link" href="#panel-trend7">Tendência 7d</a>
-      <a class="nav-link" href="#panel-daily-report">Relatório diário</a>
-      <a class="nav-link" href="#panel-canais">Canais e status</a>
-      <a class="nav-link" href="#panel-metas">Metas</a>
-      <a class="nav-link" href="#panel-lancamentos">Lançamentos</a>
-    </div>
-  </section>
+      <div class="panels-grid">
+        <div class="panel" id="panel-indicators">
+          <div class="panel-header"><div class="panel-title">Indicadores-chave do período</div></div>
+          <ul class="indicator-list" id="list-indicators"></ul>
+        </div>
 
+        <div class="panel" id="panel-top5">
+          <div class="panel-header"><div class="panel-title">Maiores exposições diárias</div><div class="panel-meta" id="panel-top5-meta"></div></div>
+          <div class="table-wrap" id="table-top5"></div>
+        </div>
+      </div>
+      </section>
+
+      <section class="page" data-page="diario-semanal" hidden>
+      <div class="panels-grid">
+        <div class="panel panel-wide" id="panel-daily">
+          <div class="panel-header"><div class="panel-title" id="panel-daily-title">Comportamento diário</div><label class="check-inline" id="chk-comparar-wrap"><input type="checkbox" id="chk-comparar"> Comparar com mês anterior</label></div>
+          <div class="chart-box"><canvas id="chart-daily-main"></canvas></div>
+          <div class="panel-sub-title">Acumulado no mês</div>
+          <div class="chart-box chart-box-sm"><canvas id="chart-daily-cum"></canvas></div>
+          <details class="table-toggle"><summary>Ver dados em tabela</summary><div class="table-wrap" id="table-daily"></div></details>
+        </div>
+
+        <div class="panel" id="panel-weekly">
+          <div class="panel-header"><div class="panel-title" id="panel-weekly-title">Comparativo semanal</div><div class="panel-meta">Sem 1 – Sem 5</div></div>
+          <div class="chart-box"><canvas id="chart-weekly"></canvas></div>
+          <details class="table-toggle"><summary>Ver dados em tabela</summary><div class="table-wrap" id="table-weekly"></div></details>
+        </div>
+
+        <div class="panel" id="panel-trend7">
+          <div class="panel-header"><div class="panel-title">Tendência semanal · Impacto financeiro</div><div class="panel-meta">últimos 7 dias corridos</div></div>
+          <div class="chart-box"><canvas id="chart-trend7-main"></canvas></div>
+          <div class="panel-sub-title">Volume (quantidade)</div>
+          <div class="chart-box chart-box-sm"><canvas id="chart-trend7-vol"></canvas></div>
+          <details class="table-toggle"><summary>Ver dados em tabela</summary><div class="table-wrap" id="table-trend7"></div></details>
+        </div>
+      </div>
+      </section>
+
+      <section class="page" data-page="mensal" hidden>
+      <div class="panels-grid">
+        <div class="panel panel-wide" id="panel-monthly">
+          <div class="panel-header"><div class="panel-title" id="panel-monthly-title">Trajetória mensal</div><div class="panel-meta">Jan – Dez</div></div>
+          <div class="chart-box"><canvas id="chart-monthly-main"></canvas></div>
+          <div class="panel-sub-title">Acumulado no ano</div>
+          <div class="chart-box chart-box-sm"><canvas id="chart-monthly-cum"></canvas></div>
+          <details class="table-toggle"><summary>Ver dados em tabela</summary><div class="table-wrap" id="table-monthly"></div></details>
+        </div>
+
+        <div class="panel panel-wide" id="panel-composition">
+          <div class="panel-header"><div class="panel-title">Composição por categoria e período (R$)</div><div class="panel-meta">ano inteiro</div></div>
+          <div class="table-wrap" id="table-composition"></div>
+        </div>
+      </div>
+      </section>
+
+      <section class="page" data-page="relatorio" hidden>
+      <div class="panels-grid">
+        <div class="panel panel-wide" id="panel-daily-report">
+          <div class="panel-header"><div class="panel-title">Relatório Diário</div></div>
+          <div class="form-row">
+            <div class="form-field"><label for="input-relatorio-data">Data</label><input type="date" class="date-input" id="input-relatorio-data"></div>
+          </div>
+          <div class="table-wrap"><table class="data-table" id="table-relatorio"></table></div>
+          <ul class="indicator-list" id="list-relatorio-extra"></ul>
+          <div class="panel-sub-title">Valor Projetado de Estornos</div>
+          <div class="form-row">
+            <div class="form-field"><label for="input-proj-data">Data futura</label><input type="date" class="date-input" id="input-proj-data"></div>
+            <div class="form-field"><label for="input-proj-valor">Valor projetado (R$)</label><input type="number" step="0.01" class="num-input" id="input-proj-valor" placeholder="0,00"></div>
+            <button class="btn btn-sm" id="btn-save-proj">Salvar</button>
+            <span class="save-note" id="proj-save-note" role="status"></span>
+          </div>
+        </div>
+      </div>
+      </section>
+
+      <section class="page" data-page="canais" hidden>
+      <div class="panels-grid">
+        <div class="panel panel-wide" id="panel-canais">
+          <div class="panel-header"><div class="panel-title" id="panel-canais-title">Canais e status</div><div class="panel-meta" id="panel-canais-meta"></div></div>
+          <div class="empty-note" id="canais-empty" hidden></div>
+          <div class="chart-box" id="canais-chart-box"><canvas id="chart-canais"></canvas></div>
+          <div class="panel-sub-title">Por status</div>
+          <div class="table-wrap" id="table-status"></div>
+        </div>
+      </div>
+      </section>
+
+      <section class="page" data-page="metas" hidden>
+      <div class="panels-grid">
+        <div class="panel panel-wide" id="panel-metas">
+          <div class="panel-header"><div class="panel-title" id="panel-metas-title">Metas e projeções</div><div class="panel-meta">todas as categorias</div></div>
+          <div class="form-row">
+            <div class="form-field"><label for="input-meta">Teto do mês (R$)</label><input type="number" step="0.01" min="0" class="num-input" id="input-meta" placeholder="Sem meta"></div>
+            <button class="btn btn-sm" id="btn-save-meta" type="button">Salvar meta</button>
+            <button class="btn btn-ghost btn-sm" id="btn-clear-meta" type="button">Remover</button>
+            <span class="save-note" id="meta-save-note" role="status"></span>
+          </div>
+          <div class="meta-progress" id="meta-progress"></div>
+          <div id="meta-alert"></div>
+          <ul class="indicator-list" id="list-forecast"></ul>
+          <div class="panel-sub-title">Projeções de estornos vs. realizado</div>
+          <div class="table-wrap" id="table-projecoes"></div>
+        </div>
+      </div>
+      </section>
+
+      <section class="page" data-page="lancamentos" hidden>
+      <div class="panels-grid">
+        <div class="panel panel-wide" id="panel-lancamentos">
+          <div class="panel-header"><div class="panel-title" id="panel-lanc-title">Lançamentos</div><div class="panel-meta" id="panel-lanc-meta"></div></div>
+          <div class="form-row">
+            <div class="form-field grow"><label for="lanc-busca">Buscar</label><input type="search" class="text-input" id="lanc-busca" placeholder="Pedido, observação, status, canal…"></div>
+            <div class="form-field"><label for="lanc-canal">Canal</label><select class="select" id="lanc-canal"></select></div>
+            <div class="form-field"><label for="lanc-status">Status</label><select class="select" id="lanc-status"></select></div>
+            <label class="check-inline"><input type="checkbox" id="lanc-avisos"> Somente com avisos</label>
+            <button class="btn btn-sm" id="btn-lanc-csv" type="button">Baixar CSV</button>
+          </div>
+          <div class="table-wrap"><table class="data-table" id="table-lanc"></table></div>
+          <div class="pager" id="lanc-pager"></div>
+        </div>
+      </div>
+      </section>
+
+      <section class="page" data-page="diagnostico" hidden>
+        <div class="panel" id="page-diagnostics-content"></div>
+      </section>
+
+    </main>
+  </div>
 </div>
-
-<div class="diagnostics-overlay" id="diagnostics-modal" hidden>
-  <div class="diagnostics-panel" id="diagnostics-modal-content"></div>
-</div>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"></script>
 <script>
@@ -1275,6 +1351,61 @@ function showScreen(name){
   document.getElementById('screen-upload').hidden = name !== 'upload';
   document.getElementById('screen-diagnostics').hidden = name !== 'diagnostics';
   document.getElementById('screen-dashboard').hidden = name !== 'dashboard';
+  document.getElementById('app-shell').hidden = name === 'dashboard';
+  closeSidebar();
+}
+
+/* ===================== Navegação (menu lateral + rotas) ===================== */
+
+var ROUTES = [
+  {id:'visao-geral', title:'Visão geral', filtros:true},
+  {id:'diario-semanal', title:'Diário e semanal', filtros:true},
+  {id:'mensal', title:'Mensal e composição', filtros:true},
+  {id:'relatorio', title:'Relatório diário', filtros:true},
+  {id:'canais', title:'Canais e status', filtros:true},
+  {id:'metas', title:'Metas e projeções', filtros:true},
+  {id:'lancamentos', title:'Lançamentos', filtros:true},
+  {id:'diagnostico', title:'Diagnóstico da importação', filtros:false}
+];
+
+function currentRoute(){
+  var id = location.hash.replace(/^#\/?/, '');
+  return ROUTES.find(function(r){ return r.id === id; }) || ROUTES[0];
+}
+
+function navigate(id){
+  if(location.hash === '#/'+id) applyRoute();
+  else location.hash = '#/'+id;
+}
+
+function applyRoute(){
+  if(!isDashboardVisible()) return;
+  var route = currentRoute();
+  Array.prototype.forEach.call(document.querySelectorAll('.page'), function(p){ p.hidden = p.dataset.page !== route.id; });
+  Array.prototype.forEach.call(document.querySelectorAll('.side-link'), function(a){
+    var active = a.dataset.route === route.id;
+    a.classList.toggle('active', active);
+    if(active) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+  });
+  document.getElementById('page-title').textContent = route.title;
+  document.getElementById('filter-bar').hidden = !route.filtros;
+  document.title = route.title + ' · Painel de Reembolsos';
+  if(route.id === 'diagnostico') renderDiagnostics(state.data, 'page-diagnostics-content', 'page');
+  // gráficos criados enquanto a página estava oculta nascem com tamanho zero
+  Object.keys(state.charts).forEach(function(k){ state.charts[k].resize(); });
+  closeSidebar();
+  window.scrollTo(0, 0);
+}
+
+function openSidebar(){
+  document.body.classList.add('sidebar-open');
+  document.getElementById('sidebar-backdrop').hidden = false;
+  document.getElementById('btn-menu').setAttribute('aria-expanded', 'true');
+}
+function closeSidebar(){
+  document.body.classList.remove('sidebar-open');
+  document.getElementById('sidebar-backdrop').hidden = true;
+  document.getElementById('btn-menu').setAttribute('aria-expanded', 'false');
 }
 
 /* ===================== Chart helpers ===================== */
@@ -1386,7 +1517,7 @@ function handleFile(file){
     var meta = {name:file.name, size:file.size, importedAt:new Date()};
     var result = processBuffer(buf, meta);
     if(result.overallStatus !== 'blocked'){ lastFileStore.save(buf, meta).then(refreshSavedFileCard); }
-    renderDiagnostics(result, 'diagnostics-content', false);
+    renderDiagnostics(result, 'diagnostics-content', 'screen');
     showScreen('diagnostics');
   };
   reader.readAsArrayBuffer(file);
@@ -1458,7 +1589,7 @@ function continueWithSavedFile(){
     if(!rec || !rec.buffer) { refreshSavedFileCard(); return; }
     var result = processBuffer(rec.buffer, {name:rec.name, size:rec.size, importedAt:new Date(rec.savedAt)});
     if(result.overallStatus === 'blocked'){
-      renderDiagnostics(result, 'diagnostics-content', false);
+      renderDiagnostics(result, 'diagnostics-content', 'screen');
       showScreen('diagnostics');
     } else {
       enterDashboard();
@@ -1472,15 +1603,17 @@ var STATUS_LABELS = { ok:'OK', missing:'Aba não encontrada', table_not_found:'T
 var STATUS_DOT = { ok:'dot-ok', missing:'dot-off', table_not_found:'dot-err', incomplete_columns:'dot-err', empty:'dot-warn' };
 var YEAR_SOURCE_LABELS = { consolidado_anual:'detectado em "Consolidado Anual"!B2', data_median:'estimado pela mediana das datas encontradas', current_year_fallback:'ano corrente do sistema (nenhuma referência encontrada)' };
 
-function renderDiagnostics(result, containerId, isModal){
+// mode: 'screen' (logo após o upload, com botão para continuar) ou 'page' (página Diagnóstico do site)
+function renderDiagnostics(result, containerId, mode){
   var el = document.getElementById(containerId);
   var blocked = result.overallStatus === 'blocked';
+  var isScreen = mode !== 'page';
   var html = '';
 
-  html += '<div class="diag-header"><div><h2 style="font-size:20px;">Diagnóstico da importação</h2>' +
-    '<div class="header-sub" style="margin-top:4px;">'+escapeHtml(result.fileName||'')+' · '+(result.importedAt? result.importedAt.toLocaleString('pt-BR'):'')+'</div></div>' +
-    (isModal ? '<button class="btn btn-ghost btn-sm" id="btn-close-diag-modal">Fechar</button>' : '') +
-  '</div>';
+  var fileLine = escapeHtml(result.fileName||'')+' · '+(result.importedAt? result.importedAt.toLocaleString('pt-BR'):'');
+  html += isScreen
+    ? '<div class="diag-header"><div><h2 style="font-size:20px;">Diagnóstico da importação</h2><div class="header-sub" style="margin-top:4px;">'+fileLine+'</div></div></div>'
+    : '<div class="header-sub">Arquivo: '+fileLine+'</div>';
 
   if(blocked){
     html += '<div class="alert alert-critical"><strong>Não foi possível montar o painel com este arquivo.</strong><ul>';
@@ -1530,34 +1663,24 @@ function renderDiagnostics(result, containerId, isModal){
   }
 
   html += '<div class="diag-actions">';
-  html += '<button class="btn btn-ghost" id="btn-reselect-file">Selecionar outro arquivo</button>';
-  if(!blocked && !isModal){ html += '<button class="btn btn-primary" id="btn-continue-dashboard">Continuar para o Dashboard</button>'; }
+  html += '<button class="btn btn-ghost" type="button" data-diag="reselect">Selecionar outro arquivo</button>';
+  if(!blocked && isScreen){ html += '<button class="btn btn-primary" type="button" id="btn-continue-dashboard" data-diag="continue">Continuar para o Dashboard</button>'; }
   html += '</div>';
 
   el.innerHTML = html;
 
-  document.getElementById('btn-reselect-file').addEventListener('click', function(){
-    if(isModal) closeModal();
+  // busca dentro do container: a tela de upload e a página do site podem ter o diagnóstico renderizado ao mesmo tempo
+  el.querySelector('[data-diag="reselect"]').addEventListener('click', function(){
+    refreshSavedFileCard();
     showScreen('upload');
   });
-  if(!blocked && !isModal){
-    document.getElementById('btn-continue-dashboard').addEventListener('click', enterDashboard);
-  }
-  if(isModal){
-    var closeBtn = document.getElementById('btn-close-diag-modal');
-    if(closeBtn) closeBtn.addEventListener('click', closeModal);
-  }
+  var cont = el.querySelector('[data-diag="continue"]');
+  if(cont) cont.addEventListener('click', enterDashboard);
 }
 
 function summaryCard(num, lbl){
   return '<div class="summary-card"><div class="num">'+num+'</div><div class="lbl">'+lbl+'</div></div>';
 }
-
-function openDiagModal(){
-  document.getElementById('diagnostics-modal').hidden = false;
-  renderDiagnostics(state.data, 'diagnostics-modal-content', true);
-}
-function closeModal(){ document.getElementById('diagnostics-modal').hidden = true; }
 
 /* ===================== Projections (localStorage) ===================== */
 
@@ -1640,6 +1763,7 @@ function enterDashboard(){
   populateFilterOptions();
   showScreen('dashboard');
   renderAll();
+  applyRoute();
 }
 
 function populateFilterOptions(){
@@ -1701,11 +1825,18 @@ function renderAll(){
 }
 
 function renderHeader(){
-  document.getElementById('dash-sub').textContent = 'Visão Executiva · Exercício ' + state.data.effectiveYear;
+  document.getElementById('dash-sub').textContent = 'Exercício ' + state.data.effectiveYear;
+  var semana = state.filters.semanaIdx != null ? ' · Sem '+(state.filters.semanaIdx+1) : '';
+  document.getElementById('page-sub').textContent = LABELS_ACCENT[state.filters.mes] + ' ' + state.data.effectiveYear + semana + ' · ' + (state.filters.categoria === 'todas' ? 'Todas as categorias' : catLabelShort());
+  document.getElementById('sidebar-file-name').textContent = state.data.fileName || '—';
   var badge = document.getElementById('diag-badge');
   var w = state.data.totals.totalWarnings;
   badge.className = 'badge ' + (w>0 ? 'badge-warning' : 'badge-good');
   badge.textContent = w>0 ? ('⚠ '+w+' aviso'+(w>1?'s':'')) : '✓ Sem avisos';
+  var count = document.getElementById('nav-diag-count');
+  count.hidden = w === 0;
+  count.textContent = w;
+  count.setAttribute('aria-label', w+' aviso'+(w>1?'s':''));
 }
 
 function renderFilterWidgets(){
@@ -2346,8 +2477,15 @@ function boot(){
     syncProjecaoInputs();
     renderProjecoesTable();
   });
-  document.getElementById('diag-badge').addEventListener('click', openDiagModal);
-  document.getElementById('diagnostics-modal').addEventListener('click', function(e){ if(e.target.id === 'diagnostics-modal') closeModal(); });
+  document.getElementById('diag-badge').addEventListener('click', function(){ navigate('diagnostico'); });
+  window.addEventListener('hashchange', applyRoute);
+  document.getElementById('btn-menu').addEventListener('click', function(){
+    if(document.body.classList.contains('sidebar-open')) closeSidebar(); else openSidebar();
+  });
+  document.getElementById('sidebar-backdrop').addEventListener('click', closeSidebar);
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeSidebar(); });
+  // clicar na página já aberta não gera hashchange; ainda assim fecha o menu no celular
+  Array.prototype.forEach.call(document.querySelectorAll('.side-link'), function(a){ a.addEventListener('click', closeSidebar); });
 
   document.getElementById('filter-mes').addEventListener('change', function(e){ state.filters.mes = e.target.value; state.filters.semanaIdx = null; renderAll(); });
   document.getElementById('filter-semana').addEventListener('change', function(e){ state.filters.semanaIdx = e.target.value===''? null : Number(e.target.value); renderAll(); });

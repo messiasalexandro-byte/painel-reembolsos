@@ -37,6 +37,23 @@ Nada é descartado sem aviso. Cada ocorrência mostra aba, linha, campo e o valo
 - **Aviso (linha mantida):** tipo fora de Estorno/Cupom/Chargeback, quantidade ou valor negativos, data fora do ano de referência, data de outro mês que não o da aba, possível lançamento duplicado.
 - **Bloqueio:** nenhuma aba mensal reconhecida, nenhuma tabela válida ou nenhuma linha válida.
 
+## Navegação
+
+O painel funciona como um site com **menu lateral**. Cada página tem endereço próprio, então dá para salvar nos favoritos ou mandar o link para uma página específica:
+
+| Página | Endereço | Conteúdo |
+|---|---|---|
+| Visão geral | `#/visao-geral` | KPIs, resumo por mês, indicadores-chave e Top 5 |
+| Diário e semanal | `#/diario-semanal` | Comportamento diário, comparativo semanal e últimos 7 dias |
+| Mensal e composição | `#/mensal` | Trajetória mensal e composição por categoria |
+| Relatório diário | `#/relatorio` | Totais de um dia e projeções de estornos |
+| Canais e status | `#/canais` | Distribuição por canal e por status |
+| Metas e projeções | `#/metas` | Teto mensal, previsão de fechamento e projetado × realizado |
+| Lançamentos | `#/lancamentos` | Tabela linha a linha |
+| Diagnóstico | `#/diagnostico` | Resultado da validação da planilha |
+
+No celular, o menu fica escondido e abre pelo botão ☰. Os filtros do topo valem para todas as páginas, menos o Diagnóstico. **Imprimir / PDF** imprime a página aberta.
+
 ## Funcionalidades
 
 **Filtros globais:** mês, métrica (quantidade ou valor), semana e categoria.
