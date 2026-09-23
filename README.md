@@ -66,13 +66,13 @@ No celular, o menu fica escondido e abre pelo botão ☰. Os filtros do topo val
 - **Composição por categoria**: tabela do ano inteiro.
 - **Top 5** dias de maior exposição e **indicadores-chave** do período.
 - **Tendência dos últimos 7 dias**.
-- **Relatório diário**: totais do dia por natureza, comparação com a média e com o dia anterior.
+- **Relatório diário**: totais do dia por natureza, comparação com a média e com o dia anterior. Também registra o **valor projetado de estornos** para uma data futura, com até **3 casas decimais** (ex.: `R$ 123,456`).
 - **Canais e status**: gráfico de rosca por canal e tabela por status.
 - **Metas e projeções**:
   - teto mensal em R$ com barra de progresso;
   - previsão de fechamento pelo ritmo diário;
   - alerta quando a meta é ou deve ser ultrapassada;
-  - tabela de projeções de estornos (projetado × realizado).
+  - tabela de projeções de estornos (projetado × realizado), exibida com 3 casas decimais. O restante do painel usa centavos.
 - **Lançamentos**: tabela linha a linha com:
   - busca;
   - filtros de canal, status e "somente com avisos";

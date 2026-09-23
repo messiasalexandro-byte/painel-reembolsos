@@ -621,7 +621,7 @@ table.data-table tfoot td{ font-weight:700; border-top:1px solid var(--border); 
           <div class="panel-sub-title">Valor Projetado de Estornos</div>
           <div class="form-row">
             <div class="form-field"><label for="input-proj-data">Data futura</label><input type="date" class="date-input" id="input-proj-data"></div>
-            <div class="form-field"><label for="input-proj-valor">Valor projetado (R$)</label><input type="number" step="0.01" class="num-input" id="input-proj-valor" placeholder="0,00"></div>
+            <div class="form-field"><label for="input-proj-valor">Valor projetado (R$)</label><input type="number" step="0.001" class="num-input" id="input-proj-valor" placeholder="0,000"></div>
             <button class="btn btn-sm" id="btn-save-proj">Salvar</button>
             <span class="save-note" id="proj-save-note" role="status"></span>
           </div>
@@ -2200,6 +2200,10 @@ function renderMetas(){
   renderProjecoesTable();
 }
 
+// projeções usam 3 casas decimais (as demais telas seguem em centavos)
+var nfCurrency3 = new Intl.NumberFormat('pt-BR', {style:'currency', currency:'BRL', minimumFractionDigits:3, maximumFractionDigits:3});
+function fmtValor3(n){ return nfCurrency3.format(n||0); }
+
 function renderProjecoesTable(){
   var keys = Object.keys(state.projecoes).sort();
   var el = document.getElementById('table-projecoes');
@@ -2216,9 +2220,9 @@ function renderProjecoesTable(){
     var diff = real != null ? real - proj : null;
     var diffCls = diff == null ? '' : (diff > 0 ? ' style="color:var(--crit-text)"' : ' style="color:var(--good-text)"');
     return '<tr><td>'+(d ? pad2(d.getDate())+'/'+pad2(d.getMonth()+1)+'/'+d.getFullYear() : escapeHtml(k))+'</td>' +
-      '<td class="num">'+fmtValor(proj)+'</td>' +
-      '<td class="num">'+(real != null ? fmtValor(real) : '<span style="color:var(--text-muted)">aguardando</span>')+'</td>' +
-      '<td class="num"'+diffCls+'>'+(diff != null ? fmtValor(diff) : '—')+'</td>' +
+      '<td class="num">'+fmtValor3(proj)+'</td>' +
+      '<td class="num">'+(real != null ? fmtValor3(real) : '<span style="color:var(--text-muted)">aguardando</span>')+'</td>' +
+      '<td class="num"'+diffCls+'>'+(diff != null ? fmtValor3(diff) : '—')+'</td>' +
       '<td><button class="link-btn" type="button" data-del-proj="'+escapeHtml(k)+'" aria-label="Excluir projeção de '+escapeHtml(k)+'">Excluir</button></td></tr>';
   }).join('');
   el.innerHTML = '<table class="data-table"><thead><tr><th>Data</th><th class="num">Projetado</th><th class="num">Realizado</th><th class="num">Diferença</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>';
@@ -2503,7 +2507,7 @@ function boot(){
     var dISO = document.getElementById('input-proj-data').value;
     var v = core.toNumber(document.getElementById('input-proj-valor').value);
     if(dISO && v != null){
-      saveProjecao(dISO, v);
+      saveProjecao(dISO, Math.round(v*1000)/1000);
       flashNote('proj-save-note', 'Projeção salva ✓');
       renderProjecoesTable();
     } else {
