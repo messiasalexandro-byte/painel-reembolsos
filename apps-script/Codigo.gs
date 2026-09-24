@@ -51,7 +51,6 @@ function obterPlanilha(versao){
     });
     if(resp.getResponseCode() !== 200) return {erro:'exportacao_falhou', detalhe:'HTTP ' + resp.getResponseCode()};
     bytes = resp.getBlob().getBytes();
-    if(!/\.xlsx$/i.test(nome)) nome += '.xlsx';
   } else {
     bytes = arquivo.getBlob().getBytes();
   }

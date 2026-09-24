@@ -1700,7 +1700,8 @@ function loadFromDrive(silent){
     drive.error = null;
     if(data.mudou === false) return;
     var buf = base64ToBuffer(data.base64);
-    var meta = {name:data.nome || 'planilha.xlsx', size:data.tamanho || 0, importedAt:new Date(data.modificadoEm), source:'drive'};
+    var nome = (data.nome || 'planilha') + (data.tipo === 'planilha_google' ? ' (Planilha Google)' : '');
+    var meta = {name:nome, size:data.tamanho || 0, importedAt:new Date(data.modificadoEm), source:'drive'};
     var previous = state.data;
     var result = processBuffer(buf, meta);
     drive.version = data.modificadoEm;
