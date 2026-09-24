@@ -24,18 +24,30 @@ function configurarChave(){
 }
 
 function doGet(e){
-  var esperado = PropertiesService.getScriptProperties().getProperty('TOKEN');
+  // TOKEN_FIXO pode vir de um arquivo Chave.gs que existe só no projeto do Apps Script (nunca no repositório).
+  var esperado = PropertiesService.getScriptProperties().getProperty('TOKEN') || (typeof TOKEN_FIXO !== 'undefined' ? TOKEN_FIXO : '');
   var recebido = e && e.parameter ? e.parameter.token : '';
   if(!esperado || recebido !== esperado) return responder({erro:'nao_autorizado'});
+  try{
+    return buscarPlanilha(e.parameter.info === '1');
+  } catch(err){
+    return responder({erro:'excecao', detalhe:String(err && err.message || err)});
+  }
+}
 
+// info=true: devolve só a lista de planilhas da pasta (diagnóstico), sem o arquivo.
+function buscarPlanilha(info){
+  var lista = [];
   var escolhido = null;
   var arquivos = DriveApp.getFolderById(FOLDER_ID).getFiles();
   while(arquivos.hasNext()){
     var f = arquivos.next();
     var tipo = f.getMimeType();
     if(tipo !== MIME_XLSX && tipo !== MIME_SHEETS) continue;
+    lista.push({nome:f.getName(), tipo:tipo, tamanho:f.getSize(), modificadoEm:f.getLastUpdated().toISOString()});
     if(!escolhido || f.getLastUpdated() > escolhido.getLastUpdated()) escolhido = f;
   }
+  if(info) return responder({arquivos:lista});
   if(!escolhido) return responder({erro:'pasta_vazia'});
 
   var nome = escolhido.getName();

@@ -35,6 +35,8 @@ A partir daí, o painel abre direto no dashboard com os dados da pasta. **Atuali
 
 - **Colegas:** **"Copiar link para colegas"** gera um endereço `…#fonte=…` que configura a fonte no navegador de quem abrir. Esse link contém a chave: envie só para quem pode ver os dados.
 - **Trocar a chave:** apague a propriedade `TOKEN` em *Configurações do projeto → Propriedades do script*, rode `configurarChave` de novo e atualize o endereço no painel.
+- **Alternativa à propriedade `TOKEN`:** um arquivo `Chave.gs` com `var TOKEN_FIXO = '<chave>';`, criado só no projeto do Apps Script e nunca no repositório.
+- **Diagnóstico:** `…/exec?token=<chave>&info=1` lista as planilhas que o script enxerga na pasta, sem baixar o arquivo.
 - **Mudou o código do script?** Use *Implantar → Gerenciar implantações → Editar → Nova versão*, para manter a mesma URL.
 
 ## Formato esperado da planilha
