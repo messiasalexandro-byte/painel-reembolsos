@@ -361,8 +361,9 @@ details.table-toggle summary{ cursor:pointer; font-size:11.5px; color:var(--kpi-
 .saved-file-sub{ font-size:11.5px; color:var(--text-muted); margin-top:3px; }
 .saved-file-actions{ display:flex; gap:8px; flex-wrap:wrap; }
 .drive-source{ display:block; }
-.drive-form{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
-.drive-form .text-input{ flex:1 1 240px; min-width:0; }
+.drive-source a{ color:var(--kpi-ticket); font-weight:600; }
+.sidebar-drive-stamp{ font-size:11px; color:var(--text-muted); margin-top:4px; line-height:1.4; }
+.sidebar-drive-stamp.is-error{ color:var(--crit-text); }
 .drive-status{ font-size:12px; margin-top:10px; padding:8px 12px; border-radius:8px; }
 .drive-status.loading{ color:var(--text-secondary); }
 .drive-status.loading::before{
@@ -429,19 +430,11 @@ table.data-table tfoot td{ font-weight:700; border-top:1px solid var(--border); 
       </div>
       <h1>Importar planilha</h1>
       <p>Carregue o arquivo <strong>.xlsx</strong> com as abas mensais (Janeiro–Dezembro) e a aba "Consolidado Anual". Tudo é lido localmente, no seu navegador — nenhum dado é enviado para fora.</p>
-      <div class="saved-file drive-source" id="drive-source">
-        <div class="saved-file-title">Atualização automática (Google Drive)</div>
-        <div class="saved-file-sub" id="drive-source-sub">Cole o endereço do app da web do Apps Script (com <code>?token=</code>) para o painel buscar sozinho a planilha mais recente da pasta ao abrir.</div>
-        <form class="drive-form" id="drive-form" autocomplete="off">
-          <input class="text-input" id="drive-url" type="url" placeholder="https://script.google.com/macros/s/…/exec?token=…" aria-label="Endereço do app da web do Apps Script" required>
-          <button class="btn btn-primary btn-sm" type="submit">Salvar e buscar</button>
-        </form>
-        <div class="saved-file-actions" id="drive-actions" hidden style="margin-top:10px;">
-          <button class="btn btn-primary btn-sm" id="btn-drive-load" type="button">Buscar agora</button>
-          <button class="btn btn-ghost btn-sm" id="btn-drive-copy" type="button">Copiar link para colegas</button>
-          <button class="btn btn-ghost btn-sm" id="btn-drive-remove" type="button">Remover fonte</button>
-        </div>
+      <div class="saved-file drive-source" id="drive-source" hidden>
+        <div class="saved-file-title">Planilha do Google Drive</div>
+        <div class="saved-file-sub" id="drive-source-sub"></div>
         <div class="drive-status" id="drive-status" role="status" aria-live="polite" hidden></div>
+        <button class="btn btn-primary btn-sm" id="btn-drive-retry" type="button" hidden style="margin-top:10px;">Tentar de novo</button>
       </div>
       <div class="saved-file" id="saved-file" hidden>
         <div>
@@ -495,7 +488,7 @@ table.data-table tfoot td{ font-weight:700; border-top:1px solid var(--border); 
         <a class="side-link" href="#/diagnostico" data-route="diagnostico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h.01"/></svg><span>Diagnóstico</span><span class="nav-count" id="nav-diag-count" hidden></span></a>
     </nav>
     <div class="sidebar-footer">
-      <div><div class="sidebar-file-label">Arquivo carregado</div><div class="sidebar-file-name" id="sidebar-file-name"></div></div>
+      <div><div class="sidebar-file-label">Arquivo carregado</div><div class="sidebar-file-name" id="sidebar-file-name"></div><div class="sidebar-drive-stamp" id="sidebar-drive-stamp" hidden></div></div>
       <button class="btn btn-primary btn-sm" id="btn-drive-refresh" type="button" hidden>Atualizar agora</button>
       <button class="btn btn-ghost btn-sm" id="btn-reimport" type="button">Importar outro arquivo</button>
       <button class="btn btn-ghost btn-sm theme-toggle" type="button"></button>
@@ -1626,108 +1619,127 @@ function fmtDateTime(d){
   return d.toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
 }
 
-/* ===================== Fonte automática (Google Drive via Apps Script) ===================== */
+/* ===================== Fonte automática (Google Drive) ===================== */
+// Servido pelo Apps Script (HtmlService), o painel lê a planilha direto da pasta do Drive via google.script.run.
+// Fora dele (GitHub Pages, arquivo local), a importação continua manual.
 
-var driveSource = (function(){
-  var KEY = 'reembolsos_fonte_drive_v1';
-  var ERROS = {
-    nao_autorizado:'A chave (token) do endereço não confere com a do Apps Script. Confira o final "?token=…" do link.',
-    pasta_vazia:'Nenhuma planilha (.xlsx ou Planilha Google) foi encontrada na pasta do Drive.',
-    exportacao_falhou:'O Google não conseguiu exportar a Planilha Google como .xlsx.'
-  };
-  // remove espaços/quebras de linha que entram ao copiar o link longo de um terminal
-  function clean(url){ return String(url || '').replace(/\s+/g, ''); }
-  function get(){ try{ return clean(localStorage.getItem(KEY)); } catch(e){ return ''; } }
-  function set(url){ try{ localStorage.setItem(KEY, clean(url)); } catch(e){} }
-  function clear(){ try{ localStorage.removeItem(KEY); } catch(e){} }
-  function isValidUrl(url){ return /^(https:\/\/|http:\/\/localhost[:\/])\S+$/i.test(clean(url)); }
-  function base64ToBuffer(b64){
-    var bin = atob(b64), bytes = new Uint8Array(bin.length);
-    for(var i=0; i<bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return bytes.buffer;
-  }
-  function fetchLatest(){
-    var url = get();
-    if(!url) return Promise.reject(new Error('Nenhuma fonte configurada.'));
-    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-    var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 30000) : null;
-    return fetch(url, ctrl ? {signal:ctrl.signal} : {})
-      .then(function(resp){
-        if(!resp.ok) throw new Error('O endereço respondeu com erro HTTP '+resp.status+'.');
-        return resp.text();
-      })
-      .then(function(txt){
-        var data;
-        try{ data = JSON.parse(txt); } catch(e){ throw new Error('A resposta não veio no formato esperado. Confira se o endereço é o do app da web (termina em /exec) e se o acesso está como "Qualquer pessoa".'); }
-        if(data.erro) throw new Error((ERROS[data.erro] || ('Erro do Apps Script: '+data.erro)) + (data.detalhe ? ' ('+data.detalhe+')' : ''));
-        if(!data.base64) throw new Error('A resposta não trouxe o arquivo.');
-        return { buffer:base64ToBuffer(data.base64), name:data.nome || 'planilha.xlsx', size:data.tamanho || 0, modifiedAt:data.modificadoEm ? new Date(data.modificadoEm) : new Date() };
-      }, function(err){
-        if(err && err.name === 'AbortError') throw new Error('O Google Drive demorou mais de 30 segundos para responder. Tente de novo.');
-        if(err && err.name === 'TypeError') throw new Error('Não foi possível acessar o endereço (sem internet ou link inválido).');
-        throw err;
-      })
-      .then(function(r){ clearTimeout(timer); return r; }, function(e){ clearTimeout(timer); throw e; });
-  }
-  return { get:get, set:set, clear:clear, isValidUrl:isValidUrl, fetchLatest:fetchLatest };
-})();
+var IS_APPS_SCRIPT = typeof google !== 'undefined' && !!(google.script && google.script.run);
+var PAINEL_ONLINE_URL = 'https://script.google.com/macros/s/AKfycbxgwqnN5kGArZmYM-zbGyV_h4AjfkzqITj2ZTfVP1PfpZMDMu2Ag8FDnlDpEGiWbXVy/exec';
+var DRIVE_POLL_MS = 5 * 60 * 1000;
+var DRIVE_ERROS = {
+  pasta_vazia:'Nenhuma planilha (.xlsx ou Planilha Google) foi encontrada na pasta do Drive.',
+  exportacao_falhou:'O Google não conseguiu exportar a Planilha Google como .xlsx.'
+};
+var drive = { loading:false, version:null, checkedAt:null, error:null, timer:null };
 
-function setDriveStatus(kind, msg){
-  var el = document.getElementById('drive-status');
-  el.className = 'drive-status' + (kind === 'loading' ? ' loading' : kind === 'error' ? ' alert-critical' : kind === 'ok' ? ' alert-good' : '');
-  el.textContent = msg || '';
-  el.hidden = !msg;
+function base64ToBuffer(b64){
+  var bin = atob(b64), bytes = new Uint8Array(bin.length);
+  for(var i=0; i<bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
 }
 
-function refreshDriveCard(){
-  var configured = !!driveSource.get();
-  document.getElementById('drive-form').hidden = configured;
-  document.getElementById('drive-actions').hidden = !configured;
-  document.getElementById('btn-drive-refresh').hidden = !configured;
-  document.getElementById('drive-source-sub').innerHTML = configured
-    ? 'Configurada neste navegador. O painel busca a planilha mais recente da pasta sempre que é aberto.'
-    : 'Cole o endereço do app da web do Apps Script (com <code>?token=</code>) para o painel buscar sozinho a planilha mais recente da pasta ao abrir.';
-}
-
-var driveLoading = false;
-function loadFromDrive(){
-  if(driveLoading || !driveSource.get()) return;
-  driveLoading = true;
-  var inDashboard = isDashboardVisible();
-  var btn = document.getElementById('btn-drive-refresh');
-  if(inDashboard){ btn.disabled = true; btn.textContent = 'Atualizando…'; }
-  else { showScreen('upload'); setDriveStatus('loading', 'Buscando a planilha no Google Drive…'); }
-
-  driveSource.fetchLatest().then(function(r){
-    var meta = {name:r.name, size:r.size, importedAt:r.modifiedAt, source:'drive'};
-    var result = processBuffer(r.buffer, meta);
-    if(result.overallStatus === 'blocked'){
-      setDriveStatus('error', 'A planilha do Drive não pôde ser usada. Veja o diagnóstico.');
-      renderDiagnostics(result, 'diagnostics-content', 'screen');
-      showScreen('diagnostics');
-      return;
-    }
-    lastFileStore.save(r.buffer, meta).then(refreshSavedFileCard);
-    setDriveStatus('', '');
-    enterDashboard();
-  }).catch(function(err){
-    var msg = err && err.message ? err.message : String(err);
-    if(inDashboard){ alert('Não foi possível atualizar pelo Google Drive.\n\n' + msg + '\n\nOs dados carregados continuam na tela.'); }
-    else { setDriveStatus('error', msg + ' Você ainda pode continuar com o último arquivo ou importar manualmente.'); }
-  }).then(function(){
-    driveLoading = false;
-    btn.disabled = false; btn.textContent = 'Atualizar agora';
+// version: modificadoEm da planilha já carregada; o servidor responde {mudou:false} se nada mudou.
+function fetchFromDrive(version){
+  return new Promise(function(resolve, reject){
+    google.script.run
+      .withSuccessHandler(function(data){
+        if(!data) return reject(new Error('O Google Drive não devolveu resposta.'));
+        if(data.erro) return reject(new Error((DRIVE_ERROS[data.erro] || ('Erro: '+data.erro)) + (data.detalhe ? ' ('+data.detalhe+')' : '')));
+        resolve(data);
+      })
+      .withFailureHandler(function(err){ reject(new Error('Não foi possível consultar o Google Drive. ' + (err && err.message ? err.message : String(err)))); })
+      .obterPlanilha(version || '');
   });
 }
 
-// Link para colegas: #fonte=<endereço codificado> salva a fonte neste navegador e some da barra de endereço.
-function consumeFonteFromHash(){
-  var m = /^#fonte=(.+)$/.exec(location.hash);
-  if(!m) return;
-  var url = '';
-  try{ url = decodeURIComponent(m[1]); } catch(e){}
-  if(driveSource.isValidUrl(url)) driveSource.set(url);
-  try{ history.replaceState(null, '', location.pathname + location.search); } catch(e){ location.hash = ''; }
+function setDriveStatus(kind, msg){
+  var el = document.getElementById('drive-status');
+  el.className = 'drive-status' + (kind === 'loading' ? ' loading' : kind === 'error' ? ' alert-critical' : '');
+  el.textContent = msg || '';
+  el.hidden = !msg;
+  document.getElementById('btn-drive-retry').hidden = kind !== 'error';
+}
+
+function renderDriveStamp(){
+  var el = document.getElementById('sidebar-drive-stamp');
+  var auto = IS_APPS_SCRIPT && state.data && state.data.source === 'drive';
+  el.hidden = !auto;
+  document.getElementById('btn-drive-refresh').hidden = !IS_APPS_SCRIPT;
+  if(!auto) return;
+  el.className = 'sidebar-drive-stamp' + (drive.error ? ' is-error' : '');
+  el.textContent = drive.error
+    ? 'Falha na última verificação: ' + drive.error
+    : 'Atualiza sozinho a cada 5 min' + (drive.checkedAt ? ' · verificado às ' + pad2(drive.checkedAt.getHours()) + ':' + pad2(drive.checkedAt.getMinutes()) : '');
+}
+
+// silent: verificação automática (sem travar o botão nem abrir alertas).
+function loadFromDrive(silent){
+  if(!IS_APPS_SCRIPT || drive.loading) return;
+  var inDashboard = isDashboardVisible();
+  // quem importou um arquivo à mão continua com ele até pedir "Atualizar agora"
+  if(silent && inDashboard && state.data.source !== 'drive') return;
+  drive.loading = true;
+  var btn = document.getElementById('btn-drive-refresh');
+  if(!silent){ btn.disabled = true; btn.textContent = 'Atualizando…'; }
+  if(!inDashboard) setDriveStatus('loading', 'Buscando a planilha no Google Drive…');
+  var knownVersion = inDashboard && state.data.source === 'drive' ? drive.version : null;
+
+  fetchFromDrive(knownVersion).then(function(data){
+    drive.checkedAt = new Date();
+    drive.error = null;
+    if(data.mudou === false) return;
+    var buf = base64ToBuffer(data.base64);
+    var meta = {name:data.nome || 'planilha.xlsx', size:data.tamanho || 0, importedAt:new Date(data.modificadoEm), source:'drive'};
+    var previous = state.data;
+    var result = processBuffer(buf, meta);
+    drive.version = data.modificadoEm;
+    if(result.overallStatus === 'blocked'){
+      if(inDashboard){
+        state.data = previous;
+        drive.error = 'a versão nova da planilha tem erros de estrutura; os dados anteriores continuam na tela.';
+      } else {
+        setDriveStatus('error', 'A planilha do Drive não pôde ser usada. Veja o diagnóstico.');
+        renderDiagnostics(result, 'diagnostics-content', 'screen');
+        showScreen('diagnostics');
+      }
+      return;
+    }
+    lastFileStore.save(buf, meta).then(refreshSavedFileCard);
+    setDriveStatus('', '');
+    enterDashboard(inDashboard);
+  }).catch(function(err){
+    var msg = err && err.message ? err.message : String(err);
+    if(inDashboard){
+      drive.error = msg;
+      if(!silent) alert('Não foi possível atualizar pelo Google Drive.\n\n' + msg + '\n\nOs dados carregados continuam na tela.');
+    } else {
+      setDriveStatus('error', msg + ' Você ainda pode continuar com o último arquivo ou importar manualmente.');
+    }
+  }).then(function(){
+    drive.loading = false;
+    btn.disabled = false; btn.textContent = 'Atualizar agora';
+    if(isDashboardVisible()) renderDriveStamp();
+  });
+}
+
+function startDrivePolling(){
+  if(!IS_APPS_SCRIPT) return;
+  drive.timer = setInterval(function(){ if(!document.hidden) loadFromDrive(true); }, DRIVE_POLL_MS);
+  // aba que volta ao primeiro plano depois de muito tempo verifica na hora
+  document.addEventListener('visibilitychange', function(){
+    if(!document.hidden && isDashboardVisible() && (!drive.checkedAt || Date.now() - drive.checkedAt.getTime() >= DRIVE_POLL_MS)) loadFromDrive(true);
+  });
+}
+
+function setupDriveCard(){
+  var card = document.getElementById('drive-source');
+  var sub = document.getElementById('drive-source-sub');
+  if(IS_APPS_SCRIPT){
+    sub.textContent = 'Os dados vêm direto da pasta do Google Drive e se atualizam sozinhos a cada 5 minutos enquanto o painel estiver aberto.';
+  } else {
+    sub.innerHTML = 'Para ver sempre os dados atuais, sem importar nada, abra o <a href="'+PAINEL_ONLINE_URL+'" target="_blank" rel="noopener">painel online</a> com a sua conta @talgui.com.br.';
+  }
+  card.hidden = false;
 }
 
 /* ===================== Diagnostics rendering ===================== */
@@ -1877,15 +1889,19 @@ function isDashboardVisible(){
 
 /* ===================== Enter dashboard ===================== */
 
-function enterDashboard(){
+// keepView: recarga automática dos mesmos dados — mantém mês, filtros e estado da tabela de lançamentos
+function enterDashboard(keepView){
+  keepView = keepView === true;
   var d = state.data;
-  var monthsWithData = MONTH_DEFS.filter(function(m){ return d.validTransactions.some(function(t){ return t.sheetKey===m.key; }); });
-  state.filters.mes = monthsWithData.length ? monthsWithData[monthsWithData.length-1].key : MONTH_DEFS[0].key;
   var maxDate = d.validTransactions.reduce(function(a,t){ return (!a || t.date>a) ? t.date : a; }, null);
   state.referenceDate = maxDate || new Date();
-  state.relatorioDate = state.referenceDate;
-  state.filters.semanaIdx = null;
-  state.lanc = { busca:'', canal:'', status:'', somenteAvisos:false, sortKey:'date', sortDir:'asc', page:0, lastSig:null };
+  if(!keepView){
+    var monthsWithData = MONTH_DEFS.filter(function(m){ return d.validTransactions.some(function(t){ return t.sheetKey===m.key; }); });
+    state.filters.mes = monthsWithData.length ? monthsWithData[monthsWithData.length-1].key : MONTH_DEFS[0].key;
+    state.relatorioDate = state.referenceDate;
+    state.filters.semanaIdx = null;
+    state.lanc = { busca:'', canal:'', status:'', somenteAvisos:false, sortKey:'date', sortDir:'asc', page:0, lastSig:null };
+  }
   state.issueIndex = {};
   (d.issues || []).forEach(function(i){
     if(!i.transactionId || i.severity === 'info') return;
@@ -1893,13 +1909,14 @@ function enterDashboard(){
   });
   loadProjecoes();
   loadMetas();
-  populateFilterOptions();
+  populateFilterOptions(keepView);
   showScreen('dashboard');
   renderAll();
-  applyRoute();
+  if(!keepView) applyRoute();
+  renderDriveStamp();
 }
 
-function populateFilterOptions(){
+function populateFilterOptions(keepView){
   var mesSel = document.getElementById('filter-mes');
   mesSel.innerHTML = MONTH_DEFS.map(function(m){
     var s = state.data.sheetsSummary.find(function(x){ return x.sheetKey===m.key; });
@@ -1910,15 +1927,22 @@ function populateFilterOptions(){
 
   var relInput = document.getElementById('input-relatorio-data');
   relInput.value = isoDate(state.relatorioDate);
-  var projDataInput = document.getElementById('input-proj-data');
-  var future = new Date(state.referenceDate.getTime()); future.setDate(future.getDate()+7);
-  projDataInput.value = isoDate(future);
-  syncProjecaoInputs();
+  if(!keepView){
+    // numa recarga automática, não apaga uma projeção que esteja sendo digitada
+    var projDataInput = document.getElementById('input-proj-data');
+    var future = new Date(state.referenceDate.getTime()); future.setDate(future.getDate()+7);
+    projDataInput.value = isoDate(future);
+    syncProjecaoInputs();
+  }
 
-  document.getElementById('lanc-busca').value = '';
-  document.getElementById('lanc-avisos').checked = false;
-  document.getElementById('lanc-canal').innerHTML = distinctOptions('canal');
-  document.getElementById('lanc-status').innerHTML = distinctOptions('status');
+  document.getElementById('lanc-busca').value = state.lanc.busca;
+  document.getElementById('lanc-avisos').checked = state.lanc.somenteAvisos;
+  ['canal', 'status'].forEach(function(field){
+    var sel = document.getElementById('lanc-'+field);
+    sel.innerHTML = distinctOptions(field);
+    sel.value = state.lanc[field];
+    if(sel.value !== state.lanc[field]){ state.lanc[field] = ''; sel.value = ''; }
+  });
 }
 
 function distinctOptions(field){
@@ -2542,32 +2566,9 @@ function boot(){
     b.addEventListener('click', function(){ applyTheme(currentTheme() === 'light' ? 'dark' : 'light', true); });
   });
   refreshSavedFileCard();
-  consumeFonteFromHash();
-  refreshDriveCard();
-  document.getElementById('drive-form').addEventListener('submit', function(e){
-    e.preventDefault();
-    var url = document.getElementById('drive-url').value.trim();
-    if(!driveSource.isValidUrl(url)){ setDriveStatus('error', 'Informe um endereço começando com https://'); return; }
-    driveSource.set(url);
-    refreshDriveCard();
-    loadFromDrive();
-  });
-  document.getElementById('btn-drive-load').addEventListener('click', loadFromDrive);
-  document.getElementById('btn-drive-refresh').addEventListener('click', loadFromDrive);
-  document.getElementById('btn-drive-remove').addEventListener('click', function(){
-    if(!confirm('Remover a fonte automática deste navegador? A planilha no Drive não é afetada.')) return;
-    driveSource.clear();
-    document.getElementById('drive-url').value = '';
-    setDriveStatus('', '');
-    refreshDriveCard();
-  });
-  document.getElementById('btn-drive-copy').addEventListener('click', function(){
-    var link = location.origin + location.pathname + '#fonte=' + encodeURIComponent(driveSource.get());
-    var done = function(){ setDriveStatus('ok', 'Link copiado. Quem abrir esse link passa a ter a atualização automática. Ele contém a chave de acesso: compartilhe só com quem pode ver os dados.'); };
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(link).then(done, function(){ prompt('Copie o link:', link); });
-    } else { prompt('Copie o link:', link); }
-  });
+  setupDriveCard();
+  document.getElementById('btn-drive-retry').addEventListener('click', function(){ loadFromDrive(false); });
+  document.getElementById('btn-drive-refresh').addEventListener('click', function(){ loadFromDrive(false); });
   document.getElementById('btn-saved-continue').addEventListener('click', continueWithSavedFile);
   document.getElementById('btn-saved-forget').addEventListener('click', function(){
     lastFileStore.clear().then(refreshSavedFileCard);
@@ -2642,11 +2643,7 @@ function boot(){
     renderProjecoesTable();
   });
   document.getElementById('diag-badge').addEventListener('click', function(){ navigate('diagnostico'); });
-  window.addEventListener('hashchange', function(){
-    // link #fonte= colado numa aba com o painel já aberto não recarrega a página
-    if(/^#fonte=/.test(location.hash)){ consumeFonteFromHash(); refreshDriveCard(); loadFromDrive(); return; }
-    applyRoute();
-  });
+  window.addEventListener('hashchange', applyRoute);
   document.getElementById('btn-menu').addEventListener('click', function(){
     if(document.body.classList.contains('sidebar-open')) closeSidebar(); else openSidebar();
   });
@@ -2680,7 +2677,7 @@ function boot(){
   });
 
   showScreen('upload');
-  if(driveSource.get()) loadFromDrive();
+  if(IS_APPS_SCRIPT){ loadFromDrive(false); startDrivePolling(); }
 }
 
 if(document.readyState === 'loading'){

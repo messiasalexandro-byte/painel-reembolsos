@@ -1,9 +1,11 @@
 /**
- * Painel de Reembolsos — fonte automática pelo Google Drive.
+ * Painel de Reembolsos servido pelo Google Apps Script.
  *
- * Publicado como app da web, devolve em JSON (base64) a planilha modificada
- * mais recentemente na pasta abaixo: .xlsx enviado ou Planilha Google
- * (exportada como .xlsx). Passo a passo no README do repositório.
+ * doGet() entrega o painel (Index.html = cópia do index.html do repositório) e
+ * obterPlanilha() — chamada pela página via google.script.run — devolve em base64
+ * a planilha modificada mais recentemente na pasta abaixo: .xlsx enviado ou
+ * Planilha Google (exportada como .xlsx). O acesso é limitado às contas do
+ * domínio na implantação (appsscript.json → webapp.access = DOMAIN).
  */
 
 var FOLDER_ID = '1XY4OOaDlrH7_d4BmsNmrMIoxrLx8UJXv';
@@ -11,68 +13,51 @@ var FOLDER_ID = '1XY4OOaDlrH7_d4BmsNmrMIoxrLx8UJXv';
 var MIME_XLSX = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 var MIME_SHEETS = 'application/vnd.google-apps.spreadsheet';
 
-// Execute uma vez pelo editor (Executar > configurarChave) e copie a chave do registro de execução.
-function configurarChave(){
-  var props = PropertiesService.getScriptProperties();
-  var chave = props.getProperty('TOKEN');
-  if(!chave){
-    chave = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
-    props.setProperty('TOKEN', chave);
-  }
-  Logger.log('Chave de acesso: ' + chave);
-  return chave;
+function doGet(){
+  return HtmlService.createHtmlOutputFromFile('Index')
+    .setTitle('Painel de Reembolsos')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
 }
 
-function doGet(e){
-  // TOKEN_FIXO pode vir de um arquivo Chave.gs que existe só no projeto do Apps Script (nunca no repositório).
-  var esperado = PropertiesService.getScriptProperties().getProperty('TOKEN') || (typeof TOKEN_FIXO !== 'undefined' ? TOKEN_FIXO : '');
-  var recebido = e && e.parameter ? e.parameter.token : '';
-  if(!esperado || recebido !== esperado) return responder({erro:'nao_autorizado'});
-  try{
-    return buscarPlanilha(e.parameter.info === '1');
-  } catch(err){
-    return responder({erro:'excecao', detalhe:String(err && err.message || err)});
-  }
-}
-
-// info=true: devolve só a lista de planilhas da pasta (diagnóstico), sem o arquivo.
-function buscarPlanilha(info){
-  var lista = [];
+function arquivoMaisRecente(){
   var escolhido = null;
   var arquivos = DriveApp.getFolderById(FOLDER_ID).getFiles();
   while(arquivos.hasNext()){
     var f = arquivos.next();
     var tipo = f.getMimeType();
     if(tipo !== MIME_XLSX && tipo !== MIME_SHEETS) continue;
-    lista.push({nome:f.getName(), tipo:tipo, tamanho:f.getSize(), modificadoEm:f.getLastUpdated().toISOString()});
     if(!escolhido || f.getLastUpdated() > escolhido.getLastUpdated()) escolhido = f;
   }
-  if(info) return responder({arquivos:lista});
-  if(!escolhido) return responder({erro:'pasta_vazia'});
+  return escolhido;
+}
 
-  var nome = escolhido.getName();
+// versao: modificadoEm da planilha que a página já tem; se não mudou, evita reenviar o arquivo.
+function obterPlanilha(versao){
+  var arquivo = arquivoMaisRecente();
+  if(!arquivo) return {erro:'pasta_vazia'};
+  var modificadoEm = arquivo.getLastUpdated().toISOString();
+  if(versao && versao === modificadoEm) return {mudou:false, modificadoEm:modificadoEm};
+
+  var nome = arquivo.getName();
   var bytes;
-  if(escolhido.getMimeType() === MIME_SHEETS){
-    var resp = UrlFetchApp.fetch('https://docs.google.com/spreadsheets/d/' + escolhido.getId() + '/export?format=xlsx', {
+  if(arquivo.getMimeType() === MIME_SHEETS){
+    var resp = UrlFetchApp.fetch('https://docs.google.com/spreadsheets/d/' + arquivo.getId() + '/export?format=xlsx', {
       headers:{Authorization:'Bearer ' + ScriptApp.getOAuthToken()},
       muteHttpExceptions:true
     });
-    if(resp.getResponseCode() !== 200) return responder({erro:'exportacao_falhou', detalhe:'HTTP ' + resp.getResponseCode()});
+    if(resp.getResponseCode() !== 200) return {erro:'exportacao_falhou', detalhe:'HTTP ' + resp.getResponseCode()};
     bytes = resp.getBlob().getBytes();
     if(!/\.xlsx$/i.test(nome)) nome += '.xlsx';
   } else {
-    bytes = escolhido.getBlob().getBytes();
+    bytes = arquivo.getBlob().getBytes();
   }
 
-  return responder({
+  return {
+    mudou: true,
     nome: nome,
-    modificadoEm: escolhido.getLastUpdated().toISOString(),
+    modificadoEm: modificadoEm,
     tamanho: bytes.length,
-    tipo: escolhido.getMimeType() === MIME_SHEETS ? 'planilha_google' : 'xlsx',
+    tipo: arquivo.getMimeType() === MIME_SHEETS ? 'planilha_google' : 'xlsx',
     base64: Utilities.base64Encode(bytes)
-  });
-}
-
-function responder(obj){
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+  };
 }

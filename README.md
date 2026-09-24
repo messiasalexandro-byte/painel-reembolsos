@@ -16,28 +16,27 @@ Painel executivo para acompanhar **estornos, cupons e chargebacks** a partir da 
 
 Na próxima visita, o painel oferece **"Continuar com <arquivo>"** para reabrir o último arquivo sem novo upload. **"Esquecer arquivo"** apaga essa cópia do navegador.
 
-## Atualização automática pelo Google Drive
+## Painel online, sempre atualizado (Google Drive)
 
-Em vez de importar à mão, o painel pode buscar sozinho, **sempre que é aberto**, a planilha mais recente de uma pasta do Google Drive. Vale para `.xlsx` enviado à pasta ou para Planilha Google, que é exportada como `.xlsx`; o painel usa o arquivo modificado por último. A pasta continua privada: quem lê o arquivo é um Google Apps Script que roda com a sua conta.
+**Acesse:** https://script.google.com/macros/s/AKfycbxgwqnN5kGArZmYM-zbGyV_h4AjfkzqITj2ZTfVP1PfpZMDMu2Ag8FDnlDpEGiWbXVy/exec
 
-### Configurar uma única vez (≈ 5 min)
+Esse endereço abre o painel já com os dados da planilha que está na pasta do Google Drive. Não é preciso importar nada.
 
-1. Acesse [script.google.com](https://script.google.com) → **Novo projeto**.
-2. Apague o conteúdo e cole o arquivo [`apps-script/Codigo.gs`](apps-script/Codigo.gs). Se for usar outra pasta, troque `FOLDER_ID` pelo código que aparece no link dela, depois de `/folders/`.
-3. Salve e, no menu de funções, escolha **`configurarChave`** → **Executar**. Autorize o acesso ao Drive quando o Google pedir. A chave de acesso aparece no **Registro de execução**: copie-a.
-4. **Implantar → Nova implantação →** tipo **App da Web**:
-   - Executar como: **Eu**
-   - Quem pode acessar: **Qualquer pessoa**
-5. Copie a URL gerada (termina em `/exec`) e acrescente `?token=<chave do passo 3>`.
-6. No painel, cole esse endereço no cartão **"Atualização automática (Google Drive)"** e clique em **Salvar e buscar**.
+- **Quem acessa:** só quem está logado com uma conta **@talgui.com.br**.
+- **Atualização:** com o painel aberto, ele verifica a pasta **a cada 5 minutos** e redesenha só se a planilha mudou, mantendo o mês, os filtros e a página abertos. **Atualizar agora**, no menu lateral, força a verificação.
+- **Qual arquivo:** o modificado por último na pasta, seja um `.xlsx` enviado ou uma Planilha Google (exportada como `.xlsx`).
+- **Se a versão nova tiver erro de estrutura**, o painel mantém os dados anteriores e avisa no menu lateral.
+- **Várias contas Google no mesmo navegador:** se o painel não carregar, abra numa janela anônima só com a conta da Talgui. É uma limitação conhecida do Google Apps Script.
 
-A partir daí, o painel abre direto no dashboard com os dados da pasta. **Atualizar agora**, no menu lateral, busca de novo sem recarregar a página. Se o Drive falhar (sem internet, chave errada, pasta vazia), aparece uma mensagem, e o último arquivo e a importação manual continuam disponíveis.
+O endereço do GitHub Pages continua funcionando com importação manual, e mostra um link para o painel online.
 
-- **Colegas:** **"Copiar link para colegas"** gera um endereço `…#fonte=…` que configura a fonte no navegador de quem abrir. Esse link contém a chave: envie só para quem pode ver os dados.
-- **Trocar a chave:** apague a propriedade `TOKEN` em *Configurações do projeto → Propriedades do script*, rode `configurarChave` de novo e atualize o endereço no painel.
-- **Alternativa à propriedade `TOKEN`:** um arquivo `Chave.gs` com `var TOKEN_FIXO = '<chave>';`, criado só no projeto do Apps Script e nunca no repositório.
-- **Diagnóstico:** `…/exec?token=<chave>&info=1` lista as planilhas que o script enxerga na pasta, sem baixar o arquivo.
-- **Mudou o código do script?** Use *Implantar → Gerenciar implantações → Editar → Nova versão*, para manter a mesma URL.
+### Como funciona / como publicar mudanças
+
+- O painel online é servido pelo projeto do Apps Script "Painel de Reembolsos - Fonte Drive", da conta dona da pasta. A pasta continua privada: o script lê o arquivo em nome dessa conta.
+- `apps-script/Codigo.gs`: `doGet()` entrega a página e `obterPlanilha()` devolve a planilha, que a página chama por `google.script.run`.
+- `apps-script/appsscript.json`: escopos e acesso restrito ao domínio.
+- O mesmo `index.html` serve os dois lugares: ele detecta se está rodando dentro do Apps Script.
+- **Para publicar uma mudança no `index.html`** no painel online, mantendo a mesma URL, rode `sh apps-script/publicar.sh`. Ele copia `index.html` para `Index.html` e roda `clasp push` + `clasp update-deployment`. Antes, faça uma vez `npx @google/clasp login` com a conta dona do script, marcando **todas** as permissões.
 
 ## Formato esperado da planilha
 
@@ -110,10 +109,9 @@ A previsão de fechamento usa a data do último lançamento da planilha como "ho
 ## Privacidade e armazenamento
 
 - A planilha **não é enviada** para nenhum servidor. Todo o processamento acontece no navegador.
-- Com a atualização automática, o arquivo sai do Google Drive direto para o navegador, pelo Apps Script da sua conta, sem passar por outros servidores. Quem tiver o endereço com a chave (`?token=`) consegue baixar a planilha. Trate esse endereço como uma senha.
+- No painel online, a planilha vai do Google Drive direto para o navegador, pelo Apps Script, sem passar por outros servidores. Só contas @talgui.com.br conseguem abrir.
 - Algumas informações ficam salvas **só no navegador de cada pessoa**, sem compartilhamento entre computadores:
   - último arquivo importado ou baixado do Drive (IndexedDB `reembolsos_db`);
-  - endereço da fonte do Google Drive (`localStorage`: `reembolsos_fonte_drive_v1`);
   - metas mensais (`localStorage`: `reembolsos_metas_v1`);
   - projeções (`localStorage`: `reembolsos_projecoes_v1`);
   - tema (`localStorage`: `reembolsos_tema_v1`).
@@ -122,7 +120,7 @@ A previsão de fechamento usa a data do último lançamento da planilha como "ho
 ## Tecnologia
 
 - Um único arquivo: `index.html`, com HTML, CSS e JavaScript.
-- `apps-script/Codigo.gs`: script opcional do Google Apps Script para a atualização automática pelo Drive. Não é carregado pelo site.
+- `apps-script/`: projeto do Google Apps Script que serve o painel online com os dados do Drive.
 - [SheetJS](https://sheetjs.com/) 0.18.5 para ler e gerar `.xlsx`.
 - [Chart.js](https://www.chartjs.org/) 4.5.1 para os gráficos.
 - As duas bibliotecas são carregadas via CDN (cdnjs). Por isso, **é preciso internet** para abrir o painel.
