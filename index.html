@@ -2640,7 +2640,11 @@ function boot(){
     renderProjecoesTable();
   });
   document.getElementById('diag-badge').addEventListener('click', function(){ navigate('diagnostico'); });
-  window.addEventListener('hashchange', applyRoute);
+  window.addEventListener('hashchange', function(){
+    // link #fonte= colado numa aba com o painel já aberto não recarrega a página
+    if(/^#fonte=/.test(location.hash)){ consumeFonteFromHash(); refreshDriveCard(); loadFromDrive(); return; }
+    applyRoute();
+  });
   document.getElementById('btn-menu').addEventListener('click', function(){
     if(document.body.classList.contains('sidebar-open')) closeSidebar(); else openSidebar();
   });
