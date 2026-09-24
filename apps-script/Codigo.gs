@@ -33,12 +33,14 @@ function arquivoMaisRecente(){
   return maisRecente[MIME_SHEETS] || maisRecente[MIME_XLSX] || null;
 }
 
-// versao: modificadoEm da planilha que a página já tem; se não mudou, evita reenviar o arquivo.
+// versao: modificadoEm do .xlsx que a página já tem; se não mudou, evita reenviar o arquivo.
+// Planilha Google é sempre reenviada: a data de modificação dela no Drive só muda minutos depois
+// da edição, e a página compara o conteúdo para decidir se redesenha.
 function obterPlanilha(versao){
   var arquivo = arquivoMaisRecente();
   if(!arquivo) return {erro:'pasta_vazia'};
   var modificadoEm = arquivo.getLastUpdated().toISOString();
-  if(versao && versao === modificadoEm) return {mudou:false, modificadoEm:modificadoEm};
+  if(versao && versao === modificadoEm && arquivo.getMimeType() === MIME_XLSX) return {mudou:false, modificadoEm:modificadoEm};
 
   var nome = arquivo.getName();
   var bytes;

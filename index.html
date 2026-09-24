@@ -1630,7 +1630,18 @@ var DRIVE_ERROS = {
   pasta_vazia:'Nenhuma planilha (.xlsx ou Planilha Google) foi encontrada na pasta do Drive.',
   exportacao_falhou:'O Google não conseguiu exportar a Planilha Google como .xlsx.'
 };
-var drive = { loading:false, version:null, checkedAt:null, error:null, timer:null };
+var drive = { loading:false, version:null, signature:null, checkedAt:null, error:null, timer:null };
+
+// Assinatura do conteúdo lido (linhas + ano + ocorrências), para saber se a planilha mudou de fato.
+function dataSignature(result){
+  return JSON.stringify([
+    result.effectiveYear,
+    (result.issues || []).length,
+    (result.transactions || []).map(function(t){
+      return [t.id, t.date ? t.date.getTime() : null, String(t.tipoRaw), t.quantidade, t.valor, t.pedidoRef, t.status, t.observacao];
+    })
+  ]);
+}
 
 function base64ToBuffer(b64){
   var bin = atob(b64), bytes = new Uint8Array(bin.length);
@@ -1704,6 +1715,15 @@ function loadFromDrive(silent){
       }
       return;
     }
+    // Planilha Google chega a cada verificação; só redesenha se o conteúdo mudou
+    var sig = dataSignature(result);
+    if(inDashboard && previous && previous.source === 'drive' && sig === drive.signature){
+      state.data = previous;
+      state.data.importedAt = meta.importedAt;
+      renderHeader();
+      return;
+    }
+    drive.signature = sig;
     lastFileStore.save(buf, meta).then(refreshSavedFileCard);
     setDriveStatus('', '');
     enterDashboard(inDashboard);
