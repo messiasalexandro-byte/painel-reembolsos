@@ -1635,10 +1635,12 @@ var driveSource = (function(){
     pasta_vazia:'Nenhuma planilha (.xlsx ou Planilha Google) foi encontrada na pasta do Drive.',
     exportacao_falhou:'O Google não conseguiu exportar a Planilha Google como .xlsx.'
   };
-  function get(){ try{ return localStorage.getItem(KEY) || ''; } catch(e){ return ''; } }
-  function set(url){ try{ localStorage.setItem(KEY, url); } catch(e){} }
+  // remove espaços/quebras de linha que entram ao copiar o link longo de um terminal
+  function clean(url){ return String(url || '').replace(/\s+/g, ''); }
+  function get(){ try{ return clean(localStorage.getItem(KEY)); } catch(e){ return ''; } }
+  function set(url){ try{ localStorage.setItem(KEY, clean(url)); } catch(e){} }
   function clear(){ try{ localStorage.removeItem(KEY); } catch(e){} }
-  function isValidUrl(url){ return /^(https:\/\/|http:\/\/localhost[:\/])\S+$/i.test(url || ''); }
+  function isValidUrl(url){ return /^(https:\/\/|http:\/\/localhost[:\/])\S+$/i.test(clean(url)); }
   function base64ToBuffer(b64){
     var bin = atob(b64), bytes = new Uint8Array(bin.length);
     for(var i=0; i<bin.length; i++) bytes[i] = bin.charCodeAt(i);
