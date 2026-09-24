@@ -19,16 +19,18 @@ function doGet(){
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
 }
 
+// Planilha Google tem prioridade: ao converter um .xlsx, o original costuma ficar na pasta
+// e não deve voltar a ser usado só porque alguém mexeu nele. Sem Planilha Google, usa o .xlsx mais recente.
 function arquivoMaisRecente(){
-  var escolhido = null;
+  var maisRecente = {};
   var arquivos = DriveApp.getFolderById(FOLDER_ID).getFiles();
   while(arquivos.hasNext()){
     var f = arquivos.next();
     var tipo = f.getMimeType();
     if(tipo !== MIME_XLSX && tipo !== MIME_SHEETS) continue;
-    if(!escolhido || f.getLastUpdated() > escolhido.getLastUpdated()) escolhido = f;
+    if(!maisRecente[tipo] || f.getLastUpdated() > maisRecente[tipo].getLastUpdated()) maisRecente[tipo] = f;
   }
-  return escolhido;
+  return maisRecente[MIME_SHEETS] || maisRecente[MIME_XLSX] || null;
 }
 
 // versao: modificadoEm da planilha que a página já tem; se não mudou, evita reenviar o arquivo.

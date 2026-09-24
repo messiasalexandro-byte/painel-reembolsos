@@ -24,7 +24,7 @@ Esse endereço abre o painel já com os dados da planilha que está na pasta do 
 
 - **Quem acessa:** só quem está logado com uma conta **@talgui.com.br**.
 - **Atualização:** com o painel aberto, ele verifica a pasta **a cada 5 minutos** e redesenha só se a planilha mudou, mantendo o mês, os filtros e a página abertos. **Atualizar agora**, no menu lateral, força a verificação.
-- **Qual arquivo:** o modificado por último na pasta, seja um `.xlsx` enviado ou uma Planilha Google (exportada como `.xlsx`).
+- **Qual arquivo:** a Planilha Google editada por último na pasta (exportada como `.xlsx`). Se não houver nenhuma Planilha Google, usa o `.xlsx` modificado por último. Subpastas são ignoradas, então dá para guardar versões antigas numa subpasta "Arquivo".
 - **Se a versão nova tiver erro de estrutura**, o painel mantém os dados anteriores e avisa no menu lateral.
 - **Várias contas Google no mesmo navegador:** se o painel não carregar, abra numa janela anônima só com a conta da Talgui. É uma limitação conhecida do Google Apps Script.
 
