@@ -360,6 +360,16 @@ details.table-toggle summary{ cursor:pointer; font-size:11.5px; color:var(--kpi-
 .saved-file-title{ font-size:13.5px; font-weight:600; }
 .saved-file-sub{ font-size:11.5px; color:var(--text-muted); margin-top:3px; }
 .saved-file-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+.drive-source{ display:block; }
+.drive-form{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.drive-form .text-input{ flex:1 1 240px; min-width:0; }
+.drive-status{ font-size:12px; margin-top:10px; padding:8px 12px; border-radius:8px; }
+.drive-status.loading{ color:var(--text-secondary); }
+.drive-status.loading::before{
+  content:''; display:inline-block; width:10px; height:10px; margin-right:8px; vertical-align:-1px;
+  border:2px solid var(--border); border-top-color:var(--kpi-ticket); border-radius:50%; animation:spin .8s linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg); } }
 
 /* ---------- New panels ---------- */
 .panel-wide{ grid-column:1/-1; }
@@ -419,6 +429,20 @@ table.data-table tfoot td{ font-weight:700; border-top:1px solid var(--border); 
       </div>
       <h1>Importar planilha</h1>
       <p>Carregue o arquivo <strong>.xlsx</strong> com as abas mensais (Janeiro–Dezembro) e a aba "Consolidado Anual". Tudo é lido localmente, no seu navegador — nenhum dado é enviado para fora.</p>
+      <div class="saved-file drive-source" id="drive-source">
+        <div class="saved-file-title">Atualização automática (Google Drive)</div>
+        <div class="saved-file-sub" id="drive-source-sub">Cole o endereço do app da web do Apps Script (com <code>?token=</code>) para o painel buscar sozinho a planilha mais recente da pasta ao abrir.</div>
+        <form class="drive-form" id="drive-form" autocomplete="off">
+          <input class="text-input" id="drive-url" type="url" placeholder="https://script.google.com/macros/s/…/exec?token=…" aria-label="Endereço do app da web do Apps Script" required>
+          <button class="btn btn-primary btn-sm" type="submit">Salvar e buscar</button>
+        </form>
+        <div class="saved-file-actions" id="drive-actions" hidden style="margin-top:10px;">
+          <button class="btn btn-primary btn-sm" id="btn-drive-load" type="button">Buscar agora</button>
+          <button class="btn btn-ghost btn-sm" id="btn-drive-copy" type="button">Copiar link para colegas</button>
+          <button class="btn btn-ghost btn-sm" id="btn-drive-remove" type="button">Remover fonte</button>
+        </div>
+        <div class="drive-status" id="drive-status" role="status" aria-live="polite" hidden></div>
+      </div>
       <div class="saved-file" id="saved-file" hidden>
         <div>
           <div class="saved-file-title">Continuar com <strong id="saved-file-name"></strong></div>
@@ -472,6 +496,7 @@ table.data-table tfoot td{ font-weight:700; border-top:1px solid var(--border); 
     </nav>
     <div class="sidebar-footer">
       <div><div class="sidebar-file-label">Arquivo carregado</div><div class="sidebar-file-name" id="sidebar-file-name"></div></div>
+      <button class="btn btn-primary btn-sm" id="btn-drive-refresh" type="button" hidden>Atualizar agora</button>
       <button class="btn btn-ghost btn-sm" id="btn-reimport" type="button">Importar outro arquivo</button>
       <button class="btn btn-ghost btn-sm theme-toggle" type="button"></button>
     </div>
@@ -1536,7 +1561,7 @@ function processBuffer(buf, meta){
       totals:{totalSheetsExpected:12, totalSheetsFound:0, totalRowsRead:0, totalRowsValid:0, totalRowsExcluded:0, totalErrors:1, totalWarnings:0, duplicateGroups:0}
     };
   }
-  result.fileName = meta.name; result.fileSizeBytes = meta.size; result.importedAt = meta.importedAt;
+  result.fileName = meta.name; result.fileSizeBytes = meta.size; result.importedAt = meta.importedAt; result.source = meta.source || 'upload';
   state.data = result;
   return result;
 }
@@ -1567,7 +1592,7 @@ var lastFileStore = (function(){
   }
   return {
     save: function(buf, meta){
-      return run('readwrite', function(st){ return st.put({buffer:buf, name:meta.name, size:meta.size, savedAt:meta.importedAt.getTime()}, KEY); }).catch(function(){});
+      return run('readwrite', function(st){ return st.put({buffer:buf, name:meta.name, size:meta.size, savedAt:meta.importedAt.getTime(), source:meta.source || 'upload'}, KEY); }).catch(function(){});
     },
     load: function(){ return run('readonly', function(st){ return st.get(KEY); }).catch(function(){ return null; }); },
     clear: function(){ return run('readwrite', function(st){ return st.delete(KEY); }).catch(function(){}); }
@@ -1579,7 +1604,7 @@ function refreshSavedFileCard(){
   return lastFileStore.load().then(function(rec){
     if(!rec || !rec.buffer){ card.hidden = true; return; }
     document.getElementById('saved-file-name').textContent = rec.name || 'arquivo.xlsx';
-    document.getElementById('saved-file-sub').textContent = 'Importado em ' + new Date(rec.savedAt).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'}) + ' · guardado só neste navegador';
+    document.getElementById('saved-file-sub').textContent = (rec.source === 'drive' ? 'Do Google Drive, modificado em ' : 'Importado em ') + fmtDateTime(new Date(rec.savedAt)) + ' · cópia guardada só neste navegador';
     card.hidden = false;
   });
 }
@@ -1587,7 +1612,7 @@ function refreshSavedFileCard(){
 function continueWithSavedFile(){
   lastFileStore.load().then(function(rec){
     if(!rec || !rec.buffer) { refreshSavedFileCard(); return; }
-    var result = processBuffer(rec.buffer, {name:rec.name, size:rec.size, importedAt:new Date(rec.savedAt)});
+    var result = processBuffer(rec.buffer, {name:rec.name, size:rec.size, importedAt:new Date(rec.savedAt), source:rec.source});
     if(result.overallStatus === 'blocked'){
       renderDiagnostics(result, 'diagnostics-content', 'screen');
       showScreen('diagnostics');
@@ -1595,6 +1620,112 @@ function continueWithSavedFile(){
       enterDashboard();
     }
   });
+}
+
+function fmtDateTime(d){
+  return d.toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+}
+
+/* ===================== Fonte automática (Google Drive via Apps Script) ===================== */
+
+var driveSource = (function(){
+  var KEY = 'reembolsos_fonte_drive_v1';
+  var ERROS = {
+    nao_autorizado:'A chave (token) do endereço não confere com a do Apps Script. Confira o final "?token=…" do link.',
+    pasta_vazia:'Nenhuma planilha (.xlsx ou Planilha Google) foi encontrada na pasta do Drive.',
+    exportacao_falhou:'O Google não conseguiu exportar a Planilha Google como .xlsx.'
+  };
+  function get(){ try{ return localStorage.getItem(KEY) || ''; } catch(e){ return ''; } }
+  function set(url){ try{ localStorage.setItem(KEY, url); } catch(e){} }
+  function clear(){ try{ localStorage.removeItem(KEY); } catch(e){} }
+  function isValidUrl(url){ return /^(https:\/\/|http:\/\/localhost[:\/])\S+$/i.test(url || ''); }
+  function base64ToBuffer(b64){
+    var bin = atob(b64), bytes = new Uint8Array(bin.length);
+    for(var i=0; i<bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes.buffer;
+  }
+  function fetchLatest(){
+    var url = get();
+    if(!url) return Promise.reject(new Error('Nenhuma fonte configurada.'));
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 30000) : null;
+    return fetch(url, ctrl ? {signal:ctrl.signal} : {})
+      .then(function(resp){
+        if(!resp.ok) throw new Error('O endereço respondeu com erro HTTP '+resp.status+'.');
+        return resp.text();
+      })
+      .then(function(txt){
+        var data;
+        try{ data = JSON.parse(txt); } catch(e){ throw new Error('A resposta não veio no formato esperado. Confira se o endereço é o do app da web (termina em /exec) e se o acesso está como "Qualquer pessoa".'); }
+        if(data.erro) throw new Error((ERROS[data.erro] || ('Erro do Apps Script: '+data.erro)) + (data.detalhe ? ' ('+data.detalhe+')' : ''));
+        if(!data.base64) throw new Error('A resposta não trouxe o arquivo.');
+        return { buffer:base64ToBuffer(data.base64), name:data.nome || 'planilha.xlsx', size:data.tamanho || 0, modifiedAt:data.modificadoEm ? new Date(data.modificadoEm) : new Date() };
+      }, function(err){
+        if(err && err.name === 'AbortError') throw new Error('O Google Drive demorou mais de 30 segundos para responder. Tente de novo.');
+        if(err && err.name === 'TypeError') throw new Error('Não foi possível acessar o endereço (sem internet ou link inválido).');
+        throw err;
+      })
+      .then(function(r){ clearTimeout(timer); return r; }, function(e){ clearTimeout(timer); throw e; });
+  }
+  return { get:get, set:set, clear:clear, isValidUrl:isValidUrl, fetchLatest:fetchLatest };
+})();
+
+function setDriveStatus(kind, msg){
+  var el = document.getElementById('drive-status');
+  el.className = 'drive-status' + (kind === 'loading' ? ' loading' : kind === 'error' ? ' alert-critical' : kind === 'ok' ? ' alert-good' : '');
+  el.textContent = msg || '';
+  el.hidden = !msg;
+}
+
+function refreshDriveCard(){
+  var configured = !!driveSource.get();
+  document.getElementById('drive-form').hidden = configured;
+  document.getElementById('drive-actions').hidden = !configured;
+  document.getElementById('btn-drive-refresh').hidden = !configured;
+  document.getElementById('drive-source-sub').innerHTML = configured
+    ? 'Configurada neste navegador. O painel busca a planilha mais recente da pasta sempre que é aberto.'
+    : 'Cole o endereço do app da web do Apps Script (com <code>?token=</code>) para o painel buscar sozinho a planilha mais recente da pasta ao abrir.';
+}
+
+var driveLoading = false;
+function loadFromDrive(){
+  if(driveLoading || !driveSource.get()) return;
+  driveLoading = true;
+  var inDashboard = isDashboardVisible();
+  var btn = document.getElementById('btn-drive-refresh');
+  if(inDashboard){ btn.disabled = true; btn.textContent = 'Atualizando…'; }
+  else { showScreen('upload'); setDriveStatus('loading', 'Buscando a planilha no Google Drive…'); }
+
+  driveSource.fetchLatest().then(function(r){
+    var meta = {name:r.name, size:r.size, importedAt:r.modifiedAt, source:'drive'};
+    var result = processBuffer(r.buffer, meta);
+    if(result.overallStatus === 'blocked'){
+      setDriveStatus('error', 'A planilha do Drive não pôde ser usada. Veja o diagnóstico.');
+      renderDiagnostics(result, 'diagnostics-content', 'screen');
+      showScreen('diagnostics');
+      return;
+    }
+    lastFileStore.save(r.buffer, meta).then(refreshSavedFileCard);
+    setDriveStatus('', '');
+    enterDashboard();
+  }).catch(function(err){
+    var msg = err && err.message ? err.message : String(err);
+    if(inDashboard){ alert('Não foi possível atualizar pelo Google Drive.\n\n' + msg + '\n\nOs dados carregados continuam na tela.'); }
+    else { setDriveStatus('error', msg + ' Você ainda pode continuar com o último arquivo ou importar manualmente.'); }
+  }).then(function(){
+    driveLoading = false;
+    btn.disabled = false; btn.textContent = 'Atualizar agora';
+  });
+}
+
+// Link para colegas: #fonte=<endereço codificado> salva a fonte neste navegador e some da barra de endereço.
+function consumeFonteFromHash(){
+  var m = /^#fonte=(.+)$/.exec(location.hash);
+  if(!m) return;
+  var url = '';
+  try{ url = decodeURIComponent(m[1]); } catch(e){}
+  if(driveSource.isValidUrl(url)) driveSource.set(url);
+  try{ history.replaceState(null, '', location.pathname + location.search); } catch(e){ location.hash = ''; }
 }
 
 /* ===================== Diagnostics rendering ===================== */
@@ -1828,7 +1959,8 @@ function renderHeader(){
   document.getElementById('dash-sub').textContent = 'Exercício ' + state.data.effectiveYear;
   var semana = state.filters.semanaIdx != null ? ' · Sem '+(state.filters.semanaIdx+1) : '';
   document.getElementById('page-sub').textContent = LABELS_ACCENT[state.filters.mes] + ' ' + state.data.effectiveYear + semana + ' · ' + (state.filters.categoria === 'todas' ? 'Todas as categorias' : catLabelShort());
-  document.getElementById('sidebar-file-name').textContent = state.data.fileName || '—';
+  document.getElementById('sidebar-file-name').textContent = (state.data.fileName || '—') +
+    (state.data.source === 'drive' && state.data.importedAt ? ' · Google Drive, modificado em ' + fmtDateTime(state.data.importedAt) : '');
   var badge = document.getElementById('diag-badge');
   var w = state.data.totals.totalWarnings;
   badge.className = 'badge ' + (w>0 ? 'badge-warning' : 'badge-good');
@@ -2408,6 +2540,32 @@ function boot(){
     b.addEventListener('click', function(){ applyTheme(currentTheme() === 'light' ? 'dark' : 'light', true); });
   });
   refreshSavedFileCard();
+  consumeFonteFromHash();
+  refreshDriveCard();
+  document.getElementById('drive-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var url = document.getElementById('drive-url').value.trim();
+    if(!driveSource.isValidUrl(url)){ setDriveStatus('error', 'Informe um endereço começando com https://'); return; }
+    driveSource.set(url);
+    refreshDriveCard();
+    loadFromDrive();
+  });
+  document.getElementById('btn-drive-load').addEventListener('click', loadFromDrive);
+  document.getElementById('btn-drive-refresh').addEventListener('click', loadFromDrive);
+  document.getElementById('btn-drive-remove').addEventListener('click', function(){
+    if(!confirm('Remover a fonte automática deste navegador? A planilha no Drive não é afetada.')) return;
+    driveSource.clear();
+    document.getElementById('drive-url').value = '';
+    setDriveStatus('', '');
+    refreshDriveCard();
+  });
+  document.getElementById('btn-drive-copy').addEventListener('click', function(){
+    var link = location.origin + location.pathname + '#fonte=' + encodeURIComponent(driveSource.get());
+    var done = function(){ setDriveStatus('ok', 'Link copiado. Quem abrir esse link passa a ter a atualização automática. Ele contém a chave de acesso: compartilhe só com quem pode ver os dados.'); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(link).then(done, function(){ prompt('Copie o link:', link); });
+    } else { prompt('Copie o link:', link); }
+  });
   document.getElementById('btn-saved-continue').addEventListener('click', continueWithSavedFile);
   document.getElementById('btn-saved-forget').addEventListener('click', function(){
     lastFileStore.clear().then(refreshSavedFileCard);
@@ -2516,6 +2674,7 @@ function boot(){
   });
 
   showScreen('upload');
+  if(driveSource.get()) loadFromDrive();
 }
 
 if(document.readyState === 'loading'){

@@ -16,6 +16,27 @@ Painel executivo para acompanhar **estornos, cupons e chargebacks** a partir da 
 
 Na próxima visita, o painel oferece **"Continuar com <arquivo>"** para reabrir o último arquivo sem novo upload. **"Esquecer arquivo"** apaga essa cópia do navegador.
 
+## Atualização automática pelo Google Drive
+
+Em vez de importar à mão, o painel pode buscar sozinho, **sempre que é aberto**, a planilha mais recente de uma pasta do Google Drive. Vale para `.xlsx` enviado à pasta ou para Planilha Google, que é exportada como `.xlsx`; o painel usa o arquivo modificado por último. A pasta continua privada: quem lê o arquivo é um Google Apps Script que roda com a sua conta.
+
+### Configurar uma única vez (≈ 5 min)
+
+1. Acesse [script.google.com](https://script.google.com) → **Novo projeto**.
+2. Apague o conteúdo e cole o arquivo [`apps-script/Codigo.gs`](apps-script/Codigo.gs). Se for usar outra pasta, troque `FOLDER_ID` pelo código que aparece no link dela, depois de `/folders/`.
+3. Salve e, no menu de funções, escolha **`configurarChave`** → **Executar**. Autorize o acesso ao Drive quando o Google pedir. A chave de acesso aparece no **Registro de execução**: copie-a.
+4. **Implantar → Nova implantação →** tipo **App da Web**:
+   - Executar como: **Eu**
+   - Quem pode acessar: **Qualquer pessoa**
+5. Copie a URL gerada (termina em `/exec`) e acrescente `?token=<chave do passo 3>`.
+6. No painel, cole esse endereço no cartão **"Atualização automática (Google Drive)"** e clique em **Salvar e buscar**.
+
+A partir daí, o painel abre direto no dashboard com os dados da pasta. **Atualizar agora**, no menu lateral, busca de novo sem recarregar a página. Se o Drive falhar (sem internet, chave errada, pasta vazia), aparece uma mensagem, e o último arquivo e a importação manual continuam disponíveis.
+
+- **Colegas:** **"Copiar link para colegas"** gera um endereço `…#fonte=…` que configura a fonte no navegador de quem abrir. Esse link contém a chave: envie só para quem pode ver os dados.
+- **Trocar a chave:** apague a propriedade `TOKEN` em *Configurações do projeto → Propriedades do script*, rode `configurarChave` de novo e atualize o endereço no painel.
+- **Mudou o código do script?** Use *Implantar → Gerenciar implantações → Editar → Nova versão*, para manter a mesma URL.
+
 ## Formato esperado da planilha
 
 | Item | Regra |
@@ -87,8 +108,10 @@ A previsão de fechamento usa a data do último lançamento da planilha como "ho
 ## Privacidade e armazenamento
 
 - A planilha **não é enviada** para nenhum servidor. Todo o processamento acontece no navegador.
+- Com a atualização automática, o arquivo sai do Google Drive direto para o navegador, pelo Apps Script da sua conta, sem passar por outros servidores. Quem tiver o endereço com a chave (`?token=`) consegue baixar a planilha. Trate esse endereço como uma senha.
 - Algumas informações ficam salvas **só no navegador de cada pessoa**, sem compartilhamento entre computadores:
-  - último arquivo importado (IndexedDB `reembolsos_db`);
+  - último arquivo importado ou baixado do Drive (IndexedDB `reembolsos_db`);
+  - endereço da fonte do Google Drive (`localStorage`: `reembolsos_fonte_drive_v1`);
   - metas mensais (`localStorage`: `reembolsos_metas_v1`);
   - projeções (`localStorage`: `reembolsos_projecoes_v1`);
   - tema (`localStorage`: `reembolsos_tema_v1`).
@@ -97,6 +120,7 @@ A previsão de fechamento usa a data do último lançamento da planilha como "ho
 ## Tecnologia
 
 - Um único arquivo: `index.html`, com HTML, CSS e JavaScript.
+- `apps-script/Codigo.gs`: script opcional do Google Apps Script para a atualização automática pelo Drive. Não é carregado pelo site.
 - [SheetJS](https://sheetjs.com/) 0.18.5 para ler e gerar `.xlsx`.
 - [Chart.js](https://www.chartjs.org/) 4.5.1 para os gráficos.
 - As duas bibliotecas são carregadas via CDN (cdnjs). Por isso, **é preciso internet** para abrir o painel.
