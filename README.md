@@ -13,6 +13,7 @@ Painel executivo para acompanhar **estornos, cupons e chargebacks** a partir da 
 
 - **Indicadores revisados:** o canal passou a ser dividido pela abertura da Observação, as linhas de exemplo ficam fora das contas, e as médias e comparações usam só dias já decorridos. Os indicadores têm nomes técnicos (MTD, YTD, MoM, run-rate, σ) e um ícone "i" com a fórmula.
 - **Nova estrutura:** Início com alertas, Lançamentos, Análises, Acompanhamento e Planilha. Também chegam busca global (Ctrl+K), clique no gráfico para abrir os lançamentos filtrados, link da visão com os filtros e Exportar ▾.
+- **Correções da revisão:** voltar do navegador no painel online sem loop (uma entrada por página), KPIs do mês em andamento só até a data de referência, alerta que separa linhas de exemplo (fora das contas) dos demais avisos, canal por palavra inteira e `R$ 1.500` lido como mil e quinhentos, "Ano todo" em Lançamentos limpa o dia, balão acessível no ícone "i" e quantidade nos cartões do celular.
 - **Visual e interação:** seis temas (Automático, Claro, Ameixa, Corporativo, Grafite e Alto contraste), gestos no celular, animações suaves e impressão compacta.
 
 ---
@@ -57,15 +58,15 @@ A estrutura segue o padrão do painel administrativo da Nuvemshop: **Início** e
 
 **Endereços antigos continuam funcionando** e passam para os novos: `#/visao-geral` → `#/inicio`, `#/diario-semanal` → `#/dia-a-dia`, `#/relatorio` → `#/dia-a-dia` (rolando até o Resumo do dia), `#/diagnostico` → `#/planilha`.
 
-- **O endereço guarda a página e os filtros** (ex.: `#/lancamentos?mes=set&cat=Estorno&q=123`). **Copiar link** (no topo) copia a visão exata para mandar a alguém. No painel online, o link aponta para a URL `/exec`, e voltar/avançar do navegador funciona.
+- **O endereço guarda a página e os filtros** (ex.: `#/lancamentos?mes=set&cat=Estorno&q=123`). **Copiar link** (no topo) copia a visão exata para mandar a alguém. No painel online, o link aponta para a URL `/exec`, e voltar/avançar do navegador funciona: cada troca de página cria **uma** entrada no histórico (a da janela de cima, pelo `google.script.history`); filtros só atualizam a entrada atual. Início → Lançamentos → Voltar volta ao Início, e mais um Voltar sai do painel.
 - **Busca global: Ctrl+K** (⌘K no Mac, ou `/`, ou a caixa de busca no topo) procura no ano inteiro por número de pedido, texto da observação, valor exato (`189,90`) ou data (`23/09`), e também leva a qualquer página.
 - **Drill-down:** clicar num dia do Top 5, numa barra da evolução diária ou num dia da tabela abre o Resumo do dia; **Ver lançamentos do dia** abre a lista já filtrada. O mês na Composição e as linhas de canal e status (e as fatias da rosca) abrem Lançamentos filtrados. Clicar numa semana do comparativo seleciona a semana.
-- **Alertas do Início:** meta ultrapassada ou prevista acima do teto (mesma regra de Metas), dias atípicos pelo mesmo critério do indicador (valor acima de média + 2σ), avisos da planilha, o que mudou desde a última visita (guardado só neste navegador) e até que data vão os dados.
+- **Alertas do Início:** meta ultrapassada ou prevista acima do teto (mesma regra de Metas), dias atípicos pelo mesmo critério do indicador (valor acima de média + 2σ), avisos da planilha (contados à parte: "12 linhas de exemplo fora dos cálculos" e os avisos que não tiram linhas das contas), linhas do mês em andamento com dia posterior à data de referência (ficam fora dos KPIs), o que mudou desde a última visita (guardado só neste navegador) e até que data vão os dados.
 - A barra de filtros mostra **só os filtros que mudam a página aberta**. Os outros ficam guardados e voltam a valer quando você abre uma página que os usa. Em Lançamentos, **Ano todo** dispensa mês e semana.
 - O subtítulo abaixo do nome da página diz sempre qual recorte está na tela (mês, semana, dia, categoria).
 - Alguns quadros têm recorte fixo, avisado no canto do quadro: **Últimos 7 dias** (até o último lançamento), **Composição por tipo** (ano inteiro, todas as categorias) e **Metas** (em R$, todas as categorias).
 - **Exportar ▾** (no topo de todas as páginas): Excel com 4 abas, CSV dos lançamentos filtrados e Imprimir / PDF da página aberta.
-- No celular, o menu abre pelo botão ☰, os filtros ficam no botão **Filtrar** e os lançamentos viram cartões; o detalhe do lançamento abre em tela cheia.
+- No celular, o menu abre pelo botão ☰, os filtros ficam no botão **Filtrar** e os lançamentos viram cartões (com a quantidade junto ao tipo, ex.: "Estorno · 37 ocorr."); o detalhe do lançamento abre em tela cheia.
 
 ### Toque e gestos
 
@@ -77,9 +78,9 @@ A estrutura segue o padrão do painel administrativo da Nuvemshop: **Início** e
 
 ## Funcionalidades
 
-Cada indicador tem um ícone **i** com o nome técnico e a fórmula. O glossário completo, com o que foi removido e por quê, está em `../relatorios/glossario-indicadores-2026-09-25.md`.
+Cada indicador tem um ícone **i** com o nome técnico e a fórmula, num balão que abre ao passar o mouse, ao focar pelo teclado (Tab) ou ao tocar (toque de novo, toque fora ou Esc fecham). O texto também vai para o leitor de tela e o balão não sai na impressão. O glossário completo, com o que foi removido e por quê, está em `../relatorios/glossario-indicadores-2026-09-25.md`.
 
-- **KPIs do mês**: quantidade de ocorrências (volume), valor total reembolsado (R$), ticket médio de reembolso e acumulado no ano (YTD). Os três primeiros trazem a **variação MoM**: mês encerrado contra o mês anterior inteiro; mês em andamento contra os mesmos dias do mês anterior (like-for-like). Minigráfico anual em cada um.
+- **KPIs do mês**: quantidade de ocorrências (volume), valor total reembolsado (R$), ticket médio de reembolso e acumulado no ano (YTD). Os três primeiros trazem a **variação MoM**: mês encerrado contra o mês anterior inteiro; mês em andamento contra os mesmos dias do mês anterior (like-for-like). No mês em andamento, quantidade, valor, ticket e mix contam só os dias 1 até a data de referência, como a previsão; linhas da aba com dia posterior aparecem numa nota no Início. Minigráfico anual em cada um.
 - **Resumo por mês**: cartões compactos e clicáveis para trocar o mês, com valor, ocorrências e ticket médio (TM) numa linha, e uma barra com o valor do mês em relação ao maior mês do ano. O mês em andamento leva o selo "Parcial · dd/mm"; o selo "▲ meta" aparece quando o mês passa do teto definido (o valor da meta fica na dica do selo).
 - **Indicadores-chave do mês**: pico diário (valor e quantidade), média diária por dia corrido, desvio-padrão (σ) e coeficiente de variação (CV), dias atípicos (acima de média + 2σ), concentração nos 5 maiores dias, dias com lançamento, efeito volume × ticket da variação MoM e, com todas as categorias, o mix por tipo e o peso de chargeback (% do valor).
 - **Top 5 dias do mês**: maiores exposições, com a participação de cada dia no mês.
@@ -92,7 +93,7 @@ Cada indicador tem um ícone **i** com o nome técnico e a fórmula. O glossári
 - **Metas e projeções**:
   - teto mensal em R$ com barra de consumo da meta, previsão de fechamento por run-rate (realizado ÷ dias decorridos × dias do mês), folga vs. meta e alerta quando a meta é ou deve ser ultrapassada;
   - **projeções de estornos**: registre o valor projetado de um dia (até 3 casas decimais, ex.: `R$ 123,456`) e compare com o realizado (desvio em R$ e em %). O restante do painel usa centavos.
-- **Lançamentos**: busca; período (mês do filtro ou ano todo); filtros de canal, status e "somente com avisos"; chips com os filtros aplicados; ordenação por coluna, paginação e total filtrado. Clicar numa linha abre o **detalhe**: aba e linha da planilha, avisos, divisão por canal e outros lançamentos do mesmo pedido.
+- **Lançamentos**: busca; período (mês do filtro ou ano todo; escolher ano todo limpa o dia vindo de um drill-down); filtros de canal, status e "somente com avisos"; chips com os filtros aplicados; ordenação por coluna, paginação e total filtrado. Clicar numa linha abre o **detalhe**: aba e linha da planilha, avisos, divisão por canal e outros lançamentos do mesmo pedido.
 - **Exportar Excel**: 4 abas (lançamentos filtrados; resumo mensal com quantidade e valor por tipo, ticket médio, MoM, peso de chargeback, participação no ano e teto; diário do mês; ocorrências do diagnóstico).
 - **Baixar CSV**: dos lançamentos, no padrão brasileiro (`;` e vírgula decimal).
 - **Imprimir / PDF**: sempre em tema claro, sem botões e com as tabelas abertas; gráficos com altura fixa (180 px, os menores 100 px) para não ocuparem a página inteira.
@@ -125,7 +126,7 @@ Não há taxa de chargeback de mercado (chargeback ratio = chargebacks ÷ transa
 | Colunas opcionais | `Pedido/Referência`, `Status`, `Observação` |
 | Tipos reconhecidos | `Estorno`, `Cupom`, `Chargeback` |
 | Ano de referência | Célula `B2` da aba `Consolidado Anual`. Sem ela, usa a mediana dos anos das datas (com 5 datas ou mais) ou, em último caso, o ano atual. |
-| Canal | Lido da `Observação`. Com abertura (`SAC: 2 (R$ 301,70) \| TD Nuvem: 1 (R$ 269,90)`), cada canal recebe a sua quantidade e o seu valor. Sem números, um único canal citado recebe a linha inteira. Canais reconhecidos: `SAC`, `TD Nuvem`, `PIX Direto`. |
+| Canal | Lido da `Observação`. Com abertura (`SAC: 2 (R$ 301,70) \| TD Nuvem: 1 (R$ 269,90)`), cada canal recebe a sua quantidade e o seu valor. Sem números, um único canal citado recebe a linha inteira. Canais reconhecidos: `SAC`, `TD Nuvem`, `PIX Direto`, só como palavra ou expressão inteira, sem diferenciar acentos e maiúsculas ("Transação", "Isaac" e "sacola" não contam como SAC). Valores com ponto de milhar e sem centavos (`R$ 1.500`) valem mil e quinhentos. |
 
 A leitura termina após duas linhas totalmente vazias. Linhas de "Total" são ignoradas. `-`, `—` ou `n/a` em Status e Pedido/Referência contam como não preenchido.
 
@@ -170,6 +171,15 @@ painel-reembolsos/
 - `apps-script/Index.html` **não é mantido à mão**: o `publicar.sh` o gera copiando o `index.html` a cada publicação (e o `.gitignore` o exclui do Git). Não edite esse arquivo.
 - O mesmo `index.html` serve os dois lugares: ele detecta se está dentro do Apps Script (`google.script.run`) e, nesse caso, busca a planilha no Drive e verifica mudanças a cada 5 minutos.
 - A pasta do Drive é definida em `FOLDER_ID`, no `Codigo.gs`. Ela continua privada: o script lê o arquivo em nome da conta dona.
+
+### Conferir no Apps Script antes de publicar
+
+O histórico (voltar/avançar) e o foco inicial do teclado dependem do iframe do Apps Script e não dá para testar no GitHub Pages. Antes de publicar, abra a **implantação de teste** (Editor do Apps Script → Implantar → Testar implantações → URL terminada em `/dev`) e confira:
+
+1. Início → Lançamentos (pelo menu) → **Voltar** volta ao Início; **Voltar** de novo sai do painel, sem alternar entre Início e Lançamentos.
+2. Trocar o mês não cria entrada no histórico; **Avançar** refaz a navegação.
+3. Um link com filtros (`/dev#/lancamentos?mes=ago`) abre a página e o filtro certos.
+4. Logo ao abrir, **Ctrl+K** abre a busca sem precisar clicar no painel (se não abrir, é o navegador bloqueando o foco; um clique resolve).
 
 ### Publicar mudanças
 

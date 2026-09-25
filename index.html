@@ -458,15 +458,29 @@ table.data-table tr:last-child td{ border-bottom:none; }
 .indicator-list li:last-child{ border-bottom:none; padding-bottom:0; }
 .indicator-list .ind-label{ color:var(--text-secondary); }
 .indicator-list .ind-value{ font-weight:700; font-variant-numeric:tabular-nums; text-align:right; }
-/* ícone "i" com o nome técnico e a fórmula do indicador (title + aria-label) */
+/* ícone "i" com o nome técnico e a fórmula do indicador: balão (.info-pop) ao passar o mouse, focar ou tocar */
 .info-tip{
   display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; margin-left:5px; vertical-align:1px;
   border:1px solid var(--border-strong, var(--border)); border-radius:50%; font:italic 700 9px/1 Georgia, serif;
   color:var(--text-muted); cursor:help; text-transform:none; letter-spacing:0; flex:0 0 auto;
 }
-.info-tip:hover, .info-tip:focus-visible{ color:var(--text-primary); border-color:var(--kpi-ticket); outline:none; }
+.info-tip:hover, .info-tip:focus-visible, .info-tip[aria-expanded="true"]{ color:var(--text-primary); border-color:var(--kpi-ticket); outline:none; }
+.info-tip:focus-visible{ box-shadow:0 0 0 3px var(--ring); }
+.info-pop{
+  position:fixed; left:0; top:0; z-index:110; box-sizing:border-box; width:max-content; max-width:min(300px, calc(100vw - 16px));
+  padding:10px 12px; border-radius:10px; background:var(--tooltip-bg); color:var(--text-secondary);
+  border:1px solid var(--border-strong); box-shadow:var(--shadow-lg);
+  font:500 12.5px/1.45 var(--font-body); text-align:left; text-transform:none; letter-spacing:0; white-space:normal; overflow-wrap:anywhere;
+  opacity:0; transform:translateY(-4px) scale(.98); transform-origin:var(--ox, 50%) top;
+  transition:opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out); pointer-events:none;
+}
+.info-pop.is-above{ transform-origin:var(--ox, 50%) bottom; transform:translateY(4px) scale(.98); }
+.info-pop.is-open{ opacity:1; transform:none; pointer-events:auto; }
+.info-pop strong{ display:block; color:var(--text-primary); font-weight:700; margin-bottom:2px; }
+.info-pop[hidden]{ display:none; }
+@media (prefers-reduced-motion:reduce){ .info-pop, .info-pop.is-above{ transition:none; transform:none; } }
 @media print{
-  .info-tip{ display:none; }
+  .info-tip, .info-pop{ display:none!important; }
   /* tabelas largas (composição mês a mês) não podem ser cortadas no papel */
   .table-wrap{ overflow:visible; }
   #table-composition table.data-table{ font-size:9.5px; }
@@ -982,6 +996,7 @@ details.table-toggle[open] > .table-wrap{ animation:rise-sm .35s var(--ease-out)
   .header-actions{ gap:6px; }
   .topbar-titles{ flex-basis:100%; order:3; }
 }
+.lanc-table .tipo-qtd{ display:none; } /* a quantidade tem coluna própria; no cartão (celular) vai junto ao tipo */
 @media (max-width:640px){
   /* Lançamentos viram lista de cartões (DataList) */
   .lanc-table thead{ display:none; }
@@ -990,6 +1005,7 @@ details.table-toggle[open] > .table-wrap{ animation:rise-sm .35s var(--ease-out)
   .lanc-table tbody td{ display:block; border:none; padding:0; white-space:normal; }
   .lanc-table td.col-obs, .lanc-table td.col-origem, .lanc-table td.col-qtd, .lanc-table td.is-empty, .lanc-table td.col-warn:empty{ display:none; }
   .lanc-table td.col-data{ font-weight:700; }
+  .lanc-table .tipo-qtd{ display:inline; }
   .lanc-table td.col-valor{ grid-column:2; grid-row:1; font-weight:700; text-align:right; }
   .lanc-table td.col-tipo, .lanc-table td.col-pedido, .lanc-table td.col-status, .lanc-table td.col-canal{ font-size:12px; color:var(--text-secondary); }
   .lanc-table td.col-open{ grid-column:2; grid-row:2 / span 4; align-self:center; text-align:right; }
@@ -1665,6 +1681,8 @@ function toNumber(v){
   var s = String(v).trim().replace(/[R$\s]/g,'');
   if(/,\d{1,2}$/.test(s) && s.indexOf('.')>=0){ s = s.replace(/\./g,'').replace(',', '.'); }
   else if(/,\d{1,2}$/.test(s)){ s = s.replace(',', '.'); }
+  // "1.500" / "12.345.678" sem vírgula: ponto é separador de milhar (padrão brasileiro), não decimal
+  else if(/^-?\d{1,3}(\.\d{3})+$/.test(s)){ s = s.replace(/\./g,''); }
   else { s = s.replace(/,/g,''); }
   var n = parseFloat(s);
   return isFinite(n) ? n : null;
@@ -1813,14 +1831,20 @@ function cleanPlaceholder(v){
 function parseCanais(obs, quantidade, valor){
   var out = [];
   if(!obs) return out;
-  var re = /(SAC|TD Nuvem|PIX Direto)\s*:\s*(\d+)\s*\(\s*R\$\s*([\d.,]+)\s*\)/gi, m;
-  while((m = re.exec(obs))){
-    var nome = CANAIS.find(function(c){ return c.toLowerCase() === m[1].toLowerCase(); });
+  // texto sem acentos e em minúsculas; canal só como palavra/frase inteira ("Transação", "Isaac" e
+  // "sacola" não são SAC)
+  var txt = String(obs).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  var re = /\b(sac|td\s+nuvem|pix\s+direto)\s*:\s*(\d+)\s*\(\s*r\$\s*([\d.,]+)\s*\)/g, m;
+  while((m = re.exec(txt))){
+    var chave = m[1].replace(/\s+/g, ' ');
+    var nome = CANAIS.find(function(c){ return c.toLowerCase() === chave; });
     var v = toNumber(m[3]);
     if(nome && v != null) out.push({canal:nome, quantidade:Number(m[2]), valor:v});
   }
   if(out.length){ out.parsed = true; return out; }
-  var citados = CANAIS.filter(function(c){ return obs.toLowerCase().indexOf(c.toLowerCase()) >= 0; });
+  var citados = CANAIS.filter(function(c){
+    return new RegExp('\\b' + c.toLowerCase().replace(/\s+/g, '\\s+') + '\\b').test(txt);
+  });
   if(citados.length === 1) out.push({canal:citados[0], quantidade:quantidade || 0, valor:valor || 0});
   return out;
 }
@@ -2046,6 +2070,13 @@ function processWorkbook(workbook){
       totalRowsExcluded: allTxns.length - validTxns.length,
       totalErrors: issues.filter(function(i){ return i.severity==='error'; }).length,
       totalWarnings: issues.filter(function(i){ return i.severity==='warning'; }).length,
+      // avisos que tiram a linha das contas (linha de exemplo) × avisos sobre linhas que continuam nos cálculos
+      totalExampleRows: issues.filter(function(i){ return i.code==='EXAMPLE_ROW'; }).length,
+      totalWarningsKept: (function(){
+        var fora = {};
+        allTxns.forEach(function(t){ if(t.excludedFromAgg) fora[t.id] = true; });
+        return issues.filter(function(i){ return i.severity==='warning' && !(i.transactionId && fora[i.transactionId]); }).length;
+      })(),
       duplicateGroups: dupGroups
     }
   };
@@ -2249,7 +2280,12 @@ function computeTop5Days(dailyAgg, metric){
 function computeKPIs(txns, categoria, monthKey, referenceDate, year){
   var monthAgg = aggregateByMonth(txns, categoria);
   var p = periodInfo(monthKey, year, referenceDate);
-  var cur = totalsOf(rowsForMonth(txns, monthKey, categoria));
+  // mês em andamento: só os dias 1..diasDecorridos, como na base de comparação e na previsão (run-rate).
+  // Linhas da aba com dia posterior à data de referência ficam fora e são contadas à parte.
+  var todasDoMes = rowsForMonth(txns, monthKey, categoria);
+  var curRows = p.status === 'andamento' ? rowsForMonth(txns, monthKey, categoria, p.diasDecorridos) : todasDoMes;
+  var foraRows = todasDoMes.length === curRows.length ? [] : todasDoMes.filter(function(t){ return curRows.indexOf(t) === -1; });
+  var cur = totalsOf(curRows);
   var base = comparisonBase(txns, monthKey, categoria, year, p);
   var prev = base ? totalsOf(base.rows) : null;
   var ytdMonths = monthAgg.slice(0, p.idx+1);
@@ -2261,8 +2297,9 @@ function computeKPIs(txns, categoria, monthKey, referenceDate, year){
     ticketMedio: { value: cur.ticket || 0, prevValue: prev ? prev.ticket : null, pctChange: prev ? pctChange(cur.ticket, prev.ticket) : null },
     ytd: { quantidade: sum(ytdMonths,'quantidade'), valor: sum(ytdMonths,'valor'), meses: ytdMonths.length, totalAnoValor: sum(monthAgg,'valor') },
     efeito: prev ? volumeTicketEffect(cur, prev) : null,
-    mix: mixByTipo(rowsForMonth(txns, monthKey, categoria)),
-    mixAnterior: base ? mixByTipo(base.rows) : null
+    mix: mixByTipo(curRows),
+    mixAnterior: base ? mixByTipo(base.rows) : null,
+    foraDoPeriodo: { linhas: foraRows.length, quantidade: sum(foraRows,'quantidade'), valor: sum(foraRows,'valor'), ateDia: p.status === 'andamento' ? p.diasDecorridos : null }
   };
 }
 
@@ -2563,7 +2600,9 @@ function renderPageSub(){
   if(route.id === 'planilha'){
     parts.push('Origem, leitura e validação da planilha');
   } else {
-    if(route.id === 'lancamentos' && state.lanc.dia){
+    if(route.id === 'lancamentos' && state.lanc.anoTodo){
+      parts.push('Exercício ' + year + ' · ano todo');
+    } else if(route.id === 'lancamentos' && state.lanc.dia){
       parts.push('Dia ' + fmtDate(core.parseDateCell(state.lanc.dia)));
     } else if(routeUses('mes')){
       parts.push(LABELS_ACCENT[state.filters.mes] + ' ' + year + (routeUses('semana') && state.filters.semanaIdx != null ? ' · Sem '+(state.filters.semanaIdx+1) : ''));
@@ -2614,7 +2653,7 @@ function buildHash(route){
   if(route.id === 'dia-a-dia' && state.relatorioDate) add('dia', isoDate(state.relatorioDate));
   if(route.id === 'lancamentos'){
     if(l.anoTodo) add('ano', '1');
-    if(l.dia) add('dia', l.dia);
+    if(l.dia && !l.anoTodo) add('dia', l.dia);
     if(l.busca) add('q', l.busca);
     if(l.canal) add('canal', l.canal);
     if(l.status) add('status', l.status);
@@ -2660,6 +2699,7 @@ function applyHashParams(params, routeId){
 // Apps Script: o painel roda num iframe. O "#" da barra de endereços não chega ao iframe e o hash do iframe
 // não aparece na barra; google.script.url/history fazem essa ponte. Fora dele, o próprio location.hash basta.
 var topHash = null;
+var applyingTopChange = false;
 function gsHistory(){ return IS_APPS_SCRIPT && google.script.history ? google.script.history : null; }
 
 function syncUrl(){
@@ -2672,6 +2712,12 @@ function syncUrl(){
   }
   var gh = gsHistory();
   if(gh && topHash !== h){
+    // vindo do voltar/avançar (setChangeHandler): só acerta a entrada atual, nunca empilha outra
+    if(applyingTopChange){
+      try{ gh.replace(null, null, h.slice(1)); } catch(e){}
+      topHash = h;
+      return;
+    }
     var pp = topHash ? parseHash(topHash) : null;
     var prevId = pp ? (pp.alias || pp.id) : null;
     try{
@@ -2709,11 +2755,28 @@ function copyViewLink(){
 
 var pendingScroll = null;
 
+// troca o endereço do painel e aplica a rota. No Apps Script, o histórico é só o do google.script.history
+// (janela de cima): o hash do iframe muda com replaceState, sem criar entrada própria. Se o iframe também
+// criasse entradas, cada troca de página valeria dois "Voltar" e o setChangeHandler, ao reescrever o hash,
+// empurraria a página de novo (loop Início ↔ Lançamentos). Fora do Apps Script, o location.hash de sempre.
+function setHash(h){
+  h = '#' + String(h || '').replace(/^#/, '');
+  if(gsHistory()){
+    if(location.hash !== h){
+      try{ history.replaceState(history.state, '', location.pathname + location.search + h); }
+      catch(e){ location.hash = h; return; }
+    }
+    applyRoute();
+    return;
+  }
+  if(location.hash === h) applyRoute();
+  else location.hash = h;
+}
+
 function navigate(id, scrollToId){
   pendingScroll = scrollToId || null;
-  var h = '#/' + id;
   if(parseHash(location.hash).id === id) applyRoute();
-  else location.hash = h;
+  else setHash('#/' + id);
 }
 
 function applyRoute(){
@@ -3568,6 +3631,21 @@ function enterDashboard(keepView){
   renderAll();
   if(!keepView) applyRoute();
   renderDriveStamp();
+  if(!keepView) focarPainelNoAppsScript();
+}
+
+// Apps Script: o painel é um iframe e, sem um clique, o teclado fica na janela de cima (Ctrl+K não chegaria).
+// Só pede o foco quando nada está focado ainda e a página já está em primeiro plano; o navegador ignora o
+// pedido se a aba não estiver ativa, então não rouba foco de outras janelas.
+var focoInicialFeito = false;
+function focarPainelNoAppsScript(){
+  if(!IS_APPS_SCRIPT || focoInicialFeito) return;
+  focoInicialFeito = true;
+  try{
+    var ae = document.activeElement;
+    var semFoco = !ae || ae === document.body || ae === document.documentElement;
+    if(document.visibilityState === 'visible' && semFoco && !(document.hasFocus && document.hasFocus())) window.focus();
+  } catch(e){}
 }
 
 /* ---- "O que mudou desde a última visita" (guardado só neste navegador) ---- */
@@ -3679,7 +3757,8 @@ function infoTip(key){
   var d = DEFS[key];
   if(!d) return '';
   var txt = d[0] + ': ' + d[1];
-  return '<span class="info-tip" tabindex="0" role="img" title="'+escapeHtml(txt)+'" aria-label="'+escapeHtml(txt)+'">i</span>';
+  // o texto completo fica no aria-label (leitor de tela) e aparece no balão ao passar o mouse, focar ou tocar
+  return '<span class="info-tip" tabindex="0" role="button" aria-expanded="false" aria-label="'+escapeHtml(txt)+'" data-tip-nome="'+escapeHtml(d[0])+'" data-tip-formula="'+escapeHtml(d[1])+'">i</span>';
 }
 function indicatorItems(items){
   return items.map(function(it){
@@ -4401,7 +4480,7 @@ function renderLancamentos(){
 
   var body = pageRows.map(function(t){
     var warn = state.issueIndex[t.id];
-    return '<tr data-id="'+escapeHtml(t.id)+'"><td class="col-data">'+fmtDate(t.date)+'</td><td class="col-tipo">'+escapeHtml(t.tipo || t.tipoRaw || '')+'</td>' +
+    return '<tr data-id="'+escapeHtml(t.id)+'"><td class="col-data">'+fmtDate(t.date)+'</td><td class="col-tipo">'+escapeHtml(t.tipo || t.tipoRaw || '')+'<span class="tipo-qtd"> · '+fmtQtd(t.quantidade)+' ocorr.</span></td>' +
       '<td class="num col-qtd">'+fmtQtd(t.quantidade)+'</td><td class="num col-valor">'+fmtValor(t.valor)+'</td>' +
       '<td class="col-pedido'+(t.pedidoRef ? '' : ' is-empty')+'">'+escapeHtml(t.pedidoRef || '—')+'</td><td class="col-status'+(t.status ? '' : ' is-empty')+'">'+escapeHtml(t.status || '—')+'</td><td class="col-canal'+(t.canal ? '' : ' is-empty')+'">'+escapeHtml(t.canal || '—')+'</td>' +
       '<td class="wrap col-obs">'+escapeHtml(t.observacao || '—')+'</td><td class="col-origem">'+escapeHtml(t.sheetName)+' · '+t.rowNumber+'</td>' +
@@ -4427,7 +4506,7 @@ function syncLancControls(){
   var busca = document.getElementById('lanc-busca');
   if(document.activeElement !== busca && busca.value !== l.busca) busca.value = l.busca;
   document.getElementById('lanc-periodo').value = l.anoTodo ? 'ano' : 'mes';
-  document.getElementById('lanc-periodo').options[0].textContent = l.dia ? 'Dia '+fmtDate(core.parseDateCell(l.dia)) : 'Mês do filtro ('+LABELS_ACCENT[state.filters.mes]+')';
+  document.getElementById('lanc-periodo').options[0].textContent = (l.dia && !l.anoTodo) ? 'Dia '+fmtDate(core.parseDateCell(l.dia)) : 'Mês do filtro ('+LABELS_ACCENT[state.filters.mes]+')';
   ['canal', 'status'].forEach(function(field){
     var sel = document.getElementById('lanc-'+field);
     if(sel.value !== l[field]){
@@ -4554,8 +4633,18 @@ function renderHomeAlerts(dailyAgg){
       'dia', st.atipicos.length > 1 ? 'Ver o último dia' : 'Ver o dia', ' data-dia="'+isoDate(new Date(year, mIdx, ultimo.dayNumber))+'"');
   }
   // 3) avisos da planilha
-  var w = state.data.totals.totalWarnings;
-  if(w) row('info', fmtQtd(w)+' aviso'+(w>1?'s':'')+' na leitura da planilha (linhas mantidas nos cálculos).', 'planilha', 'Ver planilha');
+  // contados à parte: linhas de exemplo saem das contas; os demais avisos mantêm a linha
+  var tt = state.data.totals, w = tt.totalWarnings;
+  var ex = tt.totalExampleRows != null ? tt.totalExampleRows : 0;
+  var wk = tt.totalWarningsKept != null ? tt.totalWarningsKept : Math.max(w - ex, 0);
+  var partes = [];
+  if(ex) partes.push(fmtQtd(ex)+' linha'+(ex>1?'s':'')+' de exemplo fora dos cálculos');
+  if(wk) partes.push(fmtQtd(wk)+' aviso'+(wk>1?'s':'')+' que não tira'+(wk>1?'m':'')+' linhas dos cálculos');
+  if(w && !partes.length) partes.push(fmtQtd(w)+' aviso'+(w>1?'s':'')+' em linhas fora dos cálculos');
+  if(partes.length) row('info', 'Leitura da planilha: '+partes.join(' · ')+'.', 'planilha', 'Ver planilha');
+  // KPIs do mês em andamento param na data de referência: linhas da aba com dia posterior ficam de fora
+  var kf = agg.computeKPIs(state.data.validTransactions, state.filters.categoria, mes, state.referenceDate, year).foraDoPeriodo;
+  if(kf && kf.linhas) row('info', fmtQtd(kf.linhas)+' linha'+(kf.linhas>1?'s':'')+' de '+LABELS_ACCENT[mes]+' com dia posterior a '+pad2(kf.ateDia)+'/'+pad2(MONTH_DEFS.findIndex(function(x){ return x.key === mes; })+1)+' (data de referência) fora dos KPIs do mês ('+fmtValor(kf.valor)+').', 'lancamentos', 'Ver lançamentos');
   // 4) o que mudou desde a última visita / atualização
   var nv = state.novidades;
   if(nv) row('info', (nv.tipo === 'atualizacao' ? 'Na atualização das '+pad2(nv.desde.getHours())+':'+pad2(nv.desde.getMinutes()) : 'Desde a sua última visita ('+fmtDateTime(nv.desde)+')')+': '+textoNovidades(nv)+'.',
@@ -5015,13 +5104,15 @@ function setupTouchAndMotion(){
 // Sem google.script.url/history (versões antigas, GitHub Pages), fica o comportamento normal do location.hash.
 function setupAppsScriptLocation(){
   if(!IS_APPS_SCRIPT) return;
+  // sempre replaceState (nunca location.hash): o iframe não cria entradas de histórico
   function setIframeHash(h){
     if(!h) return;
     h = '#' + String(h).replace(/^#/, '');
-    if(location.hash === h) return;
-    if(isDashboardVisible()){ location.hash = h; return; }
-    try{ history.replaceState(history.state, '', location.pathname + location.search + h); }
-    catch(e){ location.hash = h; }
+    if(location.hash !== h){
+      try{ history.replaceState(history.state, '', location.pathname + location.search + h); }
+      catch(e){ return; }
+    }
+    if(isDashboardVisible()) applyRoute();
   }
   try{
     if(google.script.url && google.script.url.getLocation){
@@ -5031,12 +5122,97 @@ function setupAppsScriptLocation(){
     }
     if(google.script.history && google.script.history.setChangeHandler){
       google.script.history.setChangeHandler(function(e){
+        if(applyingTopChange) return; // evita reentrância
         var h = e && e.location ? e.location.hash : '';
         topHash = h ? '#' + String(h).replace(/^#/, '') : null;
-        setIframeHash(h || '/inicio');
+        applyingTopChange = true;
+        try{ setIframeHash(h || '/inicio'); }
+        finally{ applyingTopChange = false; }
       });
     }
   } catch(e){}
+}
+
+// <input type="number"> sempre entrega ponto decimal ("123.456" = 123,456): não passa pelo toNumber,
+// que lê "1.500" como milhar (padrão brasileiro da planilha)
+function numInputValue(el){
+  var s = String(el && el.value != null ? el.value : '').trim();
+  if(!s) return null;
+  var n = el.type === 'number' ? parseFloat(s) : core.toNumber(s);
+  return isFinite(n) ? n : null;
+}
+
+/* ---- Balão do ícone "i": mouse (hover), teclado (foco) e toque/clique (alterna). Esc fecha. ---- */
+function setupInfoTips(){
+  var pop = document.createElement('div');
+  pop.className = 'info-pop'; pop.id = 'info-pop'; pop.setAttribute('role', 'tooltip'); pop.hidden = true;
+  document.body.appendChild(pop);
+  var atual = null, fixo = false, hideTimer = 0;
+  function posicionar(el){
+    var r = el.getBoundingClientRect(), vw = document.documentElement.clientWidth || window.innerWidth, vh = window.innerHeight;
+    var pw = pop.offsetWidth, ph = pop.offsetHeight, m = 8;
+    var left = Math.max(m, Math.min(r.left + r.width/2 - pw/2, vw - pw - m));
+    var acima = r.bottom + 8 + ph > vh - m && r.top - 8 - ph >= m;
+    pop.classList.toggle('is-above', acima);
+    pop.style.left = Math.round(left) + 'px';
+    pop.style.top = Math.round(acima ? r.top - 8 - ph : r.bottom + 8) + 'px';
+    pop.style.setProperty('--ox', Math.round(r.left + r.width/2 - left) + 'px');
+  }
+  function abrir(el, pin){
+    clearTimeout(hideTimer);
+    if(atual && atual !== el) atual.setAttribute('aria-expanded', 'false');
+    atual = el; fixo = !!pin;
+    pop.innerHTML = '<strong></strong><span></span>';
+    pop.firstChild.textContent = el.getAttribute('data-tip-nome') || '';
+    pop.lastChild.textContent = el.getAttribute('data-tip-formula') || '';
+    pop.hidden = false;
+    posicionar(el);
+    el.setAttribute('aria-expanded', 'true');
+    el.setAttribute('aria-describedby', 'info-pop');
+    requestAnimationFrame(function(){ if(atual === el) pop.classList.add('is-open'); });
+  }
+  function fechar(){
+    if(!atual) return;
+    atual.setAttribute('aria-expanded', 'false');
+    atual.removeAttribute('aria-describedby');
+    atual = null; fixo = false;
+    pop.classList.remove('is-open');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(function(){ if(!atual) pop.hidden = true; }, motionOK() ? 200 : 0);
+  }
+  function tipDe(e){ return e.target && e.target.closest ? e.target.closest('.info-tip') : null; }
+  // mouse: só com ponteiro de mouse (no toque, o hover emulado brigaria com o toque que alterna)
+  document.addEventListener('pointerover', function(e){ var t = tipDe(e); if(t && e.pointerType === 'mouse' && atual !== t) abrir(t, false); });
+  document.addEventListener('pointerout', function(e){ var t = tipDe(e); if(t && e.pointerType === 'mouse' && atual === t && !fixo && document.activeElement !== t) fechar(); });
+  document.addEventListener('focusin', function(e){ var t = tipDe(e); if(t){ if(atual !== t) abrir(t, false); } else if(atual && !fixo) fechar(); });
+  document.addEventListener('focusout', function(e){ var t = tipDe(e); if(t && atual === t && !fixo) fechar(); });
+  // toque/clique alterna; fase de captura para não disparar a ordenação ou o drill-down do elemento pai
+  document.addEventListener('click', function(e){
+    var t = tipDe(e);
+    if(t){
+      e.preventDefault(); e.stopPropagation();
+      if(atual === t && fixo) fechar(); else abrir(t, true);
+      return;
+    }
+    if(atual && !(e.target.closest && e.target.closest('#info-pop'))) fechar();
+  }, true);
+  document.addEventListener('keydown', function(e){
+    var t = tipDe(e);
+    if(e.key === 'Escape' && atual){ e.stopPropagation(); e.preventDefault(); var foco = atual; fechar(); if(document.activeElement !== foco && foco.focus) foco.focus(); return; }
+    if(t && (e.key === 'Enter' || e.key === ' ')){
+      e.preventDefault(); e.stopPropagation();
+      if(atual === t && fixo) fechar(); else abrir(t, true);
+    }
+  }, true);
+  // no celular a barra de endereço some/aparece e dispara resize só na altura: aí só reposiciona
+  var larguraAnt = window.innerWidth;
+  window.addEventListener('resize', function(){
+    var mudouLargura = window.innerWidth !== larguraAnt; larguraAnt = window.innerWidth;
+    if(!atual) return;
+    if(mudouLargura) fechar(); else posicionar(atual);
+  });
+  window.addEventListener('scroll', function(){ if(atual) fechar(); }, {passive:true, capture:true});
+  window.addEventListener('beforeprint', fechar);
 }
 
 function boot(){
@@ -5203,6 +5379,8 @@ function boot(){
   });
   document.getElementById('lanc-periodo').addEventListener('change', function(e){
     state.lanc.anoTodo = e.target.value === 'ano';
+    // ano todo dispensa o dia escolhido (e o endereço deixa de levar dia=)
+    if(state.lanc.anoTodo) state.lanc.dia = '';
     renderLancamentos();
   });
   window.addEventListener('beforeprint', beforePrint);
@@ -5238,7 +5416,7 @@ function boot(){
   });
 
   document.getElementById('btn-save-meta').addEventListener('click', function(){
-    var v = core.toNumber(document.getElementById('input-meta').value);
+    var v = numInputValue(document.getElementById('input-meta'));
     if(v == null || v <= 0){ flashNote('meta-save-note', 'Informe um valor maior que zero', true); return; }
     state.metas[metaKey(state.filters.mes)] = v;
     persistMetas();
@@ -5281,6 +5459,18 @@ function boot(){
   });
   // clicar na página já aberta não gera hashchange; ainda assim fecha o menu no celular
   Array.prototype.forEach.call(document.querySelectorAll('.side-link'), function(a){ a.addEventListener('click', closeSidebar); });
+  // Apps Script: links internos ("#/página", inclusive os do menu) não podem mudar o hash do iframe por conta
+  // própria (criariam uma entrada de histórico no iframe além da do google.script.history); passam por navigate/setHash
+  document.addEventListener('click', function(e){
+    if(!gsHistory() || e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+    var a = e.target.closest ? e.target.closest('a[href^="#/"]') : null;
+    if(!a) return;
+    e.preventDefault();
+    var href = a.getAttribute('href');
+    var p = parseHash(href);
+    if(Object.keys(p.params).length) setHash(href);
+    else navigate(p.id);
+  });
 
   document.getElementById('filter-mes').addEventListener('change', function(e){ state.filters.mes = e.target.value; state.filters.semanaIdx = null; renderAll(); pulseContent(); });
   document.getElementById('filter-semana').addEventListener('change', function(e){ state.filters.semanaIdx = e.target.value===''? null : Number(e.target.value); renderAll(); pulseContent(); });
@@ -5300,7 +5490,7 @@ function boot(){
   document.getElementById('input-proj-data').addEventListener('change', syncProjecaoInputs);
   document.getElementById('btn-save-proj').addEventListener('click', function(){
     var dISO = document.getElementById('input-proj-data').value;
-    var v = core.toNumber(document.getElementById('input-proj-valor').value);
+    var v = numInputValue(document.getElementById('input-proj-valor'));
     if(dISO && v != null){
       saveProjecao(dISO, Math.round(v*1000)/1000);
       flashNote('proj-save-note', 'Projeção salva ✓');
@@ -5311,6 +5501,7 @@ function boot(){
   });
 
   setupAppsScriptLocation();
+  setupInfoTips();
   showScreen('upload');
   if(IS_APPS_SCRIPT){ loadFromDrive(false); startDrivePolling(); }
 }
