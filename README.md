@@ -9,6 +9,12 @@ Painel executivo para acompanhar **estornos, cupons e chargebacks** a partir da 
 | preparar ou corrigir a planilha | [Formato esperado da planilha](#formato-esperado-da-planilha) |
 | mudar o painel e publicar | [Para quem mantém](#para-quem-mantém) |
 
+### Novidades (25/09/2026)
+
+- **Indicadores revisados:** o canal passou a ser dividido pela abertura da Observação, as linhas de exemplo ficam fora das contas, e as médias e comparações usam só dias já decorridos. Os indicadores têm nomes técnicos (MTD, YTD, MoM, run-rate, σ) e um ícone "i" com a fórmula.
+- **Nova estrutura:** Início com alertas, Lançamentos, Análises, Acompanhamento e Planilha. Também chegam busca global (Ctrl+K), clique no gráfico para abrir os lançamentos filtrados, link da visão com os filtros e Exportar ▾.
+- **Visual e interação:** seis temas (Automático, Claro, Ameixa, Corporativo, Grafite e Alto contraste), gestos no celular, animações suaves e impressão compacta.
+
 ---
 
 ## Acessar o painel
@@ -37,42 +43,78 @@ Na próxima visita, o painel oferece **"Continuar com <arquivo>"**. **"Esquecer 
 
 ## Navegação
 
-O menu lateral agrupa as páginas pelo que a pessoa quer fazer. Cada página tem endereço próprio, então dá para salvar nos favoritos ou mandar o link de uma página específica.
+A estrutura segue o padrão do painel administrativo da Nuvemshop: **Início** e **Lançamentos** no topo do menu, as análises agrupadas por pergunta e a **Planilha** (configuração e diagnóstico) no rodapé. A proposta completa está em `../relatorios/arquitetura-informacao-2026-09-25.md`.
 
 | Grupo | Página | Endereço | Para quê | Filtros que valem |
 |---|---|---|---|---|
-| **Análise** | Visão geral | `#/visao-geral` | Situação do mês em segundos: KPIs, resumo por mês (clique para trocar o mês), indicadores-chave e maiores exposições diárias | mês, métrica, categoria |
-| | Diário e semanal | `#/diario-semanal` | Comportamento dia a dia, comparativo semanal e últimos 7 dias | mês, métrica, semana, categoria |
-| | Mês a mês | `#/mensal` | Trajetória do ano, acumulado e composição por categoria | métrica, categoria |
+| — | Início | `#/inicio` | Situação do mês em segundos: alertas (meta, dias atípicos, avisos da planilha, o que mudou), KPIs, meta do mês, últimos 7 dias, top 5 dias e resumo por mês | mês, métrica, categoria |
+| — | Lançamentos | `#/lancamentos` | Lista linha a linha: busca, período (mês ou ano todo), canal, status, avisos, filtros aplicados como chips, detalhe do lançamento e CSV | mês, semana, categoria |
+| **Análises** | Dia a dia | `#/dia-a-dia` | Evolução diária, **Resumo do dia** (antigo Relatório diário), comparativo semanal e indicadores-chave do mês | mês, métrica, semana, categoria |
+| | Mês a mês | `#/mensal` | Evolução do ano, acumulado e composição por tipo de ocorrência | métrica, categoria |
 | | Canais e status | `#/canais` | Distribuição por canal (SAC, TD Nuvem, PIX Direto) e por status | mês, métrica, categoria |
-| **Rotina** | Relatório diário | `#/relatorio` | Totais de um dia escolhido, comparados à média e ao dia anterior | categoria |
-| | Metas e projeções | `#/metas` | Teto do mês, previsão de fechamento e projeções de estornos × realizado | mês |
-| **Dados** | Lançamentos | `#/lancamentos` | Tabela linha a linha, com busca, filtros próprios e CSV | mês, semana, categoria |
-| | Diagnóstico da planilha | `#/diagnostico` | Resultado da leitura e da validação da planilha | — |
+| **Acompanhamento** | Metas e projeções | `#/metas` | Teto do mês, previsão de fechamento e projeções de estornos × realizado | mês |
+| rodapé | Planilha | `#/planilha` | Origem dos dados, Atualizar agora, Importar outro arquivo e diagnóstico da leitura | — |
 
-- A barra de filtros mostra **só os filtros que mudam a página aberta**. Os outros ficam guardados e voltam a valer quando você abre uma página que os usa.
-- O subtítulo abaixo do nome da página diz sempre qual recorte está na tela (mês, semana, categoria).
-- Alguns quadros têm recorte fixo, avisado no canto do quadro: **Últimos 7 dias** (até o último lançamento), **Composição por categoria** (ano inteiro, todas as categorias) e **Metas** (em R$, todas as categorias).
-- No celular, o menu abre pelo botão ☰. **Imprimir / PDF** imprime a página aberta. **Exportar Excel** fica no topo de todas as páginas.
+**Endereços antigos continuam funcionando** e passam para os novos: `#/visao-geral` → `#/inicio`, `#/diario-semanal` → `#/dia-a-dia`, `#/relatorio` → `#/dia-a-dia` (rolando até o Resumo do dia), `#/diagnostico` → `#/planilha`.
+
+- **O endereço guarda a página e os filtros** (ex.: `#/lancamentos?mes=set&cat=Estorno&q=123`). **Copiar link** (no topo) copia a visão exata para mandar a alguém. No painel online, o link aponta para a URL `/exec`, e voltar/avançar do navegador funciona.
+- **Busca global: Ctrl+K** (⌘K no Mac, ou `/`, ou a caixa de busca no topo) procura no ano inteiro por número de pedido, texto da observação, valor exato (`189,90`) ou data (`23/09`), e também leva a qualquer página.
+- **Drill-down:** clicar num dia do Top 5, numa barra da evolução diária ou num dia da tabela abre o Resumo do dia; **Ver lançamentos do dia** abre a lista já filtrada. O mês na Composição e as linhas de canal e status (e as fatias da rosca) abrem Lançamentos filtrados. Clicar numa semana do comparativo seleciona a semana.
+- **Alertas do Início:** meta ultrapassada ou prevista acima do teto (mesma regra de Metas), dias atípicos pelo mesmo critério do indicador (valor acima de média + 2σ), avisos da planilha, o que mudou desde a última visita (guardado só neste navegador) e até que data vão os dados.
+- A barra de filtros mostra **só os filtros que mudam a página aberta**. Os outros ficam guardados e voltam a valer quando você abre uma página que os usa. Em Lançamentos, **Ano todo** dispensa mês e semana.
+- O subtítulo abaixo do nome da página diz sempre qual recorte está na tela (mês, semana, dia, categoria).
+- Alguns quadros têm recorte fixo, avisado no canto do quadro: **Últimos 7 dias** (até o último lançamento), **Composição por tipo** (ano inteiro, todas as categorias) e **Metas** (em R$, todas as categorias).
+- **Exportar ▾** (no topo de todas as páginas): Excel com 4 abas, CSV dos lançamentos filtrados e Imprimir / PDF da página aberta.
+- No celular, o menu abre pelo botão ☰, os filtros ficam no botão **Filtrar** e os lançamentos viram cartões; o detalhe do lançamento abre em tela cheia.
+
+### Toque e gestos
+
+- **Resumo do dia**: deslize para a esquerda (dia seguinte) ou para a direita (dia anterior). O conteúdo acompanha o dedo e o novo dia entra pelo lado certo. Se a tabela do dia tiver rolagem lateral, ela rola primeiro; o gesto troca o dia quando a tabela chega à borda. No computador, as setas ← → do teclado fazem o mesmo quando o foco está no quadro.
+- **Detalhe do lançamento**: arraste para a direita para fechar.
+- **Menu lateral** (celular): arraste para a esquerda para fechar.
+- **Resumo por mês** (celular): os 12 meses viram uma faixa deslizante, já centralizada no mês escolhido.
+- Todos os controles têm área de toque de pelo menos 44 px em telas de toque; os efeitos que dependem de passar o mouse (elevar cartões, brilho que segue o cursor) só aparecem com mouse.
 
 ## Funcionalidades
 
-- **KPIs**: volume, impacto financeiro, ticket médio e participação no ano, com variação sobre o mês anterior e minigráfico anual.
-- **Resumo por mês**: cartões clicáveis para trocar o mês. Mostram "▲ acima da meta" quando o mês passa do teto definido.
-- **Comportamento diário**: barras por dia, média e acumulado. Opção **Comparar com mês anterior** (linha tracejada). A semana escolhida no filtro fica destacada.
-- **Comparativo semanal**: semanas fixas (dias 1–7, 8–14, 15–21, 22–28 e 29–31), com o intervalo de dias no próprio filtro.
-- **Trajetória mensal**, **acumulado no ano** e **composição por categoria** (tabela do ano inteiro).
-- **Relatório diário**: totais do dia por natureza, representatividade no mês, desvio da média e variação sobre o dia anterior.
-- **Metas e projeções**:
-  - teto mensal em R$ com barra de progresso, previsão de fechamento pelo ritmo diário e alerta quando a meta é ou deve ser ultrapassada;
-  - **projeções de estornos**: registre o valor projetado de um dia (até 3 casas decimais, ex.: `R$ 123,456`) e compare com o realizado. O restante do painel usa centavos.
-- **Lançamentos**: busca; filtros de canal, status e "somente com avisos"; ordenação por coluna, paginação e total filtrado.
-- **Exportar Excel**: 4 abas (lançamentos filtrados, resumo mensal, diário do mês, ocorrências do diagnóstico).
-- **Baixar CSV**: dos lançamentos, no padrão brasileiro (`;` e vírgula decimal).
-- **Imprimir / PDF**: sempre em tema claro, sem botões e com as tabelas abertas.
-- **Tema claro/escuro**: a escolha fica salva.
+Cada indicador tem um ícone **i** com o nome técnico e a fórmula. O glossário completo, com o que foi removido e por quê, está em `../relatorios/glossario-indicadores-2026-09-25.md`.
 
-A previsão de fechamento e os "últimos 7 dias" usam a data do último lançamento da planilha como "hoje".
+- **KPIs do mês**: quantidade de ocorrências (volume), valor total reembolsado (R$), ticket médio de reembolso e acumulado no ano (YTD). Os três primeiros trazem a **variação MoM**: mês encerrado contra o mês anterior inteiro; mês em andamento contra os mesmos dias do mês anterior (like-for-like). Minigráfico anual em cada um.
+- **Resumo por mês**: cartões compactos e clicáveis para trocar o mês, com valor, ocorrências e ticket médio (TM) numa linha, e uma barra com o valor do mês em relação ao maior mês do ano. O mês em andamento leva o selo "Parcial · dd/mm"; o selo "▲ meta" aparece quando o mês passa do teto definido (o valor da meta fica na dica do selo).
+- **Indicadores-chave do mês**: pico diário (valor e quantidade), média diária por dia corrido, desvio-padrão (σ) e coeficiente de variação (CV), dias atípicos (acima de média + 2σ), concentração nos 5 maiores dias, dias com lançamento, efeito volume × ticket da variação MoM e, com todas as categorias, o mix por tipo e o peso de chargeback (% do valor).
+- **Top 5 dias do mês**: maiores exposições, com a participação de cada dia no mês.
+- **Evolução diária**: barras por dia, média diária (dias corridos) e acumulado no mês (MTD). Opção **Comparar com mês anterior** (linha tracejada). A semana escolhida no filtro fica destacada.
+- **Comparativo semanal**: semanas fixas (dias 1–7, 8–14, 15–21, 22–28 e 29–fim do mês), com participação de cada semana. A média semanal usa só semanas completas de 7 dias já encerradas; a semana 5 e a semana em curso aparecem marcadas.
+- **Evolução mensal**: linha do ano com média mensal (só meses encerrados), média móvel de 3 meses (MM3) e acumulado no ano (YTD). A tabela traz ticket médio e variação MoM.
+- **Composição por tipo de ocorrência, mês a mês**: quantidade, valor, ticket médio, MoM, valor de estornos, cupons e chargebacks, peso de chargeback e participação no ano, com linha de total do ano.
+- **Canais e status**: rosca e tabela por canal (quantidade, valor, ticket médio, participação). O canal vem da abertura escrita na Observação (`SAC: 2 (R$ 301,70) | TD Nuvem: 1 (R$ 269,90)`): cada canal recebe a sua parte da linha. Status só aparece quando a coluna está preenchida.
+- **Resumo do dia** (em Dia a dia; antes Relatório diário): setas para dia anterior/seguinte, totais do dia por tipo (com ticket médio e participação), participação no mês até a data, desvio vs. média diária em R$ e em σ (z-score) e variação DoD contra o último dia com lançamento.
+- **Metas e projeções**:
+  - teto mensal em R$ com barra de consumo da meta, previsão de fechamento por run-rate (realizado ÷ dias decorridos × dias do mês), folga vs. meta e alerta quando a meta é ou deve ser ultrapassada;
+  - **projeções de estornos**: registre o valor projetado de um dia (até 3 casas decimais, ex.: `R$ 123,456`) e compare com o realizado (desvio em R$ e em %). O restante do painel usa centavos.
+- **Lançamentos**: busca; período (mês do filtro ou ano todo); filtros de canal, status e "somente com avisos"; chips com os filtros aplicados; ordenação por coluna, paginação e total filtrado. Clicar numa linha abre o **detalhe**: aba e linha da planilha, avisos, divisão por canal e outros lançamentos do mesmo pedido.
+- **Exportar Excel**: 4 abas (lançamentos filtrados; resumo mensal com quantidade e valor por tipo, ticket médio, MoM, peso de chargeback, participação no ano e teto; diário do mês; ocorrências do diagnóstico).
+- **Baixar CSV**: dos lançamentos, no padrão brasileiro (`;` e vírgula decimal).
+- **Imprimir / PDF**: sempre em tema claro, sem botões e com as tabelas abertas; gráficos com altura fixa (180 px, os menores 100 px) para não ocuparem a página inteira.
+- **Temas** (botão **Tema** no rodapé do menu lateral e na tela de importação; a escolha fica salva):
+  - **Automático**: segue o claro ou escuro do sistema e acompanha a troca;
+  - **Claro** (lilás suave) e **Ameixa** (escuro violeta), os originais;
+  - **Corporativo**: claro e neutro, com o azul institucional do Nimbus (Nuvemshop);
+  - **Grafite**: escuro neutro, sem matiz, para leitura longa de números;
+  - **Alto contraste**: preto, branco e amarelo, bordas nítidas, links sublinhados, foco de 3 px e sem efeitos decorativos.
+
+  Todos passam no WCAG AA (texto 4,5:1, cores de gráfico 3:1), e as cores dos gráficos acompanham o tema. A troca usa uma revelação circular a partir do botão, quando o navegador suporta.
+
+### Movimento e interação
+
+- Durações e curvas únicas para o painel inteiro (`--dur-1` a `--dur-5`, `--ease-out`, `--ease-emph`, `--ease-spring`) e animações só com transform/opacity.
+- Elevação em quatro níveis por tema: cartões em repouso (`--shadow-sm`), hover e barra fixa (`--shadow-md`), menus e avisos (`--shadow-lg`), diálogos (`--shadow-xl`).
+- Contagem animada nos KPIs, cartões entrando em sequência ao trocar de página, dica dos gráficos deslizando entre os pontos, menus que crescem a partir do botão e resposta ao pressionar em todos os controles.
+- Com **reduzir movimento** ativado no sistema, tudo isso é desligado (números e gráficos aparecem prontos).
+
+A data de referência ("hoje" do painel) é a do **último lançamento até a data atual**: lançamentos com data futura não empurram a referência. Ela define o mês aberto por padrão, o mês em andamento, a previsão de fechamento, as médias por dia corrido e os "últimos 7 dias".
+
+Não há taxa de chargeback de mercado (chargeback ratio = chargebacks ÷ transações de venda): a planilha não traz o total de vendas. O painel mostra o **peso de chargeback no valor reembolsado**, que é outra coisa.
 
 ## Formato esperado da planilha
 
@@ -83,16 +125,17 @@ A previsão de fechamento e os "últimos 7 dias" usam a data do último lançame
 | Colunas opcionais | `Pedido/Referência`, `Status`, `Observação` |
 | Tipos reconhecidos | `Estorno`, `Cupom`, `Chargeback` |
 | Ano de referência | Célula `B2` da aba `Consolidado Anual`. Sem ela, usa a mediana dos anos das datas (com 5 datas ou mais) ou, em último caso, o ano atual. |
-| Canal | Detectado no texto da `Observação`: `SAC`, `TD Nuvem` ou `PIX Direto` |
+| Canal | Lido da `Observação`. Com abertura (`SAC: 2 (R$ 301,70) \| TD Nuvem: 1 (R$ 269,90)`), cada canal recebe a sua quantidade e o seu valor. Sem números, um único canal citado recebe a linha inteira. Canais reconhecidos: `SAC`, `TD Nuvem`, `PIX Direto`. |
 
-A leitura termina após duas linhas totalmente vazias. Linhas de "Total" são ignoradas.
+A leitura termina após duas linhas totalmente vazias. Linhas de "Total" são ignoradas. `-`, `—` ou `n/a` em Status e Pedido/Referência contam como não preenchido.
 
 ### Validações do diagnóstico
 
 Nada é descartado sem aviso. Cada ocorrência mostra aba, linha, campo e o valor encontrado.
 
 - **Erro (linha excluída dos cálculos):** data inválida ou vazia; tipo, quantidade ou valor ausentes ou não numéricos.
-- **Aviso (linha mantida):** tipo fora de Estorno/Cupom/Chargeback, quantidade ou valor negativos, data fora do ano de referência, data de outro mês que não o da aba, possível lançamento duplicado.
+- **Aviso (linha mantida):** tipo fora de Estorno/Cupom/Chargeback, quantidade ou valor negativos, data fora do ano de referência, data de outro mês que não o da aba, possível lançamento duplicado, abertura por canal na Observação que não bate com Quantidade/Valor.
+- **Aviso (linha excluída dos cálculos):** linha de exemplo do modelo da planilha (Observação começando com "Exemplo"). Apague-a da planilha para o aviso sumir.
 - **Bloqueio:** nenhuma aba mensal reconhecida, nenhuma tabela válida ou nenhuma linha válida.
 
 ## Privacidade e armazenamento
@@ -103,7 +146,7 @@ Nada é descartado sem aviso. Cada ocorrência mostra aba, linha, campo e o valo
   - último arquivo importado ou baixado do Drive (IndexedDB `reembolsos_db`);
   - metas mensais (`localStorage`: `reembolsos_metas_v1`);
   - projeções (`localStorage`: `reembolsos_projecoes_v1`);
-  - tema (`localStorage`: `reembolsos_tema_v1`).
+  - tema (`localStorage`: `reembolsos_tema_v1`; valores `auto`, `light`, `dark`, `nimbus`, `grafite`, `contraste`).
 - Limpar os dados do site no navegador apaga essas informações.
 
 ---
@@ -150,7 +193,7 @@ O JavaScript está dividido em três blocos dentro do `index.html`:
 | `RefundsApp.agg` | Agregações: por mês, dia, semana, categoria, canal/status, previsão, filtros |
 | Renderização | Telas, rotas (`ROUTES`, com os filtros de cada página), gráficos, exportação, tema e eventos |
 
-Para criar uma página nova: acrescente a entrada em `ROUTES` (com a lista `filtros`), o link no menu lateral dentro do grupo certo e a `<section class="page" data-page="…">`. Não renomeie os ids das rotas existentes: eles estão nos favoritos das pessoas.
+Para criar uma página nova: acrescente a entrada em `ROUTES` (com a lista `filtros`), o link no menu lateral dentro do grupo certo e a `<section class="page" data-page="…">`. Não renomeie os ids das rotas existentes: eles estão nos favoritos das pessoas. Se precisar trocar um id, deixe o antigo em `ROUTE_ALIASES`. Os parâmetros do endereço são montados em `buildHash` e lidos em `applyHashParams`.
 
 ```bash
 git clone https://github.com/messiasalexandro-byte/painel-reembolsos.git
