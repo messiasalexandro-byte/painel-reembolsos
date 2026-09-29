@@ -454,11 +454,33 @@ table.data-table th{
 table.data-table td{ padding:7px 8px; border-bottom:1px solid var(--row-sep); font-variant-numeric:tabular-nums; white-space:nowrap; }
 table.data-table tr.total-row td{ font-weight:700; color:var(--status-warning); border-top:1px solid var(--border); }
 table.data-table tr:last-child td{ border-bottom:none; }
-.indicator-list{ list-style:none; margin:10px 0 0; padding:0; display:flex; flex-direction:column; gap:10px; }
-.indicator-list li{ display:flex; justify-content:space-between; gap:10px; font-size:12.5px; border-bottom:1px dashed var(--border); padding-bottom:8px; }
-.indicator-list li:last-child{ border-bottom:none; padding-bottom:0; }
-.indicator-list .ind-label{ color:var(--text-secondary); }
-.indicator-list .ind-value{ font-weight:700; font-variant-numeric:tabular-nums; text-align:right; }
+/* Alinhamento de números (regra única para todas as tabelas):
+   - coluna numérica (.num): título e valor à direita, na mesma borda. Antes "table.data-table th" (mais específica)
+     vencia "th.num" e o título ficava à esquerda, longe do número;
+   - títulos de várias linhas encostam no pé do cabeçalho, junto dos valores. */
+table.data-table th{ vertical-align:bottom; }
+table.data-table th.num, table.data-table td.num{ text-align:right; }
+table.data-table .col-rank{ width:2.5rem; }
+/* texto logo depois de um número (Lançamentos: Valor → Pedido/Ref.) ganha respiro, senão "R$ 11.674,85 —" parece um valor só */
+table.data-table td.num + td:not(.num), table.data-table th.num + th:not(.num){ padding-left:20px; }
+/* Largura de leitura: tabelas compactas e listas de indicador não esticam até 1.300 px nos painéis largos
+   (o número ficava a meia tela do rótulo). Com a mesma largura máxima, a última coluna da tabela e os valores
+   da lista logo abaixo terminam na mesma borda. Tabelas largas (.is-full: composição, ocorrências; Lançamentos) usam a largura toda. */
+table.data-table:not(.is-full):not(.lanc-table), .indicator-list{ max-width:48rem; }
+@media (min-width:701px){
+  /* colunas numéricas com a mesma largura (a sobra vai para a coluna de rótulo); antes a sobra era repartida
+     pelo tamanho do título, e "Part. (% do valor)" ficava com o triplo de "Qtde" */
+  table.data-table:not(.is-full):not(.lanc-table) th.num,
+  table.data-table:not(.is-full):not(.lanc-table) td.num{ width:8rem; }
+}
+/* lista rótulo → valor: mesmo recuo das células (8 px), para rótulo e valor alinharem com as colunas da tabela acima,
+   e realce da linha ao passar o mouse, que liga o rótulo ao valor */
+.indicator-list{ list-style:none; margin:4px 0 0; padding:0; display:flex; flex-direction:column; }
+.indicator-list li{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:baseline; gap:6px 16px; font-size:12.5px; border-bottom:1px dashed var(--border); padding:9px 8px; }
+.indicator-list li:last-child{ border-bottom:none; }
+.indicator-list .ind-label{ color:var(--text-secondary); min-width:0; flex:1 1 9rem; }
+/* se rótulo e valor não cabem lado a lado (celular), o valor desce inteiro para a linha de baixo, à direita, em vez de quebrar no meio ("1:" / "11/05") */
+.indicator-list .ind-value{ font-weight:700; font-variant-numeric:tabular-nums; text-align:right; min-width:0; flex:0 1 auto; margin-left:auto; }
 /* ícone "i" com o nome técnico e a fórmula do indicador: balão (.info-pop) ao passar o mouse, focar ou tocar */
 .info-tip{
   display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; margin-left:5px; vertical-align:1px;
@@ -754,6 +776,8 @@ body::before{
 /* Tabelas e listas */
 table.data-table tbody tr{ transition:background-color .15s ease; }
 table.data-table tbody tr:hover{ background:var(--row-hover); }
+.indicator-list li{ transition:background-color .15s ease; }
+@media (hover:hover){ .indicator-list li:hover{ background:var(--row-hover); } }
 .th-sort{ transition:color .15s ease; }
 details.table-toggle summary{ list-style:none; display:inline-flex; align-items:center; gap:8px; padding:4px 0; border-radius:6px; transition:filter .2s ease; }
 details.table-toggle summary::-webkit-details-marker{ display:none; }
@@ -2508,7 +2532,16 @@ window.RefundsApp.agg = {
 var core = window.RefundsApp.core;
 var agg = window.RefundsApp.agg;
 var MONTH_DEFS = core.MONTH_DEFS, LABELS_ACCENT = core.LABELS_ACCENT;
-var fmtQtd = core.fmtQtd, fmtValor = core.fmtValor, fmtPct = core.fmtPct, fmtPctSigned = core.fmtPctSigned, fmtMetric = core.fmtMetric;
+// Números na tela: um único sinal de menos, o tipográfico (−), como já usam fmtValorSigned, fmtSigma e fmtPP.
+// O Intl devolve o hífen (-): antes a mesma tela mostrava "−R$ 17.411,09" ao lado de "-100,0%".
+// Zero arredondado sai sem sinal ("-0,0%" e "+0,0%" viram "0,0%"). Só muda o texto exibido:
+// as contas continuam no core e as exportações (CSV e Excel) usam os números crus, sem passar por aqui.
+function tidySign(s){ s = String(s); return /[1-9]/.test(s) ? s.replace(/^-/, '−') : s.replace(/^[-+−]/, ''); }
+function fmtQtd(n){ return tidySign(core.fmtQtd(n)); }
+function fmtValor(n){ return tidySign(core.fmtValor(n)); }
+function fmtPct(n){ return tidySign(core.fmtPct(n)); }
+function fmtPctSigned(n){ return tidySign(core.fmtPctSigned(n)); }
+function fmtMetric(n, metric){ return metric === 'valor' ? fmtValor(n) : fmtQtd(n); }
 var escapeHtml = core.escapeHtml, getCss = core.getCss, isoDate = core.isoDate, pad2 = core.pad2, sum = core.sum;
 
 var state = {
@@ -3485,10 +3518,10 @@ function renderDiagnostics(result, containerId, mode){
 
   if(result.issues && result.issues.length){
     html += '<div class="panel-sub-title" style="margin-top:22px;">Ocorrências ('+result.issues.length+')</div>';
-    html += '<div class="issues-scroll"><table class="data-table"><thead><tr><th>Severidade</th><th>Aba</th><th>Linha</th><th>Campo</th><th>Mensagem</th><th>Valor observado</th></tr></thead><tbody>';
+    html += '<div class="issues-scroll"><table class="data-table is-full"><thead><tr><th>Severidade</th><th>Aba</th><th class="num">Linha</th><th>Campo</th><th>Mensagem</th><th>Valor observado</th></tr></thead><tbody>';
     result.issues.slice(0, 500).forEach(function(i){
       html += '<tr><td><span class="sev-pill '+i.severity+'">'+ (i.severity==='error'?'Erro':i.severity==='warning'?'Aviso':'Info') +'</span></td>' +
-        '<td>'+escapeHtml(i.sheet||'—')+'</td><td>'+(i.row!=null?i.row:'—')+'</td><td>'+escapeHtml(i.field||'—')+'</td>' +
+        '<td>'+escapeHtml(i.sheet||'—')+'</td><td class="num">'+(i.row!=null?i.row:'—')+'</td><td>'+escapeHtml(i.field||'—')+'</td>' +
         '<td style="white-space:normal;min-width:260px;">'+escapeHtml(i.message)+'</td><td style="white-space:normal;">'+escapeHtml(i.observedValue||'—')+'</td></tr>';
     });
     html += '</tbody></table></div>';
@@ -3896,10 +3929,10 @@ function indicatorItems(items){
 function th(label, defKey, num){ return '<th'+(num?' class="num"':'')+'>'+label+(defKey ? infoTip(defKey) : '')+'</th>'; }
 
 var nfDec1 = new Intl.NumberFormat('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
-function fmtDec1(n){ return nfDec1.format(n||0); }
-function fmtPP(n){ return n == null ? '—' : (n>0?'+':n<0?'−':'') + nfDec1.format(Math.abs(n*100)) + ' p.p.'; }
-function fmtValorSigned(n){ return (n>0?'+':n<0?'−':'') + fmtValor(Math.abs(n||0)); }
-function fmtSigma(n){ return (n>0?'+':n<0?'−':'') + nfDec1.format(Math.abs(n||0)) + 'σ'; }
+function fmtDec1(n){ return tidySign(nfDec1.format(n||0)); }
+function fmtPP(n){ return n == null ? '—' : tidySign((n>0?'+':n<0?'−':'') + nfDec1.format(Math.abs(n*100)) + ' p.p.'); }
+function fmtValorSigned(n){ return tidySign((n>0?'+':n<0?'−':'') + fmtValor(Math.abs(n||0))); }
+function fmtSigma(n){ return tidySign((n>0?'+':n<0?'−':'') + nfDec1.format(Math.abs(n||0)) + 'σ'); }
 function fmtPctOrDash(n){ return n == null ? '—' : fmtPct(n); }
 function fmtPctSignedOrDash(n){ return n == null ? '—' : fmtPctSigned(n); }
 
@@ -4266,7 +4299,7 @@ function renderCompositionTable(){
     '<td class="num">'+fmtPctOrDash(tV ? tCb/tV : null)+'</td><td class="num">'+(tV ? fmtPct(1) : dash)+'</td></tr>';
   var hasPartial = rows.some(function(r){ return r.status === 'andamento' && (r.volume || r.impacto); });
   document.getElementById('table-composition').innerHTML =
-    '<table class="data-table"><thead><tr><th>Mês</th><th class="num">Qtde</th><th class="num">Valor (R$)</th>' +
+    '<table class="data-table is-full"><thead><tr><th>Mês</th><th class="num">Qtde</th><th class="num">Valor (R$)</th>' +
     th('Ticket médio', 'ticket', true) + th('Var. MoM (valor)', 'mom', true) +
     '<th class="num">Estorno (R$)</th><th class="num">Cupom (R$)</th><th class="num">Chargeback (R$)</th>' +
     th('Peso de chargeback', 'pesoCb', true) + th('Part. no ano', 'partAno', true) +
@@ -4283,11 +4316,11 @@ function renderTop5(dailyAgg){
   document.getElementById('panel-top5-meta').textContent = LABELS_ACCENT[state.filters.mes] + ' · ordenado por ' + metricNoun();
   var mIdx = MONTH_DEFS.findIndex(function(m){ return m.key === state.filters.mes; });
   var rows = top.map(function(d,i){
-    return '<tr><td>'+(i+1)+'</td><td>'+dayButton(new Date(state.data.effectiveYear, mIdx, d.dayNumber), d.dateLabel)+'</td><td class="num">'+fmtQtd(d.quantidade)+'</td><td class="num">'+fmtValor(d.valor)+'</td><td class="num">'+fmtPct(total ? d[metric]/total : 0)+'</td></tr>';
+    return '<tr><td class="col-rank">'+(i+1)+'</td><td>'+dayButton(new Date(state.data.effectiveYear, mIdx, d.dayNumber), d.dateLabel)+'</td><td class="num">'+fmtQtd(d.quantidade)+'</td><td class="num">'+fmtValor(d.valor)+'</td><td class="num">'+fmtPct(total ? d[metric]/total : 0)+'</td></tr>';
   }).join('');
   if(!rows) rows = '<tr><td colspan="5" style="color:var(--text-muted)">Sem movimentação neste mês.</td></tr>';
   document.getElementById('table-top5').innerHTML =
-    '<table class="data-table"><thead><tr><th>#</th><th>Data</th><th class="num">Qtde</th><th class="num">Valor (R$)</th>'+th('Part. no mês ('+metricNoun()+')', 'part', true)+'</tr></thead><tbody>'+rows+'</tbody></table>';
+    '<table class="data-table"><thead><tr><th class="col-rank">#</th><th>Data</th><th class="num">Qtde</th><th class="num">Valor (R$)</th>'+th('Part. no mês ('+metricNoun()+')', 'part', true)+'</tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
 /* ---- Key indicators ---- */
@@ -4506,7 +4539,9 @@ function renderMetas(){
 
 // projeções usam 3 casas decimais (as demais telas seguem em centavos)
 var nfCurrency3 = new Intl.NumberFormat('pt-BR', {style:'currency', currency:'BRL', minimumFractionDigits:3, maximumFractionDigits:3});
-function fmtValor3(n){ return nfCurrency3.format(n||0); }
+function fmtValor3(n){ return tidySign(nfCurrency3.format(n||0)); }
+// desvio em R$ com sinal explícito, como o desvio em % ao lado (antes: "R$ 5,000" ao lado de "+5,0%")
+function fmtValor3Signed(n){ return tidySign((n>0?'+':n<0?'−':'') + nfCurrency3.format(Math.abs(n||0))); }
 
 function renderProjecoesTable(){
   var keys = Object.keys(state.projecoes).sort();
@@ -4527,7 +4562,7 @@ function renderProjecoesTable(){
     return '<tr><td>'+(d ? pad2(d.getDate())+'/'+pad2(d.getMonth()+1)+'/'+d.getFullYear() : escapeHtml(k))+'</td>' +
       '<td class="num">'+fmtValor3(proj)+'</td>' +
       '<td class="num">'+(real != null ? fmtValor3(real) : '<span style="color:var(--text-muted)">aguardando</span>')+'</td>' +
-      '<td class="num"'+diffCls+'>'+(diff != null ? fmtValor3(diff) : '—')+'</td>' +
+      '<td class="num"'+diffCls+'>'+(diff != null ? fmtValor3Signed(diff) : '—')+'</td>' +
       '<td class="num"'+diffCls+'>'+(diffPct != null ? fmtPctSigned(diffPct) : '—')+'</td>' +
       '<td><button class="link-btn" type="button" data-del-proj="'+escapeHtml(k)+'" aria-label="Excluir projeção de '+escapeHtml(k)+'">Excluir</button></td></tr>';
   }).join('');
@@ -4607,8 +4642,10 @@ function renderLancamentos(){
   var head = '<thead><tr>' + LANC_COLS.map(function(c){
     var active = l.sortKey === c.key;
     var aria = active ? (l.sortDir === 'asc' ? 'ascending' : 'descending') : 'none';
-    var arrow = active ? (l.sortDir === 'asc' ? ' ▲' : ' ▼') : '';
-    return '<th'+(c.num?' class="num"':'')+' aria-sort="'+aria+'"><button type="button" class="th-sort" data-sort="'+c.key+'">'+c.label+arrow+'</button></th>';
+    var arrow = active ? (l.sortDir === 'asc' ? '▲' : '▼') : '';
+    // coluna numérica: a seta vem antes do título, para o título continuar encostado na borda direita, junto dos valores
+    var label = !arrow ? c.label : c.num ? arrow+' '+c.label : c.label+' '+arrow;
+    return '<th'+(c.num?' class="num"':'')+' aria-sort="'+aria+'"><button type="button" class="th-sort" data-sort="'+c.key+'">'+label+'</button></th>';
   }).join('') + '<th><span class="sr-only">Avisos</span></th><th><span class="sr-only">Detalhe</span></th></tr></thead>';
 
   var body = pageRows.map(function(t){

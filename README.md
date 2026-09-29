@@ -9,6 +9,12 @@ Painel executivo para acompanhar **estornos, cupons e chargebacks** a partir da 
 | preparar ou corrigir a planilha | [Formato esperado da planilha](#formato-esperado-da-planilha) |
 | mudar o painel e publicar | [Para quem mantém](#para-quem-mantém) |
 
+### Novidades (29/09/2026)
+
+- **Números alinhados em todas as tabelas:** o título das colunas numéricas (Qtde, Valor, Ticket médio, Part., MoM etc.) agora fica à direita, na mesma borda do número, em todas as páginas. Antes ele ficava à esquerda, longe do valor a que pertence. As colunas numéricas têm a mesma largura, e o texto que vem logo depois de um número (Valor → Pedido/Ref., em Lançamentos) ganhou respiro.
+- **Largura de leitura:** nos quadros largos, tabelas curtas e listas de indicadores param em 48rem (cerca de 770 px) em vez de esticar até a borda. No Resumo do dia, a última coluna da tabela e os valores dos indicadores abaixo dela terminam na mesma linha vertical, e os rótulos começam alinhados com a primeira coluna. No celular, quando rótulo e valor não cabem lado a lado, o valor desce inteiro para a linha de baixo em vez de quebrar no meio.
+- **Um só sinal de menos:** todos os números negativos usam o mesmo sinal (−), por exemplo `−R$ 17.411,09` e `−100,0%`. Antes os dois formatos apareciam juntos. Zero arredondado aparece sem sinal (`0,0%`), e o desvio em R$ das projeções ganhou sinal, como o desvio em % ao lado. Nenhum número mudou, e CSV e Excel continuam iguais.
+
 ### Novidades (25/09/2026)
 
 - **Marca Talgui:** o ícone do menu lateral agora é o logotipo Talgui (letras brancas em fundo preto, igual em todos os temas) e também aparece como ícone da aba do navegador.
