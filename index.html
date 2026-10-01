@@ -1322,6 +1322,24 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
     <div class="diagnostics-panel inline" id="diagnostics-content"></div>
   </section>
 
+  <section id="screen-login" class="upload-wrap" hidden>
+    <form class="upload-card" id="login-form" autocomplete="on">
+      <div class="upload-top">
+        <div class="upload-eyebrow">Painel de Reembolsos</div>
+        <button class="btn btn-ghost btn-sm theme-toggle" type="button"></button>
+      </div>
+      <h1>Entrar</h1>
+      <p>Digite a senha do painel. Ela fica lembrada neste navegador até você clicar em "Sair".</p>
+      <input type="text" name="username" autocomplete="username" value="painel-reembolsos" hidden>
+      <div class="form-field" style="margin-top:18px;">
+        <label for="login-senha">Senha</label>
+        <input type="password" class="text-input" id="login-senha" autocomplete="current-password" required>
+      </div>
+      <div class="drive-status alert-critical" id="login-erro" role="alert" hidden style="margin-top:12px;"></div>
+      <button class="btn btn-primary" id="btn-login" type="submit" style="margin-top:16px;">Entrar</button>
+    </form>
+  </section>
+
 </div>
 
 <div id="screen-skeleton" class="skeleton-screen" hidden aria-busy="true">
@@ -1376,6 +1394,7 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
       <a class="side-link" href="#/planilha" data-route="planilha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span>Planilha</span><span class="nav-count" id="nav-diag-count" hidden></span></a>
       <div><div class="sidebar-file-label">Arquivo carregado</div><div class="sidebar-file-name" id="sidebar-file-name"></div><div class="sidebar-drive-stamp" id="sidebar-drive-stamp" hidden></div></div>
       <button class="btn btn-primary btn-sm" id="btn-drive-refresh" type="button" hidden>Atualizar agora</button>
+      <button class="btn btn-ghost btn-sm" id="btn-sair" type="button" hidden>Sair</button>
       <button class="btn btn-ghost btn-sm theme-toggle" type="button"></button>
     </div>
   </aside>
@@ -2531,6 +2550,7 @@ var LANC_PAGE_SIZE = 25;
 function showScreen(name){
   document.getElementById('screen-upload').hidden = name !== 'upload';
   document.getElementById('screen-diagnostics').hidden = name !== 'diagnostics';
+  document.getElementById('screen-login').hidden = name !== 'login';
   document.getElementById('screen-dashboard').hidden = name !== 'dashboard';
   document.getElementById('screen-skeleton').hidden = name !== 'skeleton';
   document.getElementById('app-shell').hidden = name === 'dashboard' || name === 'skeleton';
@@ -3275,6 +3295,74 @@ var DRIVE_ERROS = {
 };
 var drive = { loading:false, version:null, signature:null, checkedAt:null, error:null, timer:null };
 
+/* ----- Acesso: senha do painel online (conferida no servidor) ----- */
+// O token devolvido por entrar() fica no localStorage até "Sair" ou a senha mudar no servidor.
+// Sem localStorage (janela anônima, bloqueio), vale só enquanto a página estiver aberta.
+var ACESSO_KEY = 'reembolsos_acesso_v1';
+var ACESSO_ERROS = {
+  senha_incorreta:'Senha incorreta.',
+  bloqueado:'Muitas tentativas erradas. Espere 15 minutos e tente de novo.',
+  nao_configurado:'O acesso a este painel ainda não foi configurado.',
+  sem_acesso:'Esta conta não tem acesso ao painel.'
+};
+var acessoToken = '';
+try{ acessoToken = localStorage.getItem(ACESSO_KEY) || ''; } catch(e){}
+
+function guardarToken(t){
+  acessoToken = t || '';
+  try{ if(acessoToken) localStorage.setItem(ACESSO_KEY, acessoToken); else localStorage.removeItem(ACESSO_KEY); } catch(e){}
+}
+
+// apaga o acesso e a cópia da planilha guardada neste navegador e mostra a tela de senha
+function pedirSenha(msg){
+  guardarToken('');
+  lastFileStore.clear().then(refreshSavedFileCard);
+  var erro = document.getElementById('login-erro');
+  erro.textContent = msg || '';
+  erro.hidden = !msg;
+  document.getElementById('login-senha').value = '';
+  showScreen('login');
+  document.getElementById('login-senha').focus();
+}
+
+function setupLogin(){
+  var form = document.getElementById('login-form');
+  var btn = document.getElementById('btn-login');
+  var erro = document.getElementById('login-erro');
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var senha = document.getElementById('login-senha').value;
+    if(!senha || btn.disabled) return;
+    btn.disabled = true; btn.textContent = 'Entrando…';
+    erro.hidden = true;
+    var fim = function(){ btn.disabled = false; btn.textContent = 'Entrar'; };
+    google.script.run
+      .withSuccessHandler(function(r){
+        fim();
+        if(r && r.token){
+          guardarToken(r.token);
+          document.getElementById('login-senha').value = '';
+          showScreen('upload');
+          loadFromDrive(false);
+          return;
+        }
+        var code = r && r.erro;
+        erro.textContent = (ACESSO_ERROS[code] || 'Não foi possível entrar.') +
+          (code === 'senha_incorreta' && r.restantes ? ' ' + (r.restantes === 1 ? 'Resta 1 tentativa.' : 'Restam ' + r.restantes + ' tentativas.') : '');
+        erro.hidden = false;
+        var campo = document.getElementById('login-senha');
+        campo.select(); campo.focus();
+      })
+      .withFailureHandler(function(err){
+        fim();
+        erro.textContent = 'Não foi possível conferir a senha. ' + (err && err.message ? err.message : String(err));
+        erro.hidden = false;
+      })
+      .entrar(senha);
+  });
+  document.getElementById('btn-sair').addEventListener('click', function(){ pedirSenha(''); });
+}
+
 // Assinatura do conteúdo lido (linhas + ano + ocorrências), para saber se a planilha mudou de fato.
 function dataSignature(result){
   return JSON.stringify([
@@ -3298,11 +3386,12 @@ function fetchFromDrive(version){
     google.script.run
       .withSuccessHandler(function(data){
         if(!data) return reject(new Error('O Google Drive não devolveu resposta.'));
+        if(data.erro === 'senha_necessaria'){ var e = new Error('É preciso digitar a senha.'); e.code = data.erro; return reject(e); }
         if(data.erro) return reject(new Error((DRIVE_ERROS[data.erro] || ('Erro: '+data.erro)) + (data.detalhe ? ' ('+data.detalhe+')' : '')));
         resolve(data);
       })
       .withFailureHandler(function(err){ reject(new Error('Não foi possível consultar o Google Drive. ' + (err && err.message ? err.message : String(err)))); })
-      .obterPlanilha(version || '');
+      .obterPlanilha(version || '', acessoToken);
   });
 }
 
@@ -3319,6 +3408,7 @@ function renderDriveStamp(){
   var auto = IS_APPS_SCRIPT && state.data && state.data.source === 'drive';
   el.hidden = !auto;
   document.getElementById('btn-drive-refresh').hidden = !IS_APPS_SCRIPT;
+  document.getElementById('btn-sair').hidden = !IS_APPS_SCRIPT;
   if(!auto) return;
   el.className = 'sidebar-drive-stamp' + (drive.error ? ' is-error' : '');
   el.textContent = drive.error
@@ -3328,7 +3418,7 @@ function renderDriveStamp(){
 
 // silent: verificação automática (sem travar o botão nem abrir alertas).
 function loadFromDrive(silent){
-  if(!IS_APPS_SCRIPT || drive.loading) return;
+  if(!IS_APPS_SCRIPT || drive.loading || !acessoToken) return;
   var inDashboard = isDashboardVisible();
   // quem importou um arquivo à mão continua com ele até pedir "Atualizar agora"
   if(silent && inDashboard && state.data.source !== 'drive') return;
@@ -3394,6 +3484,11 @@ function loadFromDrive(silent){
     }
   }).catch(function(err){
     var msg = err && err.message ? err.message : String(err);
+    // senha trocada ou acesso apagado: volta para a tela de senha, sem mostrar os dados antigos
+    if(err && err.code === 'senha_necessaria'){
+      pedirSenha(inDashboard ? 'A senha do painel mudou. Digite a nova senha para continuar.' : '');
+      return;
+    }
     if(inDashboard){
       drive.error = msg;
       if(!silent) alert('Não foi possível atualizar pelo Google Drive.\n\n' + msg + '\n\nOs dados carregados continuam na tela.');
@@ -3734,7 +3829,9 @@ function enterDashboard(keepView){
       ? refKey
       : (monthsWithData.length ? monthsWithData[monthsWithData.length-1].key : MONTH_DEFS[0].key);
     state.relatorioDate = state.referenceDate;
-    state.filters.semanaIdx = null;
+    // ao abrir, a semana também é a do último lançamento (Sem 1 = dias 1–7, Sem 2 = 8–14...)
+    state.filters.semanaIdx = (state.referenceDate.getFullYear() === d.effectiveYear && MONTH_DEFS[state.referenceDate.getMonth()].key === state.filters.mes)
+      ? Math.floor((state.referenceDate.getDate()-1)/7) : null;
     state.lanc = { busca:'', canal:'', status:'', somenteAvisos:false, anoTodo:false, dia:'', sortKey:'date', sortDir:'asc', page:0, lastSig:null };
   }
   state.issueIndex = {};
@@ -5669,8 +5766,14 @@ function boot(){
 
   setupAppsScriptLocation();
   setupInfoTips();
-  showScreen('upload');
-  if(IS_APPS_SCRIPT){ loadFromDrive(false); startDrivePolling(); }
+  if(IS_APPS_SCRIPT){
+    setupLogin();
+    startDrivePolling();
+    if(acessoToken){ showScreen('upload'); loadFromDrive(false); }
+    else pedirSenha('');
+  } else {
+    showScreen('upload');
+  }
 }
 
 if(document.readyState === 'loading'){
