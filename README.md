@@ -9,6 +9,11 @@ Painel executivo para acompanhar **estornos, cupons e chargebacks** a partir da 
 | preparar ou corrigir a planilha | [Formato esperado da planilha](#formato-esperado-da-planilha) |
 | mudar o painel e publicar | [Para quem mantém](#para-quem-mantém) |
 
+### Novidades (01/10/2026)
+
+- **Cadastro com senha no painel online:** só entra quem foi liberado na página **Acesso**, e cada pessoa cria a própria senha no primeiro acesso. Veja [Quem acessa e senha](#quem-acessa-e-senha).
+- **Semana já marcada:** ao abrir o painel, o filtro de semana vem na semana do último lançamento.
+
 ### Novidades (25/09/2026)
 
 - **Marca Talgui:** o ícone do menu lateral agora é o logotipo Talgui (letras brancas em fundo preto, igual em todos os temas) e também aparece como ícone da aba do navegador.
@@ -29,11 +34,20 @@ Painel executivo para acompanhar **estornos, cupons e chargebacks** a partir da 
 
 Abre já com os dados da planilha que está na pasta do Google Drive. Não é preciso importar nada.
 
-- **Quem acessa:** só quem está logado com uma conta **@talgui.com.br**.
+- **Quem acessa:** só contas **@talgui.com.br** liberadas na página Acesso, e com senha (veja abaixo).
 - **Atualização:** com o painel aberto, ele verifica a pasta **a cada 5 minutos** e só redesenha se a planilha mudou, mantendo o mês, os filtros e a página abertos. **Atualizar agora**, no menu lateral, força a verificação.
 - **Qual arquivo:** a Planilha Google editada por último na pasta (exportada como `.xlsx`). Se não houver nenhuma Planilha Google, usa o `.xlsx` modificado por último. Subpastas são ignoradas, então dá para guardar versões antigas numa subpasta "Arquivo".
 - **Se a versão nova tiver erro de estrutura**, o painel mantém os dados anteriores e avisa no menu lateral.
 - **Várias contas Google no mesmo navegador:** se o painel não carregar, abra numa janela anônima só com a conta da Talgui. É uma limitação conhecida do Google Apps Script.
+
+#### Quem acessa e senha
+
+- **Primeiro acesso:** depois que o administrador libera o e-mail, a pessoa abre o link e cria uma senha de pelo menos 8 caracteres.
+- **Nas outras vezes:** a senha fica lembrada no navegador até a pessoa clicar em **Sair**, no menu lateral.
+- **Senha errada:** depois de 5 tentativas erradas, a conta fica bloqueada por 15 minutos.
+- **Esqueceu a senha:** o administrador clica em **Liberar novo cadastro** na página Acesso. A senha antiga deixa de valer, e a pessoa cria outra no próximo acesso.
+- **Administradores:** o dono do script e quem estiver na propriedade `PAINEL_ADMINS`. Só eles veem a página **Acesso**, onde adicionam e removem e-mails. Quem é removido perde o acesso na hora. Se estiver com o painel aberto, ele trava na próxima verificação.
+- **Contas fora da lista:** veem só o aviso "Você não tem acesso a este painel".
 
 ### 2. Importação manual (GitHub Pages)
 
@@ -56,6 +70,7 @@ A estrutura segue o padrão do painel administrativo da Nuvemshop: **Início** e
 | **Análises** | Dia a dia e metas | `#/dia-a-dia` | Duas abas. **Dia a dia:** evolução diária, **Resumo do dia** (antigo Relatório diário), comparativo semanal e indicadores-chave do mês. **Metas e projeções** (`#/dia-a-dia?aba=metas`): teto do mês, previsão de fechamento e projeções de estornos × realizado | aba Dia a dia: mês, métrica, semana, categoria · aba Metas: mês |
 | | Mês a mês | `#/mensal` | Evolução do ano, acumulado e composição por tipo de ocorrência | métrica, categoria |
 | | Canais e status | `#/canais` | Distribuição por canal (SAC, TD Nuvem, PIX Direto) e por status | mês, métrica, categoria |
+| rodapé | Acesso | `#/acesso` | Só administradores, no painel online: quem pode abrir o painel, adicionar e remover e-mails e liberar novo cadastro | — |
 | rodapé | Planilha | `#/planilha` | Origem dos dados, Atualizar agora, Importar outro arquivo e diagnóstico da leitura | — |
 
 **Endereços antigos continuam funcionando** e passam para os novos: `#/visao-geral` → `#/inicio`, `#/diario-semanal` → `#/dia-a-dia`, `#/relatorio` → `#/dia-a-dia` (rolando até o Resumo do dia), `#/metas` → `#/dia-a-dia?aba=metas`, `#/diagnostico` → `#/planilha`.
@@ -147,9 +162,10 @@ Nada é descartado sem aviso. Cada ocorrência mostra aba, linha, campo e o valo
 ## Privacidade e armazenamento
 
 - Na importação manual, a planilha **não é enviada** para nenhum servidor: tudo acontece no navegador.
-- No painel online, a planilha vai do Google Drive direto para o navegador, pelo Apps Script, sem passar por outros servidores. Só contas @talgui.com.br conseguem abrir.
+- No painel online, a planilha vai do Google Drive direto para o navegador, pelo Apps Script, sem passar por outros servidores. Só contas @talgui.com.br liberadas e com a senha certa conseguem abrir. A senha é conferida no servidor e guardada só como hash, então ninguém consegue lê-la, nem o administrador.
 - Algumas informações ficam salvas **só no navegador de cada pessoa**, sem compartilhamento entre computadores:
-  - último arquivo importado ou baixado do Drive (IndexedDB `reembolsos_db`);
+  - último arquivo importado ou baixado do Drive (IndexedDB `reembolsos_db`), apagado ao clicar em **Sair**;
+  - acesso ao painel online (`localStorage`: `reembolsos_acesso_v1`), apagado ao clicar em **Sair**;
   - metas mensais (`localStorage`: `reembolsos_metas_v1`);
   - projeções (`localStorage`: `reembolsos_projecoes_v1`);
   - tema (`localStorage`: `reembolsos_tema_v1`; valores `auto`, `light`, `dark`, `nimbus`, `grafite`, `contraste`).
@@ -167,7 +183,7 @@ painel-reembolsos/
 ├── README.md
 ├── .claude/agents/       ← agentes do Claude Code (arquiteto, auditor, redator, revisor)
 └── apps-script/          ← projeto do Google Apps Script que serve o painel online
-    ├── Codigo.gs         ← doGet() entrega a página; obterPlanilha(versao) devolve a planilha do Drive
+    ├── Codigo.gs         ← doGet() entrega a página; cadastro e senha; obterPlanilha(versao, token) devolve a planilha do Drive
     ├── appsscript.json   ← escopos e acesso restrito ao domínio (DOMAIN)
     ├── .clasp.json       ← scriptId usado pelo clasp
     └── publicar.sh       ← publica o index.html no Apps Script, mesma URL
@@ -176,6 +192,12 @@ painel-reembolsos/
 - `apps-script/Index.html` **não é mantido à mão**: o `publicar.sh` o gera copiando o `index.html` a cada publicação (e o `.gitignore` o exclui do Git). Não edite esse arquivo.
 - O mesmo `index.html` serve os dois lugares: ele detecta se está dentro do Apps Script (`google.script.run`) e, nesse caso, busca a planilha no Drive e verifica mudanças a cada 5 minutos.
 - A pasta do Drive é definida em `FOLDER_ID`, no `Codigo.gs`. Ela continua privada: o script lê o arquivo em nome da conta dona.
+- O acesso fica nas **Propriedades do script**, no editor do Apps Script, em Configurações do projeto. Elas valem para o `/dev` e o `/exec` ao mesmo tempo:
+  - `usuario:<e-mail>`: um cadastro por pessoa, com o hash e o sal da senha, ou só a data, enquanto aguarda o primeiro acesso;
+  - `PAINEL_SEGREDO`: chave que assina os tokens de acesso, criada sozinha. Se for apagada, todo mundo precisa digitar a senha de novo;
+  - `PAINEL_ADMINS` (opcional): administradores além do dono, separados por vírgula;
+  - `PAINEL_MIGRADO`: marca que a lista antiga (`PAINEL_EMAILS`, da época da senha única) já virou cadastros. `PAINEL_EMAILS` e `PAINEL_SENHA` não são mais usadas e podem ser apagadas.
+- Se o dono esquecer a própria senha, apague a propriedade `usuario:<e-mail do dono>`. No próximo acesso ele cria outra senha.
 
 ### Conferir no Apps Script antes de publicar
 
