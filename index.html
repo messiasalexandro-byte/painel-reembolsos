@@ -1328,15 +1328,20 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
         <div class="upload-eyebrow">Painel de Reembolsos</div>
         <button class="btn btn-ghost btn-sm theme-toggle" type="button"></button>
       </div>
-      <h1>Entrar</h1>
-      <p>Digite a senha do painel. Ela fica lembrada neste navegador até você clicar em "Sair".</p>
-      <input type="text" name="username" autocomplete="username" value="painel-reembolsos" hidden>
+      <h1 id="login-titulo">Entrar</h1>
+      <p id="login-texto">Verificando o seu acesso…</p>
+      <input type="text" name="username" id="login-usuario" autocomplete="username" value="" hidden>
       <div class="form-field" style="margin-top:18px;">
         <label for="login-senha">Senha</label>
         <input type="password" class="text-input" id="login-senha" autocomplete="current-password" required>
       </div>
+      <div class="form-field" id="login-confirma-campo" style="margin-top:12px;" hidden>
+        <label for="login-confirma">Repita a senha</label>
+        <input type="password" class="text-input" id="login-confirma" autocomplete="new-password">
+      </div>
       <div class="drive-status alert-critical" id="login-erro" role="alert" hidden style="margin-top:12px;"></div>
-      <button class="btn btn-primary" id="btn-login" type="submit" style="margin-top:16px;">Entrar</button>
+      <button class="btn btn-primary" id="btn-login" type="submit" style="margin-top:16px;" disabled>Entrar</button>
+      <div class="upload-note" id="login-ajuda" hidden>Esqueceu a senha? Peça ao administrador do painel para liberar um novo cadastro.</div>
     </form>
   </section>
 
@@ -1391,6 +1396,7 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
         <a class="side-link" href="#/canais" data-route="canais"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg><span>Canais e status</span></a>
     </nav>
     <div class="sidebar-footer">
+      <a class="side-link" href="#/acesso" data-route="acesso" id="nav-acesso" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Acesso</span></a>
       <a class="side-link" href="#/planilha" data-route="planilha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span>Planilha</span><span class="nav-count" id="nav-diag-count" hidden></span></a>
       <div><div class="sidebar-file-label">Arquivo carregado</div><div class="sidebar-file-name" id="sidebar-file-name"></div><div class="sidebar-drive-stamp" id="sidebar-drive-stamp" hidden></div></div>
       <button class="btn btn-primary btn-sm" id="btn-drive-refresh" type="button" hidden>Atualizar agora</button>
@@ -1664,6 +1670,24 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
             </div>
           </div>
           <div class="panel panel-wide" id="page-diagnostics-content"></div>
+        </div>
+      </section>
+
+      <section class="page" data-page="acesso" hidden>
+        <div class="panels-grid">
+          <div class="panel panel-wide">
+            <div class="panel-header"><div class="panel-title">Quem pode abrir o painel</div></div>
+            <p class="upload-note" style="margin-top:6px;">Adicione o e-mail @talgui.com.br da pessoa. No primeiro acesso ela cria a própria senha. Se alguém esquecer a senha, use "Liberar novo cadastro".</p>
+            <form class="form-row" id="acesso-form">
+              <div class="form-field grow">
+                <label for="acesso-email">E-mail</label>
+                <input type="email" class="text-input" id="acesso-email" placeholder="nome@talgui.com.br" autocomplete="off" required>
+              </div>
+              <button class="btn btn-primary btn-sm" id="btn-acesso-add" type="submit">Adicionar</button>
+            </form>
+            <div class="drive-status" id="acesso-status" role="status" aria-live="polite" hidden></div>
+            <div class="table-wrap" style="margin-top:14px;"><table class="data-table" id="table-acesso"></table></div>
+          </div>
         </div>
       </section>
 
@@ -2656,8 +2680,11 @@ var ROUTES = [
     abas:[{id:'dia', title:'Dia a dia'}, {id:'metas', title:'Metas e projeções', filtros:['mes']}]},
   {id:'mensal', title:'Mês a mês', filtros:['metrica','categoria']},
   {id:'canais', title:'Canais e status', filtros:['mes','metrica','categoria']},
-  {id:'planilha', title:'Planilha', filtros:[]}
+  {id:'planilha', title:'Planilha', filtros:[]},
+  // só para administradores do painel online (acessoAdmin)
+  {id:'acesso', title:'Acesso', filtros:[], admin:true}
 ];
+function routeLiberada(r){ return !r.admin || (IS_APPS_SCRIPT && acessoAdmin); }
 // endereços da estrutura anterior (favoritos e links já enviados) → páginas novas
 // (#/metas virou a aba Metas e projeções de Dia a dia e metas: applyRoute abre a aba certa)
 var ROUTE_ALIASES = { 'visao-geral':'inicio', 'diario-semanal':'dia-a-dia', 'relatorio':'dia-a-dia', 'diagnostico':'planilha', 'metas':'dia-a-dia' };
@@ -2690,6 +2717,8 @@ function renderPageSub(){
   var parts = [];
   if(route.id === 'planilha'){
     parts.push('Origem, leitura e validação da planilha');
+  } else if(route.id === 'acesso'){
+    parts.push('Quem pode abrir o painel online');
   } else {
     if(route.id === 'lancamentos' && state.lanc.anoTodo){
       parts.push('Exercício ' + year + ' · ano todo');
@@ -2729,7 +2758,7 @@ function parseHash(h){
 function currentRoute(){
   var p = parseHash(location.hash);
   var id = p.alias || p.id;
-  return ROUTES.find(function(r){ return r.id === id; }) || ROUTES[0];
+  return ROUTES.find(function(r){ return r.id === id && routeLiberada(r); }) || ROUTES[0];
 }
 
 // só entram no endereço os parâmetros que valem para a página aberta
@@ -2899,6 +2928,7 @@ function applyRoute(){
   renderPageSub();
   syncDocTitle();
   if(route.id === 'planilha'){ renderDiagnostics(state.data, 'page-diagnostics-content', 'page'); renderPlanilhaOrigem(); }
+  if(route.id === 'acesso') carregarAcesso();
   // gráficos criados enquanto a página estava oculta nascem com tamanho zero
   Object.keys(state.charts).forEach(function(k){ state.charts[k].resize(); });
   // entrada da página: cards e painéis sobem em cascata e os gráficos da página redesenham animados
@@ -3295,17 +3325,27 @@ var DRIVE_ERROS = {
 };
 var drive = { loading:false, version:null, signature:null, checkedAt:null, error:null, timer:null };
 
-/* ----- Acesso: senha do painel online (conferida no servidor) ----- */
-// O token devolvido por entrar() fica no localStorage até "Sair" ou a senha mudar no servidor.
-// Sem localStorage (janela anônima, bloqueio), vale só enquanto a página estiver aberta.
+/* ----- Acesso: cadastro e senha de cada pessoa no painel online (conferidos no servidor) ----- */
+// O token devolvido por entrar()/criarSenha() fica no localStorage até "Sair" ou até a senha
+// da pessoa ser liberada de novo. Sem localStorage (janela anônima, bloqueio), vale só enquanto a página estiver aberta.
 var ACESSO_KEY = 'reembolsos_acesso_v1';
+var SENHA_MIN = 8;
 var ACESSO_ERROS = {
   senha_incorreta:'Senha incorreta.',
   bloqueado:'Muitas tentativas erradas. Espere 15 minutos e tente de novo.',
-  nao_configurado:'O acesso a este painel ainda não foi configurado.',
-  sem_acesso:'Esta conta não tem acesso ao painel.'
+  sem_acesso:'Esta conta não tem acesso ao painel.',
+  senha_curta:'A senha precisa ter pelo menos ' + SENHA_MIN + ' caracteres.',
+  ja_cadastrado:'Esta conta já tem senha. Digite-a para entrar.',
+  email_invalido:'Informe um e-mail @talgui.com.br.',
+  ja_existe:'Este e-mail já está na lista.',
+  proprio_usuario:'Você não pode fazer isso com a sua própria conta.',
+  dono:'A conta dona do painel não pode ser removida.',
+  nao_encontrado:'Este e-mail não está mais na lista.'
 };
 var acessoToken = '';
+var acessoAdmin = false;
+var acessoEmail = "";
+var loginModo = 'entrar';
 try{ acessoToken = localStorage.getItem(ACESSO_KEY) || ''; } catch(e){}
 
 function guardarToken(t){
@@ -3313,54 +3353,186 @@ function guardarToken(t){
   try{ if(acessoToken) localStorage.setItem(ACESSO_KEY, acessoToken); else localStorage.removeItem(ACESSO_KEY); } catch(e){}
 }
 
-// apaga o acesso e a cópia da planilha guardada neste navegador e mostra a tela de senha
-function pedirSenha(msg){
-  guardarToken('');
-  lastFileStore.clear().then(refreshSavedFileCard);
+// chamada ao servidor como Promise (o painel inteiro usa google.script.run só no Apps Script)
+function chamar(fn){
+  var args = Array.prototype.slice.call(arguments, 1);
+  return new Promise(function(resolve, reject){
+    var run = google.script.run.withSuccessHandler(resolve).withFailureHandler(function(err){
+      reject(new Error(err && err.message ? err.message : String(err)));
+    });
+    run[fn].apply(run, args);
+  });
+}
+
+function setAdmin(admin, email){
+  acessoAdmin = !!admin;
+  if(email !== undefined) acessoEmail = email || "";
+  document.getElementById('nav-acesso').hidden = !acessoAdmin;
+}
+
+function setLoginModo(modo, email){
+  loginModo = modo;
+  var criar = modo === 'criar';
+  document.getElementById('login-titulo').textContent = criar ? 'Criar sua senha' : 'Entrar';
+  document.getElementById('login-texto').textContent = criar
+    ? 'Primeiro acesso' + (email ? ' de ' + email : '') + ': crie uma senha com pelo menos ' + SENHA_MIN + ' caracteres. Ela fica lembrada neste navegador até você clicar em "Sair".'
+    : 'Digite a sua senha' + (email ? ' (' + email + ')' : '') + '. Ela fica lembrada neste navegador até você clicar em "Sair".';
+  acessoEmail = email || '';
+  document.getElementById('login-usuario').value = acessoEmail;
+  document.getElementById('login-senha').setAttribute('autocomplete', criar ? 'new-password' : 'current-password');
+  document.getElementById('login-confirma-campo').hidden = !criar;
+  document.getElementById('login-confirma').required = criar;
+  document.getElementById('login-ajuda').hidden = criar;
+  var btn = document.getElementById('btn-login');
+  btn.textContent = criar ? 'Criar senha e entrar' : 'Entrar';
+  btn.disabled = false;
+  document.getElementById('login-senha').focus();
+}
+
+function mostrarErroLogin(msg){
   var erro = document.getElementById('login-erro');
   erro.textContent = msg || '';
   erro.hidden = !msg;
+}
+
+// apaga o acesso e a cópia da planilha guardada neste navegador e mostra a tela de senha
+function pedirSenha(msg){
+  guardarToken('');
+  setAdmin(false, '');
+  lastFileStore.clear().then(refreshSavedFileCard);
+  mostrarErroLogin(msg);
   document.getElementById('login-senha').value = '';
+  document.getElementById('login-confirma').value = '';
+  document.getElementById('btn-login').disabled = true;
+  document.getElementById('login-texto').textContent = 'Verificando o seu acesso…';
   showScreen('login');
-  document.getElementById('login-senha').focus();
+  chamar('estadoAcesso').then(function(r){
+    if(r && r.erro){ document.getElementById('login-texto').textContent = ACESSO_ERROS[r.erro] || 'Não foi possível verificar o acesso.'; return; }
+    setLoginModo(r.cadastro, r.email);
+  }).catch(function(err){
+    document.getElementById('login-texto').textContent = 'Não foi possível verificar o acesso. ' + err.message;
+  });
 }
 
 function setupLogin(){
   var form = document.getElementById('login-form');
   var btn = document.getElementById('btn-login');
-  var erro = document.getElementById('login-erro');
   form.addEventListener('submit', function(e){
     e.preventDefault();
     var senha = document.getElementById('login-senha').value;
     if(!senha || btn.disabled) return;
-    btn.disabled = true; btn.textContent = 'Entrando…';
-    erro.hidden = true;
-    var fim = function(){ btn.disabled = false; btn.textContent = 'Entrar'; };
-    google.script.run
-      .withSuccessHandler(function(r){
-        fim();
-        if(r && r.token){
-          guardarToken(r.token);
-          document.getElementById('login-senha').value = '';
-          showScreen('upload');
-          loadFromDrive(false);
-          return;
-        }
-        var code = r && r.erro;
-        erro.textContent = (ACESSO_ERROS[code] || 'Não foi possível entrar.') +
-          (code === 'senha_incorreta' && r.restantes ? ' ' + (r.restantes === 1 ? 'Resta 1 tentativa.' : 'Restam ' + r.restantes + ' tentativas.') : '');
-        erro.hidden = false;
-        var campo = document.getElementById('login-senha');
-        campo.select(); campo.focus();
-      })
-      .withFailureHandler(function(err){
-        fim();
-        erro.textContent = 'Não foi possível conferir a senha. ' + (err && err.message ? err.message : String(err));
-        erro.hidden = false;
-      })
-      .entrar(senha);
+    var criar = loginModo === 'criar';
+    if(criar){
+      if(senha.length < SENHA_MIN){ mostrarErroLogin(ACESSO_ERROS.senha_curta); return; }
+      if(senha !== document.getElementById('login-confirma').value){ mostrarErroLogin('As duas senhas não são iguais.'); return; }
+    }
+    var rotulo = btn.textContent;
+    btn.disabled = true; btn.textContent = criar ? 'Criando…' : 'Entrando…';
+    mostrarErroLogin('');
+    chamar(criar ? 'criarSenha' : 'entrar', senha).then(function(r){
+      btn.disabled = false; btn.textContent = rotulo;
+      if(r && r.token){
+        guardarToken(r.token);
+        setAdmin(r.admin);
+        document.getElementById('login-senha').value = '';
+        document.getElementById('login-confirma').value = '';
+        showScreen('upload');
+        loadFromDrive(false);
+        return;
+      }
+      var code = r && r.erro;
+      // a senha foi liberada de novo (ou criada em outra aba) enquanto a tela estava aberta
+      if(code === 'criar_senha' || code === 'ja_cadastrado'){ setLoginModo(code === 'criar_senha' ? 'criar' : 'entrar', acessoEmail); }
+      mostrarErroLogin(code === 'criar_senha' ? 'Sua senha foi liberada para um novo cadastro. Crie uma nova senha.' :
+        (ACESSO_ERROS[code] || 'Não foi possível entrar.') +
+        (code === 'senha_incorreta' && r.restantes ? ' ' + (r.restantes === 1 ? 'Resta 1 tentativa.' : 'Restam ' + r.restantes + ' tentativas.') : ''));
+      var campo = document.getElementById('login-senha');
+      campo.select(); campo.focus();
+    }).catch(function(err){
+      btn.disabled = false; btn.textContent = rotulo;
+      mostrarErroLogin('Não foi possível conferir a senha. ' + err.message);
+    });
   });
   document.getElementById('btn-sair').addEventListener('click', function(){ pedirSenha(''); });
+  setupAcessoAdmin();
+}
+
+// ao abrir com um token guardado: descobre de quem é e se é administrador (mostra o item Acesso no menu)
+function conferirSessao(){
+  chamar('sessao', acessoToken).then(function(r){
+    if(!r || r.erro) return; // token inválido: o loadFromDrive já leva para a tela de senha
+    setAdmin(r.admin, r.email);
+    if(acessoAdmin && parseHash(location.hash).id === 'acesso' && isDashboardVisible()) applyRoute();
+  }).catch(function(){});
+}
+
+/* ----- Página Acesso (administradores) ----- */
+
+function setAcessoStatus(kind, msg){
+  var el = document.getElementById('acesso-status');
+  el.className = 'drive-status' + (kind === 'error' ? ' alert-critical' : '');
+  el.textContent = msg || '';
+  el.hidden = !msg;
+}
+
+// resposta do servidor nas ações de admin: lista nova, ou erro (token vencido → volta para a senha)
+function tratarAcesso(r, okMsg){
+  if(r && r.erro === 'senha_necessaria'){ pedirSenha('Digite a sua senha de novo para continuar.'); return; }
+  if(r && r.erro){ setAcessoStatus('error', ACESSO_ERROS[r.erro] || ('Erro: ' + r.erro)); return; }
+  setAcessoStatus('', okMsg || '');
+  renderAcesso(r.usuarios || []);
+}
+
+function carregarAcesso(){
+  if(!IS_APPS_SCRIPT || !acessoAdmin) return;
+  setAcessoStatus('', 'Carregando…');
+  chamar('adminListar', acessoToken).then(function(r){ tratarAcesso(r, ''); })
+    .catch(function(err){ setAcessoStatus('error', 'Não foi possível carregar a lista. ' + err.message); });
+}
+
+function renderAcesso(lista){
+  var html = '<thead><tr><th>E-mail</th><th>Situação</th><th>Desde</th><th></th></tr></thead><tbody>';
+  if(!lista.length) html += '<tr><td colspan="4">Ninguém na lista ainda.</td></tr>';
+  lista.forEach(function(u){
+    var proprio = u.email === acessoEmail;
+    var acoes = '';
+    if(!proprio && u.situacao === 'ativo') acoes += '<button class="btn btn-ghost btn-sm" type="button" data-acesso="liberar" data-email="'+escapeHtml(u.email)+'">Liberar novo cadastro</button> ';
+    if(!proprio && !u.dono) acoes += '<button class="btn btn-ghost btn-sm" type="button" data-acesso="remover" data-email="'+escapeHtml(u.email)+'">Remover</button>';
+    html += '<tr><td>' + escapeHtml(u.email) + (u.admin ? ' · administrador' : '') + (proprio ? ' (você)' : '') + '</td>' +
+      '<td>' + (u.situacao === 'ativo' ? 'Senha criada' : 'Aguardando o primeiro acesso') + '</td>' +
+      '<td>' + (u.desde ? fmtDateTime(new Date(u.desde)) : '—') + '</td>' +
+      '<td style="text-align:right;">' + acoes + '</td></tr>';
+  });
+  document.getElementById('table-acesso').innerHTML = html + '</tbody>';
+}
+
+function setupAcessoAdmin(){
+  document.getElementById('acesso-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var campo = document.getElementById('acesso-email');
+    var email = campo.value.trim();
+    if(!email) return;
+    var btn = document.getElementById('btn-acesso-add');
+    btn.disabled = true;
+    chamar('adminAdicionar', acessoToken, email).then(function(r){
+      btn.disabled = false;
+      if(r && !r.erro) campo.value = '';
+      tratarAcesso(r, email + ' foi adicionado. No primeiro acesso, a pessoa cria a própria senha.');
+    }).catch(function(err){ btn.disabled = false; setAcessoStatus('error', 'Não foi possível adicionar. ' + err.message); });
+  });
+  document.getElementById('table-acesso').addEventListener('click', function(e){
+    var b = e.target.closest('[data-acesso]');
+    if(!b) return;
+    var email = b.dataset.email, acao = b.dataset.acesso;
+    var pergunta = acao === 'remover'
+      ? 'Remover ' + email + '? A pessoa deixa de abrir o painel na próxima verificação.'
+      : 'Liberar novo cadastro para ' + email + '? A senha atual deixa de valer e a pessoa cria outra no próximo acesso.';
+    if(!confirm(pergunta)) return;
+    b.disabled = true;
+    chamar(acao === 'remover' ? 'adminRemover' : 'adminLiberarCadastro', acessoToken, email).then(function(r){
+      tratarAcesso(r, acao === 'remover' ? email + ' foi removido.' : 'Novo cadastro liberado para ' + email + '.');
+    }).catch(function(err){ b.disabled = false; setAcessoStatus('error', 'Não foi possível concluir. ' + err.message); });
+  });
 }
 
 // Assinatura do conteúdo lido (linhas + ano + ocorrências), para saber se a planilha mudou de fato.
@@ -3486,7 +3658,7 @@ function loadFromDrive(silent){
     var msg = err && err.message ? err.message : String(err);
     // senha trocada ou acesso apagado: volta para a tela de senha, sem mostrar os dados antigos
     if(err && err.code === 'senha_necessaria'){
-      pedirSenha(inDashboard ? 'A senha do painel mudou. Digite a nova senha para continuar.' : '');
+      pedirSenha(inDashboard ? 'Seu acesso mudou (nova senha ou cadastro liberado de novo). Entre novamente para continuar.' : '');
       return;
     }
     if(inDashboard){
@@ -5015,6 +5187,7 @@ function searchTransactions(q){
 function searchDestinos(){
   var out = [];
   ROUTES.forEach(function(r){
+    if(!routeLiberada(r)) return;
     if(!r.abas){ out.push({id:r.id, title:r.title}); return; }
     out.push({id:r.id, aba:'dia', title:'Dia a dia', sub:'aba de ' + r.title, keys:'resumo do dia diario semanal evolucao'});
     out.push({id:r.id, aba:'metas', title:'Metas e projeções', sub:'aba de ' + r.title, keys:'meta teto projecao previsao run-rate'});
@@ -5769,7 +5942,7 @@ function boot(){
   if(IS_APPS_SCRIPT){
     setupLogin();
     startDrivePolling();
-    if(acessoToken){ showScreen('upload'); loadFromDrive(false); }
+    if(acessoToken){ showScreen('upload'); loadFromDrive(false); conferirSessao(); }
     else pedirSenha('');
   } else {
     showScreen('upload');
