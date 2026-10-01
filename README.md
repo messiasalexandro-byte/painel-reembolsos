@@ -70,10 +70,14 @@ A estrutura segue o padrão do painel administrativo da Nuvemshop: **Início** e
 | **Análises** | Dia a dia e metas | `#/dia-a-dia` | Duas abas. **Dia a dia:** evolução diária, **Resumo do dia** (antigo Relatório diário), comparativo semanal e indicadores-chave do mês. **Metas e projeções** (`#/dia-a-dia?aba=metas`): teto do mês, previsão de fechamento e projeções de estornos × realizado | aba Dia a dia: mês, métrica, semana, categoria · aba Metas: mês |
 | | Mês a mês | `#/mensal` | Evolução do ano, acumulado e composição por tipo de ocorrência | métrica, categoria |
 | | Canais e status | `#/canais` | Distribuição por canal (SAC, TD Nuvem, PIX Direto) e por status | mês, métrica, categoria |
+| rodapé | Minha conta | `#/minha-conta` | Só no painel online, para quem entrou com senha: foto (aparece no menu; sem foto, as iniciais do e-mail), e-mail e perfil (Administrador ou Usuário), trocar senha e **Sair** (o botão saiu do rodapé do menu e fica aqui). No GitHub Pages o item não aparece e o endereço abre o Início | — |
 | rodapé | Acesso | `#/acesso` | Só administradores, no painel online: quem pode abrir o painel, adicionar e remover e-mails e liberar novo cadastro | — |
 | rodapé | Planilha | `#/planilha` | Origem dos dados, Atualizar agora, Importar outro arquivo e diagnóstico da leitura | — |
 
 **Endereços antigos continuam funcionando** e passam para os novos: `#/visao-geral` → `#/inicio`, `#/diario-semanal` → `#/dia-a-dia`, `#/relatorio` → `#/dia-a-dia` (rolando até o Resumo do dia), `#/metas` → `#/dia-a-dia?aba=metas`, `#/diagnostico` → `#/planilha`.
+
+- **Menu lateral retrátil:** no computador, a alça « na borda direita do menu recolhe o menu para uma coluna só de ícones (passe o mouse para ver o nome da página) e o » o expande de novo. A escolha fica guardada neste navegador. No celular o menu continua abrindo como gaveta pelo botão ☰, e na impressão nada muda.
+- **Minha conta:** a foto é recortada no centro e reduzida no próprio navegador (64×64, JPEG, no máximo 4000 caracteres) antes de ir para o servidor. Cada cadastro com foto ocupa cerca de 4 KB, e as propriedades do script somam no máximo 500 KB: cabem por volta de 100 pessoas com foto (sem foto, cada cadastro ocupa menos de 200 bytes). Trocar a senha desconecta os outros aparelhos e navegadores, que passam a pedir a senha nova.
 
 - **Abas de Dia a dia e metas:** clique ou setas ← → (Home/End) quando o foco está nas abas. A aba vai para o endereço (`aba=metas`; sem o parâmetro, abre Dia a dia). Trocar de aba, como trocar filtro, não cria entrada no histórico. Abrir o Resumo de um dia (Top 5, alerta, Ctrl+K) sempre leva à aba Dia a dia.
 

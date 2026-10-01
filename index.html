@@ -1237,6 +1237,66 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
   .mc-bar > i{ transition:none; }
 }
 
+/* ---------- Minha conta: avatar e página ---------- */
+.avatar{
+  display:inline-grid; place-items:center; flex:0 0 auto; border-radius:50%; overflow:hidden;
+  background:var(--accent-tint); color:var(--kpi-ticket); font-weight:700; line-height:1; letter-spacing:.02em;
+}
+.avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+.avatar-sm{ width:20px; height:20px; flex-basis:20px; font-size:8.5px; margin:-1px 0; }
+.avatar-lg{ width:96px; height:96px; flex-basis:96px; font-size:32px; font-family:var(--font-display); box-shadow:0 0 0 1px var(--border); }
+.conta-foto{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-top:12px; }
+.conta-foto .form-row{ margin-top:10px; }
+.conta-dados{ margin:12px 0 0; display:grid; gap:12px; }
+.conta-dados dt{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); }
+.conta-dados dd{ margin:4px 0 0; font-size:13.5px; font-weight:600; word-break:break-word; }
+
+/* ---------- Menu lateral retrátil (só desktop; no celular segue a gaveta) ---------- */
+/* alça redonda na borda direita do menu, fora dele: o menu aberto fica igual ao de antes */
+.sidebar-toggle{
+  position:fixed; top:30px; left:236px; z-index:41; display:inline-grid; place-items:center;
+  width:24px; height:24px; padding:0; border-radius:50%; cursor:pointer;
+  border:1px solid var(--border-strong); background:var(--bg-surface); color:var(--text-secondary); box-shadow:var(--shadow-sm);
+  transition:left var(--dur-3) var(--ease-out), color .2s ease, border-color .2s ease;
+}
+.sidebar-toggle svg{ width:13px; height:13px; transition:transform var(--dur-3) var(--ease-out); }
+.sidebar-toggle:hover{ color:var(--text-primary); border-color:var(--kpi-ticket); }
+.sidebar-toggle:focus-visible{ outline:2px solid var(--kpi-ticket); outline-offset:2px; }
+@media (max-width:960px){ .sidebar-toggle{ display:none; } }
+@media print{ .sidebar-toggle{ display:none!important; } }
+@media (min-width:961px){
+  .sidebar{ transition:width var(--dur-3) var(--ease-out), flex-basis var(--dur-3) var(--ease-out), padding var(--dur-3) var(--ease-out); }
+  body.sidebar-recolhido .sidebar{ width:64px; flex-basis:64px; padding:20px 10px; overflow-x:hidden; }
+  body.sidebar-recolhido .sidebar-toggle{ left:52px; }
+  body.sidebar-recolhido .sidebar-brand{ justify-content:center; padding:0 0 4px; }
+  body.sidebar-recolhido .sidebar-brand .brand-text,
+  body.sidebar-recolhido .side-link > span:not(.nav-count):not(.avatar),
+  body.sidebar-recolhido .sidebar-file{ display:none; }
+  body.sidebar-recolhido .sidebar-toggle svg{ transform:rotate(180deg); }
+  body.sidebar-recolhido .side-link{ justify-content:center; gap:0; padding:9px 0; }
+  body.sidebar-recolhido .nav-count{ position:absolute; top:1px; right:1px; margin:0; font-size:9px; padding:1px 5px; }
+  body.sidebar-recolhido .nav-group-label{ font-size:0; height:1px; padding:0; margin:10px 8px; background:var(--border); }
+  /* rodapé: Atualizar agora e tema viram só ícone (o nome continua no title / aria-label) */
+  body.sidebar-recolhido .sidebar-footer .btn{ display:flex; align-items:center; justify-content:center; text-align:center; padding:0; min-height:36px; }
+  body.sidebar-recolhido #btn-drive-refresh{ font-size:0; }
+  body.sidebar-recolhido #btn-drive-refresh::after{
+    content:''; width:16px; height:16px; background:currentColor;
+    -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a9 9 0 1 1-2.64-6.36L21 8'/%3E%3Cpath d='M21 3v5h-5'/%3E%3C/svg%3E") center/contain no-repeat;
+    mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12a9 9 0 1 1-2.64-6.36L21 8'/%3E%3Cpath d='M21 3v5h-5'/%3E%3C/svg%3E") center/contain no-repeat;
+  }
+  body.sidebar-recolhido #btn-drive-refresh.is-loading::after{ display:none; }
+  body.sidebar-recolhido #btn-drive-refresh.is-loading::before{ margin-right:0; }
+  body.sidebar-recolhido .sidebar-footer .theme-toggle .theme-toggle-label,
+  body.sidebar-recolhido .sidebar-footer .theme-toggle .theme-caret{ display:none; }
+  /* menu de tema fixo ao lado da coluna estreita: não é cortado pela rolagem do menu, em qualquer altura de tela */
+  body.sidebar-recolhido .sidebar-footer .theme-menu{
+    position:fixed; left:72px; right:auto; top:auto; bottom:16px; min-width:272px;
+    max-height:calc(100vh - 32px); overflow-y:auto;
+  }
+}
+@media (prefers-reduced-motion:reduce){ .sidebar-toggle, .sidebar-toggle svg{ transition:none; } }
+@media (min-width:961px) and (prefers-reduced-motion:reduce){ .sidebar{ transition:none; } }
+
 /* ---------- Print ---------- */
 @media print{
   @page{ margin:12mm; }
@@ -1385,7 +1445,7 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
   <aside class="sidebar" id="sidebar" aria-label="Menu principal">
     <div class="sidebar-brand">
       <svg class="brand-mark" viewBox="0 0 40 40" width="40" height="40" role="img" aria-label="Talgui"><title>Talgui</title><rect width="40" height="40" rx="10" fill="#0A0A0A"/><text x="20" y="20.6" fill="#FFFFFF" font-size="9.6" text-anchor="middle" dominant-baseline="central" textLength="32" lengthAdjust="spacingAndGlyphs">TALGUI</text></svg>
-      <div><div class="brand-title">Painel de Reembolsos</div><div class="brand-sub" id="dash-sub">Estornos, cupons e chargebacks</div></div>
+      <div class="brand-text"><div class="brand-title">Painel de Reembolsos</div><div class="brand-sub" id="dash-sub">Estornos, cupons e chargebacks</div></div>
     </div>
     <nav class="sidebar-nav" aria-label="Páginas">
         <a class="side-link" href="#/inicio" data-route="inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg><span>Início</span></a>
@@ -1396,14 +1456,16 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
         <a class="side-link" href="#/canais" data-route="canais"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg><span>Canais e status</span></a>
     </nav>
     <div class="sidebar-footer">
+      <a class="side-link" href="#/minha-conta" data-route="minha-conta" id="nav-conta" hidden><span class="avatar avatar-sm" id="nav-conta-avatar" aria-hidden="true"></span><span>Minha conta</span></a>
       <a class="side-link" href="#/acesso" data-route="acesso" id="nav-acesso" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Acesso</span></a>
       <a class="side-link" href="#/planilha" data-route="planilha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span>Planilha</span><span class="nav-count" id="nav-diag-count" hidden></span></a>
-      <div><div class="sidebar-file-label">Arquivo carregado</div><div class="sidebar-file-name" id="sidebar-file-name"></div><div class="sidebar-drive-stamp" id="sidebar-drive-stamp" hidden></div></div>
+      <div class="sidebar-file"><div class="sidebar-file-label">Arquivo carregado</div><div class="sidebar-file-name" id="sidebar-file-name"></div><div class="sidebar-drive-stamp" id="sidebar-drive-stamp" hidden></div></div>
       <button class="btn btn-primary btn-sm" id="btn-drive-refresh" type="button" hidden>Atualizar agora</button>
-      <button class="btn btn-ghost btn-sm" id="btn-sair" type="button" hidden>Sair</button>
       <button class="btn btn-ghost btn-sm theme-toggle" type="button"></button>
     </div>
   </aside>
+  <!-- alça na borda direita do menu (só desktop): recolhe/expande sem mudar o menu aberto -->
+  <button class="sidebar-toggle" id="btn-sidebar-toggle" type="button" aria-label="Recolher menu" title="Recolher menu" aria-controls="sidebar" aria-expanded="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg></button>
   <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
 
   <div class="site-main">
@@ -1687,6 +1749,63 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
             </form>
             <div class="drive-status" id="acesso-status" role="status" aria-live="polite" hidden></div>
             <div class="table-wrap" style="margin-top:14px;"><table class="data-table" id="table-acesso"></table></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" data-page="minha-conta" hidden>
+        <div class="panels-grid">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Foto</div></div>
+            <div class="conta-foto">
+              <span class="avatar avatar-lg" id="conta-avatar" aria-hidden="true"></span>
+              <div>
+                <p class="upload-note" style="margin-top:0;">Aparece no menu lateral. Sem foto, o menu mostra as iniciais do seu e-mail.</p>
+                <div class="form-row" style="margin-top:10px;">
+                  <input type="file" class="sr-only" id="conta-foto-input" accept="image/*" tabindex="-1" aria-hidden="true">
+                  <button class="btn btn-primary btn-sm" id="btn-foto-trocar" type="button">Trocar foto</button>
+                  <button class="btn btn-ghost btn-sm" id="btn-foto-remover" type="button" hidden>Remover foto</button>
+                </div>
+              </div>
+            </div>
+            <div class="drive-status" id="conta-foto-status" role="status" aria-live="polite" hidden></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">E-mail e perfil</div></div>
+            <dl class="conta-dados">
+              <div><dt>E-mail</dt><dd id="conta-email">—</dd></div>
+              <div><dt>Perfil</dt><dd id="conta-perfil">Usuário</dd></div>
+            </dl>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Trocar senha</div></div>
+            <p class="upload-note" style="margin-top:6px;">Depois de trocar, os outros aparelhos e navegadores pedem a senha nova.</p>
+            <form id="conta-senha-form" autocomplete="on">
+              <input type="text" name="username" id="conta-usuario" autocomplete="username" value="" hidden>
+              <div class="form-row">
+                <div class="form-field grow">
+                  <label for="conta-senha-atual">Senha atual</label>
+                  <input type="password" class="text-input" id="conta-senha-atual" autocomplete="current-password" required>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-field grow">
+                  <label for="conta-senha-nova">Nova senha</label>
+                  <input type="password" class="text-input" id="conta-senha-nova" autocomplete="new-password" required>
+                </div>
+                <div class="form-field grow">
+                  <label for="conta-senha-confirma">Repita a nova senha</label>
+                  <input type="password" class="text-input" id="conta-senha-confirma" autocomplete="new-password" required>
+                </div>
+              </div>
+              <div class="form-row"><button class="btn btn-primary btn-sm" id="btn-conta-senha" type="submit">Trocar senha</button></div>
+            </form>
+            <div class="drive-status" id="conta-senha-status" role="status" aria-live="polite" hidden></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Sair</div></div>
+            <p class="upload-note" style="margin-top:6px;">Apaga a senha lembrada e a cópia da planilha guardadas neste navegador. Para voltar, digite a senha de novo.</p>
+            <div class="form-row"><button class="btn btn-ghost btn-sm" id="btn-sair" type="button" hidden>Sair</button></div>
           </div>
         </div>
       </section>
@@ -2682,9 +2801,11 @@ var ROUTES = [
   {id:'canais', title:'Canais e status', filtros:['mes','metrica','categoria']},
   {id:'planilha', title:'Planilha', filtros:[]},
   // só para administradores do painel online (acessoAdmin)
-  {id:'acesso', title:'Acesso', filtros:[], admin:true}
+  {id:'acesso', title:'Acesso', filtros:[], admin:true},
+  // qualquer pessoa com sessão no painel online (foto, senha e Sair); no GitHub Pages cai no padrão
+  {id:'minha-conta', title:'Minha conta', filtros:[], conta:true}
 ];
-function routeLiberada(r){ return !r.admin || (IS_APPS_SCRIPT && acessoAdmin); }
+function routeLiberada(r){ return (!r.admin || (IS_APPS_SCRIPT && acessoAdmin)) && (!r.conta || contaLiberada()); }
 // endereços da estrutura anterior (favoritos e links já enviados) → páginas novas
 // (#/metas virou a aba Metas e projeções de Dia a dia e metas: applyRoute abre a aba certa)
 var ROUTE_ALIASES = { 'visao-geral':'inicio', 'diario-semanal':'dia-a-dia', 'relatorio':'dia-a-dia', 'diagnostico':'planilha', 'metas':'dia-a-dia' };
@@ -2719,6 +2840,8 @@ function renderPageSub(){
     parts.push('Origem, leitura e validação da planilha');
   } else if(route.id === 'acesso'){
     parts.push('Quem pode abrir o painel online');
+  } else if(route.id === 'minha-conta'){
+    parts.push('Foto, senha e saída do painel online');
   } else {
     if(route.id === 'lancamentos' && state.lanc.anoTodo){
       parts.push('Exercício ' + year + ' · ano todo');
@@ -2929,6 +3052,7 @@ function applyRoute(){
   syncDocTitle();
   if(route.id === 'planilha'){ renderDiagnostics(state.data, 'page-diagnostics-content', 'page'); renderPlanilhaOrigem(); }
   if(route.id === 'acesso') carregarAcesso();
+  if(route.id === 'minha-conta') syncConta();
   // gráficos criados enquanto a página estava oculta nascem com tamanho zero
   Object.keys(state.charts).forEach(function(k){ state.charts[k].resize(); });
   // entrada da página: cards e painéis sobem em cascata e os gráficos da página redesenham animados
@@ -3021,6 +3145,48 @@ function closeSidebar(){
   document.body.classList.remove('sidebar-open');
   document.getElementById('sidebar-backdrop').hidden = true;
   document.getElementById('btn-menu').setAttribute('aria-expanded', 'false');
+}
+
+// Menu lateral recolhido (só ícones) no desktop; no celular a classe não tem efeito (lá o menu é gaveta)
+var MENU_RECOLHIDO_KEY = 'reembolsos_menu_recolhido_v1';
+function menuRecolhido(){ return document.body.classList.contains('sidebar-recolhido'); }
+function setMenuRecolhido(recolhido, salvar){
+  document.body.classList.toggle('sidebar-recolhido', !!recolhido);
+  var b = document.getElementById('btn-sidebar-toggle');
+  var rotulo = recolhido ? 'Expandir menu' : 'Recolher menu';
+  b.setAttribute('aria-expanded', recolhido ? 'false' : 'true');
+  b.setAttribute('aria-label', rotulo);
+  b.title = rotulo;
+  // só com o menu recolhido (sem rótulos à vista) os itens ganham title, que serve de tooltip
+  Array.prototype.forEach.call(document.querySelectorAll('#sidebar .side-link, #btn-drive-refresh'), function(el){
+    var span = el.matches('.side-link') ? el.querySelector('span:not(.nav-count):not(.avatar)') : null;
+    var nome = span ? span.textContent : 'Atualizar agora';
+    if(recolhido) el.title = nome; else el.removeAttribute('title');
+  });
+  if(salvar){ try{ localStorage.setItem(MENU_RECOLHIDO_KEY, recolhido ? '1' : '0'); } catch(e){} }
+}
+// os gráficos acompanham a nova largura do conteúdo quando a transição termina
+function ajustarGraficosAoMenu(){
+  var sidebar = document.getElementById('sidebar'), feito = false;
+  function ajustar(){
+    if(feito) return;
+    feito = true;
+    sidebar.removeEventListener('transitionend', fim);
+    Object.keys(state.charts).forEach(function(k){ state.charts[k].resize(); });
+    try{ window.dispatchEvent(new Event('resize')); } catch(e){}
+  }
+  function fim(e){ if(e.target === sidebar && (e.propertyName === 'width' || e.propertyName === 'flex-basis')) ajustar(); }
+  sidebar.addEventListener('transitionend', fim);
+  setTimeout(ajustar, motionOK() ? 400 : 0);
+}
+function setupMenuRecolhido(){
+  var recolhido = false;
+  try{ recolhido = localStorage.getItem(MENU_RECOLHIDO_KEY) === '1'; } catch(e){}
+  setMenuRecolhido(recolhido, false);
+  document.getElementById('btn-sidebar-toggle').addEventListener('click', function(){
+    setMenuRecolhido(!menuRecolhido(), true);
+    ajustarGraficosAoMenu();
+  });
 }
 
 /* ===================== Chart helpers ===================== */
@@ -3340,11 +3506,13 @@ var ACESSO_ERROS = {
   ja_existe:'Este e-mail já está na lista.',
   proprio_usuario:'Você não pode fazer isso com a sua própria conta.',
   dono:'A conta dona do painel não pode ser removida.',
-  nao_encontrado:'Este e-mail não está mais na lista.'
+  nao_encontrado:'Este e-mail não está mais na lista.',
+  foto_invalida:'A foto não foi aceita. Escolha outra imagem.'
 };
 var acessoToken = '';
 var acessoAdmin = false;
 var acessoEmail = "";
+var acessoFoto = ''; // dataURL JPEG 64×64 da página Minha conta ('' = iniciais do e-mail)
 var loginModo = 'entrar';
 try{ acessoToken = localStorage.getItem(ACESSO_KEY) || ''; } catch(e){}
 
@@ -3364,10 +3532,39 @@ function chamar(fn){
   });
 }
 
+// Troca de senha em andamento (Minha conta): Promise que só se resolve depois de o token novo ser guardado
+var trocaSenhaPendente = null;
+
+// Token mais novo que o usado numa chamada recusada: o desta aba (troca de senha) ou o que outra aba
+// do mesmo navegador gravou no localStorage (entrou de novo ou trocou a senha). '' se nada mudou.
+function tokenMaisNovo(usado){
+  return (trocaSenhaPendente || Promise.resolve()).then(function(){
+    var salvo = '';
+    try{ salvo = localStorage.getItem(ACESSO_KEY) || ''; } catch(e){}
+    if(salvo && salvo !== usado) acessoToken = salvo;
+    return acessoToken && acessoToken !== usado ? acessoToken : '';
+  });
+}
+
+// chamada(token) → Promise da resposta do servidor. Se vier senha_necessaria e o token tiver mudado
+// enquanto isso, repete uma vez com o novo em vez de deslogar e apagar a cópia da planilha.
+function comToken(chamada){
+  var usado = acessoToken;
+  return chamada(usado).then(function(r){
+    if(!r || r.erro !== 'senha_necessaria') return r;
+    return tokenMaisNovo(usado).then(function(novo){ return novo ? chamada(novo) : r; });
+  });
+}
+function chamarComToken(fn){
+  var extra = Array.prototype.slice.call(arguments, 1);
+  return comToken(function(token){ return chamar.apply(null, [fn, token].concat(extra)); });
+}
+
 function setAdmin(admin, email){
   acessoAdmin = !!admin;
   if(email !== undefined) acessoEmail = email || "";
   document.getElementById('nav-acesso').hidden = !acessoAdmin;
+  syncConta();
 }
 
 function setLoginModo(modo, email){
@@ -3398,6 +3595,7 @@ function mostrarErroLogin(msg){
 // apaga o acesso e a cópia da planilha guardada neste navegador e mostra a tela de senha
 function pedirSenha(msg){
   guardarToken('');
+  acessoFoto = '';
   setAdmin(false, '');
   lastFileStore.clear().then(refreshSavedFileCard);
   mostrarErroLogin(msg);
@@ -3433,6 +3631,7 @@ function setupLogin(){
       btn.disabled = false; btn.textContent = rotulo;
       if(r && r.token){
         guardarToken(r.token);
+        acessoFoto = fotoValida(r.foto) ? r.foto : '';
         setAdmin(r.admin);
         document.getElementById('login-senha').value = '';
         document.getElementById('login-confirma').value = '';
@@ -3455,12 +3654,15 @@ function setupLogin(){
   });
   document.getElementById('btn-sair').addEventListener('click', function(){ pedirSenha(''); });
   setupAcessoAdmin();
+  setupMinhaConta();
+  syncConta();
 }
 
 // ao abrir com um token guardado: descobre de quem é e se é administrador (mostra o item Acesso no menu)
 function conferirSessao(){
-  chamar('sessao', acessoToken).then(function(r){
+  chamarComToken('sessao').then(function(r){
     if(!r || r.erro) return; // token inválido: o loadFromDrive já leva para a tela de senha
+    acessoFoto = fotoValida(r.foto) ? r.foto : '';
     setAdmin(r.admin, r.email);
     if(acessoAdmin && parseHash(location.hash).id === 'acesso' && isDashboardVisible()) applyRoute();
   }).catch(function(){});
@@ -3486,7 +3688,7 @@ function tratarAcesso(r, okMsg){
 function carregarAcesso(){
   if(!IS_APPS_SCRIPT || !acessoAdmin) return;
   setAcessoStatus('', 'Carregando…');
-  chamar('adminListar', acessoToken).then(function(r){ tratarAcesso(r, ''); })
+  chamarComToken('adminListar').then(function(r){ tratarAcesso(r, ''); })
     .catch(function(err){ setAcessoStatus('error', 'Não foi possível carregar a lista. ' + err.message); });
 }
 
@@ -3514,7 +3716,7 @@ function setupAcessoAdmin(){
     if(!email) return;
     var btn = document.getElementById('btn-acesso-add');
     btn.disabled = true;
-    chamar('adminAdicionar', acessoToken, email).then(function(r){
+    chamarComToken('adminAdicionar', email).then(function(r){
       btn.disabled = false;
       if(r && !r.erro) campo.value = '';
       tratarAcesso(r, email + ' foi adicionado. No primeiro acesso, a pessoa cria a própria senha.');
@@ -3529,9 +3731,176 @@ function setupAcessoAdmin(){
       : 'Liberar novo cadastro para ' + email + '? A senha atual deixa de valer e a pessoa cria outra no próximo acesso.';
     if(!confirm(pergunta)) return;
     b.disabled = true;
-    chamar(acao === 'remover' ? 'adminRemover' : 'adminLiberarCadastro', acessoToken, email).then(function(r){
+    chamarComToken(acao === 'remover' ? 'adminRemover' : 'adminLiberarCadastro', email).then(function(r){
       tratarAcesso(r, acao === 'remover' ? email + ' foi removido.' : 'Novo cadastro liberado para ' + email + '.');
     }).catch(function(err){ b.disabled = false; setAcessoStatus('error', 'Não foi possível concluir. ' + err.message); });
+  });
+}
+
+/* ----- Página Minha conta (cada pessoa, no painel online) ----- */
+// A foto é recortada no centro e reduzida aqui no navegador (64×64, JPEG); o servidor só guarda o dataURL.
+var FOTO_LADO = 64;
+var FOTO_MAX = 4000; // o servidor recusa acima disso (as propriedades do script somam no máximo 500 KB)
+var FOTO_RE = /^data:image\/jpeg;base64,[A-Za-z0-9+\/]+={0,2}$/;
+
+function fotoValida(f){ return typeof f === 'string' && f.length <= FOTO_MAX && FOTO_RE.test(f); }
+
+// a página e o item do menu só existem no painel online com sessão (token guardado)
+function contaLiberada(){ return IS_APPS_SCRIPT && !!acessoToken; }
+
+function iniciaisEmail(email){
+  var local = String(email || '').split('@')[0];
+  var partes = local.split(/[._\-+]+/).filter(Boolean);
+  return (partes.length >= 2 ? partes[0].charAt(0) + partes[1].charAt(0) : local.slice(0, 2)).toUpperCase();
+}
+
+// foto via img.src (só depois de validar o prefixo JPEG); sem foto, as iniciais via textContent
+function renderAvatar(el){
+  if(!el) return;
+  while(el.firstChild) el.removeChild(el.firstChild);
+  if(fotoValida(acessoFoto)){
+    var img = document.createElement('img');
+    img.alt = '';
+    img.src = acessoFoto;
+    el.appendChild(img);
+  } else {
+    el.textContent = iniciaisEmail(acessoEmail) || '?';
+  }
+}
+
+function syncConta(){
+  document.getElementById('nav-conta').hidden = !contaLiberada();
+  renderAvatar(document.getElementById('nav-conta-avatar'));
+  renderAvatar(document.getElementById('conta-avatar'));
+  document.getElementById('conta-email').textContent = acessoEmail || '—';
+  document.getElementById('conta-perfil').textContent = acessoAdmin ? 'Administrador' : 'Usuário';
+  document.getElementById('conta-usuario').value = acessoEmail;
+  document.getElementById('btn-foto-remover').hidden = !acessoFoto;
+}
+
+function setContaStatus(id, kind, msg){
+  var el = document.getElementById(id);
+  el.className = 'drive-status' + (kind === 'error' ? ' alert-critical' : kind === 'good' ? ' alert-good' : kind === 'loading' ? ' loading' : '');
+  el.textContent = msg || '';
+  el.hidden = !msg;
+}
+
+// recorte central + redução em etapas (evita serrilhado em fotos grandes); baixa a qualidade até caber
+function prepararFoto(file){
+  return new Promise(function(resolve, reject){
+    if(!file || !/^image\//.test(file.type || '')) return reject(new Error('Escolha um arquivo de imagem.'));
+    if(file.size > 20 * 1024 * 1024) return reject(new Error('A imagem passa de 20 MB. Escolha uma menor.'));
+    var reader = new FileReader();
+    reader.onerror = function(){ reject(new Error('Não foi possível ler a imagem.')); };
+    reader.onload = function(){
+      var img = new Image();
+      img.onerror = function(){ reject(new Error('Este formato de imagem não pôde ser aberto. Use JPG ou PNG.')); };
+      img.onload = function(){
+        var w = img.naturalWidth, h = img.naturalHeight, lado = Math.min(w, h);
+        if(!lado) return reject(new Error('A imagem está vazia.'));
+        var src = document.createElement('canvas');
+        src.width = src.height = lado;
+        src.getContext('2d').drawImage(img, (w - lado) / 2, (h - lado) / 2, lado, lado, 0, 0, lado, lado);
+        while(src.width > FOTO_LADO * 2){
+          var meio = document.createElement('canvas');
+          meio.width = meio.height = Math.max(FOTO_LADO, Math.round(src.width / 2));
+          meio.getContext('2d').drawImage(src, 0, 0, meio.width, meio.height);
+          src = meio;
+        }
+        var out = document.createElement('canvas');
+        out.width = out.height = FOTO_LADO;
+        var ctx = out.getContext('2d');
+        ctx.fillStyle = '#FFFFFF'; // PNG com transparência não fica preto no JPEG
+        ctx.fillRect(0, 0, FOTO_LADO, FOTO_LADO);
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(src, 0, 0, FOTO_LADO, FOTO_LADO);
+        var q = 0.8, url = out.toDataURL('image/jpeg', q);
+        while(url.length > FOTO_MAX && q > 0.25){ q -= 0.1; url = out.toDataURL('image/jpeg', q); }
+        if(!fotoValida(url)) return reject(new Error('Não foi possível reduzir a foto. Tente outra imagem.'));
+        resolve(url);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function enviarFoto(foto){
+  var trocar = document.getElementById('btn-foto-trocar'), remover = document.getElementById('btn-foto-remover');
+  trocar.disabled = remover.disabled = true;
+  setContaStatus('conta-foto-status', 'loading', foto ? 'Salvando a foto…' : 'Removendo a foto…');
+  return chamarComToken('salvarFoto', foto).then(function(r){
+    trocar.disabled = remover.disabled = false;
+    if(r && r.erro === 'senha_necessaria'){ pedirSenha('Digite a sua senha de novo para continuar.'); return; }
+    if(!r || r.erro){ setContaStatus('conta-foto-status', 'error', ACESSO_ERROS[r && r.erro] || 'Não foi possível salvar a foto.'); return; }
+    acessoFoto = fotoValida(r.foto) ? r.foto : '';
+    syncConta();
+    setContaStatus('conta-foto-status', 'good', acessoFoto ? 'Foto salva.' : 'Foto removida. O menu volta a mostrar as iniciais.');
+  }).catch(function(err){
+    trocar.disabled = remover.disabled = false;
+    setContaStatus('conta-foto-status', 'error', 'Não foi possível salvar a foto. ' + err.message);
+  });
+}
+
+function setupMinhaConta(){
+  var input = document.getElementById('conta-foto-input');
+  document.getElementById('btn-foto-trocar').addEventListener('click', function(){ input.click(); });
+  input.addEventListener('change', function(){
+    var file = input.files && input.files[0];
+    input.value = ''; // escolher o mesmo arquivo de novo também dispara change
+    if(!file) return;
+    prepararFoto(file).then(enviarFoto, function(err){ setContaStatus('conta-foto-status', 'error', err.message); });
+  });
+  document.getElementById('btn-foto-remover').addEventListener('click', function(){
+    if(confirm('Remover a sua foto? O menu volta a mostrar as iniciais do e-mail.')) enviarFoto('');
+  });
+
+  var form = document.getElementById('conta-senha-form');
+  var btn = document.getElementById('btn-conta-senha');
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    if(btn.disabled) return;
+    var atual = document.getElementById('conta-senha-atual');
+    var nova = document.getElementById('conta-senha-nova');
+    var confirma = document.getElementById('conta-senha-confirma');
+    if(!atual.value){ setContaStatus('conta-senha-status', 'error', 'Digite a senha atual.'); atual.focus(); return; }
+    if(nova.value.length < SENHA_MIN){ setContaStatus('conta-senha-status', 'error', ACESSO_ERROS.senha_curta); nova.focus(); return; }
+    if(nova.value !== confirma.value){ setContaStatus('conta-senha-status', 'error', 'As duas senhas novas não são iguais.'); confirma.focus(); return; }
+    btn.disabled = true; btn.textContent = 'Trocando…';
+    setContaStatus('conta-senha-status', '', '');
+    // chamadas que falharem com o token antigo enquanto isso esperam o token novo (tokenMaisNovo)
+    var liberar;
+    trocaSenhaPendente = new Promise(function(res){ liberar = res; });
+    function fimTroca(){ trocaSenhaPendente = null; liberar(); }
+    var usado = acessoToken;
+    chamar('trocarSenha', usado, atual.value, nova.value).then(function(r){
+      btn.disabled = false; btn.textContent = 'Trocar senha';
+      if(r && r.token){
+        guardarToken(r.token);
+        fimTroca();
+        atual.value = nova.value = confirma.value = '';
+        setContaStatus('conta-senha-status', 'good', 'Senha trocada. Nos outros aparelhos, entre com a senha nova.');
+        return;
+      }
+      fimTroca();
+      var code = r && r.erro;
+      if(code === 'senha_necessaria'){
+        // outra aba deste navegador entrou de novo ou trocou a senha: adota o token dela em vez de deslogar
+        tokenMaisNovo(usado).then(function(novo){
+          if(novo) setContaStatus('conta-senha-status', 'error', 'A sua sessão foi atualizada em outra aba. Confira a senha atual e tente de novo.');
+          else pedirSenha('Digite a sua senha de novo para continuar.');
+        });
+        return;
+      }
+      setContaStatus('conta-senha-status', 'error', code === 'senha_incorreta'
+        ? 'A senha atual está incorreta.' + (r.restantes ? ' ' + (r.restantes === 1 ? 'Resta 1 tentativa.' : 'Restam ' + r.restantes + ' tentativas.') : '')
+        : (ACESSO_ERROS[code] || 'Não foi possível trocar a senha.'));
+      if(code === 'senha_incorreta'){ atual.select(); atual.focus(); }
+    }).catch(function(err){
+      fimTroca();
+      btn.disabled = false; btn.textContent = 'Trocar senha';
+      setContaStatus('conta-senha-status', 'error', 'Não foi possível trocar a senha. ' + err.message);
+    });
   });
 }
 
@@ -3553,17 +3922,20 @@ function base64ToBuffer(b64){
 }
 
 // version: modificadoEm da planilha já carregada; o servidor responde {mudou:false} se nada mudou.
+// (com o token que valer: se ele mudou durante a chamada, comToken repete com o novo)
 function fetchFromDrive(version){
-  return new Promise(function(resolve, reject){
-    google.script.run
-      .withSuccessHandler(function(data){
-        if(!data) return reject(new Error('O Google Drive não devolveu resposta.'));
-        if(data.erro === 'senha_necessaria'){ var e = new Error('É preciso digitar a senha.'); e.code = data.erro; return reject(e); }
-        if(data.erro) return reject(new Error((DRIVE_ERROS[data.erro] || ('Erro: '+data.erro)) + (data.detalhe ? ' ('+data.detalhe+')' : '')));
-        resolve(data);
-      })
-      .withFailureHandler(function(err){ reject(new Error('Não foi possível consultar o Google Drive. ' + (err && err.message ? err.message : String(err)))); })
-      .obterPlanilha(version || '', acessoToken);
+  return comToken(function(token){
+    return new Promise(function(resolve, reject){
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(function(err){ reject(new Error('Não foi possível consultar o Google Drive. ' + (err && err.message ? err.message : String(err)))); })
+        .obterPlanilha(version || '', token);
+    });
+  }).then(function(data){
+    if(!data) throw new Error('O Google Drive não devolveu resposta.');
+    if(data.erro === 'senha_necessaria'){ var e = new Error('É preciso digitar a senha.'); e.code = data.erro; throw e; }
+    if(data.erro) throw new Error((DRIVE_ERROS[data.erro] || ('Erro: '+data.erro)) + (data.detalhe ? ' ('+data.detalhe+')' : ''));
+    return data;
   });
 }
 
@@ -3591,6 +3963,8 @@ function renderDriveStamp(){
 // silent: verificação automática (sem travar o botão nem abrir alertas).
 function loadFromDrive(silent){
   if(!IS_APPS_SCRIPT || drive.loading || !acessoToken) return;
+  // a verificação automática espera a troca de senha terminar (o token vai mudar)
+  if(silent && trocaSenhaPendente) return;
   var inDashboard = isDashboardVisible();
   // quem importou um arquivo à mão continua com ele até pedir "Atualizar agora"
   if(silent && inDashboard && state.data.source !== 'drive') return;
@@ -5937,6 +6311,7 @@ function boot(){
     }
   });
 
+  setupMenuRecolhido();
   setupAppsScriptLocation();
   setupInfoTips();
   if(IS_APPS_SCRIPT){

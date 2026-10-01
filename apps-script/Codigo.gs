@@ -77,6 +77,7 @@ function migrarListaAntiga(){
 }
 
 // cadastro da pessoa: {hash, sal, senhaEm} depois de criar a senha; {adicionadoEm} enquanto aguarda.
+// foto (opcional): dataURL JPEG 64×64 (até 4000 caracteres) enviado pela página Minha conta; cadastro sem ela continua valendo.
 // O administrador sem cadastro conta como pendente, para nunca ficar trancado do lado de fora.
 function lerUsuario(email){
   var raw = props().getProperty(PREFIXO_USUARIO + email);
@@ -154,7 +155,7 @@ function criarSenha(senha){
     atual.hash = hashSenha(senha, sal);
     atual.senhaEm = new Date().toISOString();
     gravarUsuario(conta.email, atual);
-    return {token: tokenPara(conta.email, atual), admin: conta.admin};
+    return {token: tokenPara(conta.email, atual), admin: conta.admin, foto: atual.foto || ''};
   } finally { lock.releaseLock(); }
 }
 
@@ -172,13 +173,68 @@ function entrar(senha){
     return erros >= MAX_TENTATIVAS ? {erro:'bloqueado'} : {erro:'senha_incorreta', restantes: MAX_TENTATIVAS - erros};
   }
   cache.remove(chave);
-  return {token: tokenPara(conta.email, conta.usuario), admin: conta.admin};
+  return {token: tokenPara(conta.email, conta.usuario), admin: conta.admin, foto: conta.usuario.foto || ''};
 }
 
-// a página confere, ao abrir com um token guardado, se ele ainda vale e se é admin
+// a página confere, ao abrir com um token guardado, se ele ainda vale e se é admin (e pega a foto do menu)
 function sessao(token){
   var conta = contaComToken(token);
-  return conta ? {email:conta.email, admin:conta.admin} : {erro:'senha_necessaria'};
+  return conta ? {email:conta.email, admin:conta.admin, foto:conta.usuario.foto || ''} : {erro:'senha_necessaria'};
+}
+
+/* ----- Minha conta (cada pessoa, com a própria sessão) ----- */
+
+var FOTO_PREFIXO = 'data:image/jpeg;base64,';
+var FOTO_MAX = 4000; // cada propriedade aceita ~9 KB e todas juntas no máximo 500 KB (~100 pessoas com foto)
+
+// dataUrl '' remove a foto; senão, só JPEG em base64 até FOTO_MAX caracteres
+function salvarFoto(token, dataUrl){
+  var conta = contaComToken(token);
+  if(!conta) return {erro:'senha_necessaria'};
+  var foto = String(dataUrl || '');
+  if(foto && (foto.length > FOTO_MAX || foto.indexOf(FOTO_PREFIXO) !== 0 ||
+      !/^[A-Za-z0-9+\/]+={0,2}$/.test(foto.slice(FOTO_PREFIXO.length)))) return {erro:'foto_invalida'};
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try{
+    var atual = lerUsuario(conta.email);
+    // a senha pode ter sido trocada ou liberada enquanto a página estava aberta
+    if(!atual || !atual.hash || atual.hash !== conta.usuario.hash) return {erro:'senha_necessaria'};
+    if(foto) atual.foto = foto; else delete atual.foto;
+    gravarUsuario(conta.email, atual);
+    return {ok:true, foto:foto};
+  } finally { lock.releaseLock(); }
+}
+
+// confere a senha atual como entrar() (mesmo limite de tentativas) e grava o hash novo com sal novo.
+// O token é HMAC do e-mail + hash: o novo vale neste aparelho e os outros passam a pedir a senha.
+function trocarSenha(token, atualSenha, novaSenha){
+  var conta = contaComToken(token);
+  if(!conta) return {erro:'senha_necessaria'};
+  var cache = CacheService.getScriptCache();
+  var chave = 'tentativas_' + conta.email;
+  var erros = Number(cache.get(chave) || 0);
+  if(erros >= MAX_TENTATIVAS) return {erro:'bloqueado'};
+  if(!iguais(hashSenha(String(atualSenha || ''), conta.usuario.sal), conta.usuario.hash)){
+    erros++;
+    cache.put(chave, String(erros), BLOQUEIO_SEG);
+    return erros >= MAX_TENTATIVAS ? {erro:'bloqueado'} : {erro:'senha_incorreta', restantes: MAX_TENTATIVAS - erros};
+  }
+  cache.remove(chave);
+  novaSenha = String(novaSenha || '');
+  if(novaSenha.length < SENHA_MIN) return {erro:'senha_curta', minimo:SENHA_MIN};
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try{
+    var atual = lerUsuario(conta.email);
+    if(!atual || !atual.hash || atual.hash !== conta.usuario.hash) return {erro:'senha_necessaria'};
+    var sal = Utilities.getUuid();
+    atual.sal = sal;
+    atual.hash = hashSenha(novaSenha, sal);
+    atual.senhaEm = new Date().toISOString();
+    gravarUsuario(conta.email, atual);
+    return {token: tokenPara(conta.email, atual)};
+  } finally { lock.releaseLock(); }
 }
 
 /* ----- Tela Acesso (só administradores) ----- */
@@ -223,7 +279,10 @@ function adminLiberarCadastro(token, email){
   email = normalizarEmail(email);
   if(email === conta.email) return {erro:'proprio_usuario'};
   if(props().getProperty(PREFIXO_USUARIO + email) === null) return {erro:'nao_encontrado'};
-  gravarUsuario(email, {adicionadoEm: new Date().toISOString()});
+  var novo = {adicionadoEm: new Date().toISOString()};
+  var antigo = lerUsuario(email);
+  if(antigo && antigo.foto) novo.foto = antigo.foto; // a foto da pessoa sobrevive ao novo cadastro
+  gravarUsuario(email, novo);
   CacheService.getScriptCache().remove('tentativas_' + email);
   return adminListar(token);
 }
