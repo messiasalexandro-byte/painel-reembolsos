@@ -8477,7 +8477,8 @@ var VENDAS_ERROS = {
   csv_vazio:'O arquivo está vazio.',
   api_acesso:'A API da Nuvemshop recusou o token: gere um novo e atualize NUVEMSHOP_TOKEN nas Propriedades do script.',
   api_429:'A API da Nuvemshop está limitando as chamadas; tenta de novo na próxima verificação.',
-  api_resposta:'A API da Nuvemshop devolveu uma resposta inesperada.'
+  api_resposta:'A API da Nuvemshop devolveu uma resposta inesperada.',
+  base_ilegivel:'Não consegui ler uma das bases do painel no Google Drive e, por segurança, nada foi gravado. Tente de novo em alguns minutos; se repetir, avise o responsável (o detalhe fica na propriedade BASE_ERRO do script).'
 };
 var vendas = {
   pedidos:null, porNum:{}, fonte:null, arquivos:[], avisos:[], versao:null,
@@ -9679,7 +9680,8 @@ var NP_ERROS = {
   sem_arquivo:'A pasta do Nuvem Pago ainda não tem nenhum extrato (.csv).',
   formato_nuvempago:'O arquivo não parece um extrato do Nuvem Pago (faltam as colunas "Data do pagamento", "Data de recebimento", "Tipo de transação" ou "Valor Liquido").',
   csv_vazio:'O arquivo está vazio.',
-  sem_permissao:'Os recebimentos do Nuvem Pago estão liberados só para o dono do painel.'
+  sem_permissao:'Os recebimentos do Nuvem Pago estão liberados só para o dono do painel.',
+  base_ilegivel:'Não consegui ler uma das bases do painel no Google Drive e, por segurança, nada foi gravado. Tente de novo em alguns minutos; se repetir, avise o responsável (o detalhe fica na propriedade BASE_ERRO do script).'
 };
 var NP_FORMAS = ['Pix', 'Cartão à vista', 'Cartão parcelado', 'Link de pagamento', 'Outros'];
 // prazo para a venda aparecer no extrato depois do pagamento: Pix no mesmo dia; cartão em 2 a 5 dias corridos (visto nos extratos)
