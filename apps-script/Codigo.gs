@@ -78,7 +78,7 @@ function exigirDonoEditor_(){
 }
 
 // Versão deste código. Só mude ao publicar uma versão nova (veja gatilhoLiberado_ e marcarProducaoVersao).
-var CODIGO_VERSAO = 'etapa27-2026-10-28';
+var CODIGO_VERSAO = 'etapa28-2026-10-28';
 
 // Os gatilhos de 15 min rodam o código HEAD (o último push, mesmo que só para teste) sobre as bases reais.
 // Depois que o dono roda marcarProducaoVersao() (com a versão publicada), os gatilhos só trabalham se
@@ -1283,6 +1283,7 @@ function arquivosDevolucoes_(pasta){
   while(it.hasNext()){
     var f = it.next(), nome = f.getName(), tipo = f.getMimeType();
     if(nome.indexOf(DEVOL_TMP) === 0) continue;
+    if(ehArquivoOp_(nome)) continue; // NFs e pedidos enviados pela extensão (JSON, etapa 28) não são exports de devolução
     if(/\.(csv|xlsx)$/i.test(nome) || tipo === MIME_XLSX || tipo === MIME_SHEETS || /csv/i.test(tipo)) lista.push(f);
   }
   lista.sort(function(a, b){ return a.getLastUpdated() - b.getLastUpdated(); });
@@ -1664,9 +1665,12 @@ function doPost(e){
   try{
     var corpo = null;
     try{ corpo = JSON.parse(e.postData.contents); } catch(err){ return respostaJson_({erro:'pedido_invalido'}); }
-    if(!corpo || corpo.acao !== 'devolucoes') return respostaJson_({erro:'pedido_invalido'});
+    var acao = corpo && corpo.acao;
+    if(acao !== 'devolucoes' && acao !== 'nfs' && acao !== 'pedidos') return respostaJson_({erro:'pedido_invalido'});
     var chave = props_().getProperty('DEVOL_EXT_CHAVE');
     if(!chave || typeof corpo.chave !== 'string' || !iguais_(corpo.chave, chave)) return respostaJson_({erro:'chave_invalida'});
+    // NFs e pedidos têm tratamento e estado próprios: uma falha deles nunca marca erro nas devoluções
+    if(acao !== 'devolucoes') return respostaJson_(processarOperacaoPost_(acao, corpo));
     var r = receberDevolucoesExtensao_(String(corpo.conteudo || ''), Number(corpo.solicitacoes) || 0);
     var s = estadoDevolExt_() || {};
     if(r.erro && r.erro !== 'consolidando') s.erro = r.erro;
@@ -1710,6 +1714,316 @@ function gerarChaveExtensao(){
   var chave = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
   props_().setProperty('DEVOL_EXT_CHAVE', chave);
   console.log('Chave da extensão (cole nas opções da extensão): ' + chave);
+}
+
+/* ===================== Operação AfterClick: NFs de venda e status dos pedidos (extensão) ===================== */
+
+// A mesma extensão que manda as devoluções manda também (acao 'nfs' e 'pedidos') as NFs emitidas e a lista de pedidos
+// da AfterClick (AJD). Só vão campos operacionais (nada de nome, documento, e-mail ou protocolo da NF).
+// Fluxo de cada envio: (1) mescla as linhas no arquivo do dia em nuvemshop/AJD (afterclick-nfs-AAAA-MM-DD.json e
+// afterclick-pedidos-AAAA-MM-DD.json: o JSON guarda a última versão de cada linha enviada naquele dia);
+// (2) consolida os arquivos ainda não lidos em nuvemshop/_base/operacao.json, indexado pelo número do pedido da
+// Nuvemshop (o número depois de "TLG-"). Arquivos .json não entram em consolidarDevolucoes_ (ehArquivoOp_).
+// Base: {formato, ped:{n:[...OP_PED_COLS, lidoEm]}, pedRev:{"D-TLG-n-1":[...]}, nfs:{n:[[...OP_NF_COLS, vistaEm]]},
+//        nfRev:{n:[[...]]} (NFs "input" das devoluções D-TLG-n-k, ligadas ao pedido n), hist:{n:{"s:status":ms,"u:sub":ms}}, inicio}
+// Datas viram "AAAA-MM-DD HH:MM" (horário de Brasília, como a AfterClick devolve); carimbos "lidoEm/vistaEm/hist" são ms.
+var OP_BASE_ARQ = 'operacao.json';
+var OP_ESTADO_ARQ = 'operacao-estado.json';
+var OP_FORMATO = 1;
+var OP_PREFIXOS = {nfs:'afterclick-nfs-', pedidos:'afterclick-pedidos-'};
+var OP_EXT_PROP = 'OPER_EXT'; // uma propriedade por tipo (OPER_EXT_nfs, OPER_EXT_pedidos): {ultimo, recebidas, invalidas, ignoradas, arquivo, erro}
+var OP_RETENCAO_DIAS = 400;    // pedidos com data do pedido mais antiga que isso saem da base (poda no máx. 1x por dia)
+var OP_ARQ_DIAS = 90;          // estado.arqs/info só guardam arquivos dos últimos 90 dias (pelo dia no nome do arquivo)
+var OP_MAX_LINHAS = 100000;
+var OP_NF_COLS = ['invoiceId','orderId','orderNumber','typeInvoice','invoiceNumber','invoiceSeries','invoiceKey','creationDate',
+  'issuanceDate','authorizationDate','invoiceValue','invoiceStatus','isCanceled','cancelationDate','dispatchedDate'];
+var OP_PED_COLS = ['orderId','orderNumber','creationDate','orderStatus','orderStatusSub','totalValue','origin','orderType','uf','lastMessage'];
+var OP_NF_VISTO = OP_NF_COLS.length;   // posição de "vistaEm": 1ª vez que a extensão viu a NF (só na base)
+var OP_PED_VISTO = OP_PED_COLS.length; // posição de "lidoEm": última leitura em que o pedido veio (só na base)
+
+function ehArquivoOp_(nome){ return /^afterclick-(nfs|pedidos)-\d{4}-\d{2}-\d{2}\.json$/.test(String(nome)); }
+
+// {nfs:{...}, pedidos:{...}} (cada tipo numa propriedade própria: dois envios não disputam a mesma propriedade)
+function estadoOperExt_(){
+  var r = {};
+  ['nfs', 'pedidos'].forEach(function(t){
+    try{ var x = JSON.parse(props_().getProperty(OP_EXT_PROP + '_' + t) || 'null'); if(x) r[t] = x; } catch(e){}
+  });
+  return r;
+}
+
+// lastMessage da AfterClick é texto livre e pode trazer dado pessoal: só um código fechado é guardado. O texto nunca sai da extensão;
+// se uma extensão antiga o mandar, é classificado aqui e descartado.
+function codigoMensagemOp_(v){
+  var t = textoDevol_(v);
+  if(!t) return '';
+  if(t === 'abacos_ok' || t === 'autorizado' || t === 'erro' || t === 'outro') return t;
+  if(/^aprovado com sucesso no abacos!?$/i.test(t)) return 'abacos_ok';
+  if(/^autorizado!?$/i.test(t)) return 'autorizado';
+  if(/erro|falha|rejei/i.test(t)) return 'erro';
+  return 'outro';
+}
+
+// dia (AAAA-MM-DD, Brasília) de agora menos n dias
+function diaOp_(dias){ return Utilities.formatDate(new Date(Date.now() - (dias || 0) * 864e5), 'America/Sao_Paulo', 'yyyy-MM-dd'); }
+
+// só "TLG-57160" → {n:'57160', rev:false} e "D-TLG-55624-1" → {n:'55624', rev:true}; qualquer outro formato/prefixo → null (ignorada)
+function numeroPedidoOp_(texto){
+  var s = String(texto == null ? '' : texto).trim(), m;
+  if((m = /^TLG-(\d+)$/.exec(s))) return {n:m[1], rev:false};
+  if((m = /^D-TLG-(\d+)-\d+$/.exec(s))) return {n:m[1], rev:true};
+  return null;
+}
+
+// linha enviada pela extensão (colunas por nome) → linha no layout OP_NF_COLS; null se não tem id
+function normalizarNfOp_(r, ix){
+  function v(c){ return ix[c] >= 0 ? r[ix[c]] : null; }
+  var id = Number(v('invoiceId'));
+  if(!isFinite(id) || id <= 0 || !textoDevol_(v('orderNumber'))) return null;
+  var valor = Number(v('invoiceValue')), cancelada = v('isCanceled');
+  return [id, Number(v('orderId')) || 0, textoDevol_(v('orderNumber')).slice(0, 40), textoDevol_(v('typeInvoice')).toLowerCase().slice(0, 12),
+    textoDevol_(v('invoiceNumber')).slice(0, 20), textoDevol_(v('invoiceSeries')).slice(0, 10), textoDevol_(v('invoiceKey')).replace(/\D/g, '').slice(0, 44),
+    dataHoraDevol_(v('creationDate')), dataHoraDevol_(v('issuanceDate')), dataHoraDevol_(v('authorizationDate')),
+    isFinite(valor) ? Math.round(valor * 100) / 100 : 0, Number(v('invoiceStatus')) || 0, (cancelada === true || Number(cancelada) === 1) ? 1 : 0,
+    dataHoraDevol_(v('cancelationDate')), dataHoraDevol_(v('dispatchedDate'))];
+}
+
+function normalizarPedidoOp_(r, ix){
+  function v(c){ return ix[c] >= 0 ? r[ix[c]] : null; }
+  var id = Number(v('orderId'));
+  if(!isFinite(id) || id <= 0 || !textoDevol_(v('orderNumber'))) return null;
+  var total = Number(v('totalValue'));
+  return [id, textoDevol_(v('orderNumber')).slice(0, 40), dataHoraDevol_(v('creationDate')), textoDevol_(v('orderStatus')).slice(0, 40),
+    textoDevol_(v('orderStatusSub')).slice(0, 40), isFinite(total) ? Math.round(total * 100) / 100 : 0, textoDevol_(v('origin')).slice(0, 30),
+    Number(v('orderType')) || 0, textoDevol_(v('uf')).slice(0, 2), codigoMensagemOp_(v('lastMessage'))];
+}
+
+// aplica linhas já normalizadas na base; cont conta novas/atualizadas/ignoradas
+function aplicarNfsOp_(base, linhas, ts, cont){
+  linhas.forEach(function(r){
+    var p = numeroPedidoOp_(r[2]);
+    if(!p){ cont.ignoradas++; return; }
+    var lista = (r[3] === 'input' || p.rev) ? base.nfRev : base.nfs;
+    var arr = lista[p.n] = lista[p.n] || [], i = -1;
+    for(var k = 0; k < arr.length; k++) if(arr[k][0] === r[0]){ i = k; break; }
+    var nova = r.concat([i >= 0 ? arr[i][OP_NF_VISTO] : ts]); // a vistaEm é a da 1ª vez
+    if(i < 0){ arr.push(nova); cont.novas++; }
+    else { if(arr[i].join('|') !== nova.join('|')) cont.atualizadas++; arr[i] = nova; }
+    if(arr.length > 1) arr.sort(function(a, b){ return a[8] < b[8] ? -1 : a[8] > b[8] ? 1 : a[0] - b[0]; });
+  });
+}
+
+function aplicarPedidosOp_(base, linhas, ts, cont){
+  linhas.forEach(function(r){
+    var p = numeroPedidoOp_(r[1]);
+    if(!p){ cont.ignoradas++; return; }
+    var nova = r.concat([ts]);
+    if(p.rev){ // pedido de troca/devolução (D-TLG-n-k): fica à parte, já vem pelas devoluções
+      var antR = base.pedRev[r[1]];
+      if(!antR) cont.novas++; else if(antR.slice(0, OP_PED_VISTO).join('|') !== r.join('|')) cont.atualizadas++;
+      base.pedRev[r[1]] = nova;
+      return;
+    }
+    var ant = base.ped[p.n];
+    if(!ant) cont.novas++; else if(ant.slice(0, OP_PED_VISTO).join('|') !== r.join('|')) cont.atualizadas++;
+    base.ped[p.n] = nova;
+    // hist: quando cada status ("s:") e sub-status ("u:") foi visto pela 1ª vez (carimbo do arquivo)
+    var h = base.hist[p.n] = base.hist[p.n] || {};
+    if(r[3] && !(('s:' + r[3]) in h)) h['s:' + r[3]] = ts;
+    if(r[4] && !(('u:' + r[4]) in h)) h['u:' + r[4]] = ts;
+  });
+}
+
+function baseOpVazia_(){ return {formato:OP_FORMATO, ped:{}, pedRev:{}, nfs:{}, nfRev:{}, hist:{}, inicio:0}; }
+
+// estado + base. Base ausente com arquivos já consolidados = anomalia (o hist não se refaz): erro, nada é gravado.
+function carregarOperacao_(pastaBase){
+  var estado = lerJsonBase_(pastaBase, OP_ESTADO_ARQ) || {};
+  estado.arqs = estado.arqs || {}; estado.info = estado.info || {}; estado.avisos = estado.avisos || {};
+  var baseLida = lerJsonBase_(pastaBase, OP_BASE_ARQ);
+  if(!baseLida && Object.keys(estado.arqs).length) throw erroBase_(OP_BASE_ARQ, 'não encontrado, mas o estado indica arquivos já lidos');
+  var base = baseLida || baseOpVazia_();
+  ['ped', 'pedRev', 'nfs', 'nfRev', 'hist'].forEach(function(k){ base[k] = base[k] || {}; });
+  return {estado:estado, base:base};
+}
+
+// arquivos de NFs/pedidos da pasta AJD (o mais novo de cada nome), do mais antigo para o mais novo
+function listarArquivosOp_(pasta){
+  var porNome = {}, it = pasta.getFiles(), corte = diaOp_(OP_ARQ_DIAS);
+  while(it.hasNext()){
+    var f = it.next(), nome = f.getName();
+    if(!ehArquivoOp_(nome)) continue;
+    // arquivo com mais de 90 dias (dia no nome) nunca é lido de novo: o estado esquece esses nomes, mas a base já os tem
+    if(/(\d{4}-\d{2}-\d{2})\.json$/.exec(nome)[1] < corte) continue;
+    var ts = f.getLastUpdated().getTime();
+    if(!porNome[nome] || ts > porNome[nome].ts) porNome[nome] = {nome:nome, ts:ts};
+  }
+  return Object.keys(porNome).map(function(n){ return porNome[n]; }).sort(function(a, b){ return a.ts - b.ts || (a.nome < b.nome ? -1 : 1); });
+}
+
+function lerArquivoOp_(pasta, nome){
+  var obj = lerJsonBase_(pasta, nome);
+  if(!obj) return null;
+  if(obj.formato !== OP_FORMATO || !Array.isArray(obj.linhas) || (obj.tipo !== 'nfs' && obj.tipo !== 'pedidos')) throw erroBase_(nome, 'formato desconhecido');
+  return obj;
+}
+
+// Lê TUDO o que precisa antes de gravar qualquer coisa (leitura que falha não deixa nada pela metade) e depois grava:
+// arquivo do dia → base → estado (se cair no meio, o arquivo é lido de novo e a mescla é idempotente).
+// extra (opcional) = {tipo, dia, linhas}: linhas novas a mesclar no arquivo do dia antes de consolidar. Chamar com o lock.
+function consolidarOperacaoSemLock_(pasta, pastaBase, extra){
+  var cur = carregarOperacao_(pastaBase), estado = cur.estado, base = cur.base;
+  var nomeExtra = extra ? OP_PREFIXOS[extra.tipo] + extra.dia + '.json' : '';
+  var lidos = [];
+  listarArquivosOp_(pasta).forEach(function(a){
+    if(a.nome === nomeExtra || estado.arqs[a.nome] === a.ts) return;
+    var obj = lerArquivoOp_(pasta, a.nome);
+    if(obj) lidos.push({nome:a.nome, ts:a.ts, obj:obj});
+  });
+  var diaObj = null;
+  if(extra){
+    var atual = lerArquivoOp_(pasta, nomeExtra), porId = {};
+    ((atual && atual.linhas) || []).forEach(function(r){ porId[r[0]] = r; });
+    extra.linhas.forEach(function(r){ porId[r[0]] = r; });
+    diaObj = {formato:OP_FORMATO, tipo:extra.tipo, dia:extra.dia, colunas:extra.tipo === 'nfs' ? OP_NF_COLS : OP_PED_COLS,
+      linhas:Object.keys(porId).map(function(k){ return porId[k]; })};
+  }
+  // ---- gravações
+  if(diaObj){
+    gravarJsonBase_(pasta, nomeExtra, diaObj);
+    lidos.push({nome:nomeExtra, ts:arquivoBase_(pasta, nomeExtra).getLastUpdated().getTime(), obj:diaObj});
+  }
+  var cont = {novas:0, atualizadas:0, ignoradas:0};
+  lidos.sort(function(a, b){ return a.ts - b.ts; });
+  lidos.forEach(function(x){
+    var c = {novas:0, atualizadas:0, ignoradas:0};
+    if(x.obj.tipo === 'nfs') aplicarNfsOp_(base, x.obj.linhas, x.ts, c); else aplicarPedidosOp_(base, x.obj.linhas, x.ts, c);
+    cont.novas += c.novas; cont.atualizadas += c.atualizadas; cont.ignoradas += c.ignoradas;
+    estado.arqs[x.nome] = x.ts;
+    estado.info[x.nome] = {tipo:x.obj.tipo, dia:x.obj.dia, modificadoEm:new Date(x.ts).toISOString(), linhas:x.obj.linhas.length};
+    if(c.ignoradas) estado.avisos[x.nome] = {nome:x.nome, ignoradas:c.ignoradas}; else delete estado.avisos[x.nome];
+    if(!base.inicio || x.ts < base.inicio) base.inicio = x.ts;
+  });
+  if(lidos.length){
+    podarOperacao_(base, estado);
+    if(!estado.epoca) estado.epoca = Utilities.getUuid().replace(/-/g, '').slice(0, 12);
+    base.formato = OP_FORMATO; estado.formato = OP_FORMATO;
+    gravarJsonBase_(pastaBase, OP_BASE_ARQ, base);
+    gravarJsonBase_(pastaBase, OP_ESTADO_ARQ, estado);
+  }
+  return {estado:estado, base:base, lidos:lidos.length, contagem:cont};
+}
+
+// Retenção (no máx. 1x por dia, só quando há gravação): tira da base os pedidos com data do pedido > OP_RETENCAO_DIAS e esquece
+// no estado os arquivos com mais de OP_ARQ_DIAS. Data vazia nunca é apagada.
+function podarOperacao_(base, estado){
+  var hoje = diaOp_(0);
+  if(base.podadoEm === hoje) return;
+  var corte = diaOp_(OP_RETENCAO_DIAS), corteArq = diaOp_(OP_ARQ_DIAS);
+  var velha = function(d){ d = String(d || '').slice(0, 10); return !!d && d < corte; };
+  Object.keys(base.ped).forEach(function(n){ if(velha(base.ped[n][2])){ delete base.ped[n]; delete base.hist[n]; } });
+  Object.keys(base.pedRev).forEach(function(k){ if(velha(base.pedRev[k][2])) delete base.pedRev[k]; });
+  ['nfs', 'nfRev'].forEach(function(k){
+    Object.keys(base[k]).forEach(function(n){ if(base[k][n].every(function(r){ return velha(r[7] || r[8]); })) delete base[k][n]; });
+  });
+  Object.keys(base.hist).forEach(function(n){ if(!base.ped[n]) delete base.hist[n]; });
+  Object.keys(estado.arqs).forEach(function(nome){
+    var m = /(\d{4}-\d{2}-\d{2})\.json$/.exec(nome);
+    if(m && m[1] < corteArq){ delete estado.arqs[nome]; delete estado.info[nome]; delete estado.avisos[nome]; }
+  });
+  base.podadoEm = hoje;
+}
+
+// consolida o que estiver pendente (nada pendente = só lê o estado, sem lock nem gravação)
+function consolidarOperacao_(pasta, pastaBase){
+  var estado = lerJsonBase_(pastaBase, OP_ESTADO_ARQ) || {arqs:{}};
+  var arqs = estado.arqs || {};
+  var pendente = listarArquivosOp_(pasta).some(function(a){ return arqs[a.nome] !== a.ts; });
+  if(!pendente) return {estado:{arqs:arqs, info:estado.info || {}, avisos:estado.avisos || {}, epoca:estado.epoca || ''}};
+  var lock = LockService.getScriptLock();
+  if(!lock.tryLock(30000)) return {erro:'consolidando'};
+  try{ return consolidarOperacaoSemLock_(pasta, pastaBase, null); }
+  finally { lock.releaseLock(); }
+}
+
+// recebe {acao, chave, colunas:[nomes], linhas:[[...]], epoca}. epoca = a que o painel devolveu no último envio: se não
+// bate com a da base (base refeita/apagada), responde reenviar_tudo e a extensão manda tudo de novo (ela só manda o que mudou).
+function receberOperacaoExtensao_(tipo, corpo){
+  var cols = tipo === 'nfs' ? OP_NF_COLS : OP_PED_COLS;
+  if(!Array.isArray(corpo.colunas) || !Array.isArray(corpo.linhas)) return {erro:'formato_' + tipo};
+  if(corpo.linhas.length > OP_MAX_LINHAS) return {erro:'tamanho'};
+  var ix = {};
+  cols.forEach(function(c){ ix[c] = corpo.colunas.indexOf(c); });
+  var chaves = tipo === 'nfs' ? ['invoiceId', 'orderNumber'] : ['orderId', 'orderNumber'];
+  if(ix[chaves[0]] < 0 || ix[chaves[1]] < 0) return {erro:'formato_' + tipo};
+  var normalizar = tipo === 'nfs' ? normalizarNfOp_ : normalizarPedidoOp_, linhas = [], invalidas = 0;
+  corpo.linhas.forEach(function(r){
+    var n = Array.isArray(r) ? normalizar(r, ix) : null;
+    if(n) linhas.push(n); else invalidas++;
+  });
+  var pastaV = pastaVendas_();
+  if(!pastaV) return {erro:'pasta_vendas'};
+  var pasta = pastaDevolucoes_(pastaV);
+  if(!pasta) return {erro:'pasta_devolucoes'};
+  var pastaBase = pastaBaseVendas_(pastaV);
+  var lock = LockService.getScriptLock();
+  if(!lock.tryLock(30000)) return {erro:'ocupado'};
+  try{
+    var estado = lerJsonBase_(pastaBase, OP_ESTADO_ARQ) || {};
+    var epocaBase = String(estado.epoca || '');
+    if(String(corpo.epoca || '') !== epocaBase) return {erro:'reenviar_tudo', epoca:epocaBase};
+    var dia = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
+    var nome = OP_PREFIXOS[tipo] + dia + '.json';
+    if(!linhas.length) return {ok:true, tipo:tipo, recebidas:0, invalidas:invalidas, novas:0, atualizadas:0, ignoradas:0, arquivo:nome, epoca:epocaBase};
+    var c = consolidarOperacaoSemLock_(pasta, pastaBase, {tipo:tipo, dia:dia, linhas:linhas});
+    return {ok:true, tipo:tipo, recebidas:linhas.length, invalidas:invalidas, novas:c.contagem.novas, atualizadas:c.contagem.atualizadas,
+      ignoradas:c.contagem.ignoradas, arquivo:nome, epoca:c.estado.epoca};
+  } finally { lock.releaseLock(); }
+}
+
+// doPost de 'nfs' e 'pedidos': qualquer falha vira JSON com erro e fica em OPER_EXT (sem tocar no estado das devoluções)
+function processarOperacaoPost_(tipo, corpo){
+  var r;
+  try{ r = comErroBase_('operacao', function(){ return receberOperacaoExtensao_(tipo, corpo); }); }
+  catch(err){
+    console.error('doPost ' + tipo + ': ' + textoErro_(err));
+    r = {erro:'erro_interno', detalhe:'O painel não conseguiu processar o envio. Tente de novo; se repetir, avise o responsável.'};
+  }
+  try{
+    var prop = OP_EXT_PROP + '_' + tipo, x = {};
+    try{ x = JSON.parse(props_().getProperty(prop) || '{}') || {}; } catch(e2){ x = {}; }
+    if(r.erro && r.erro !== 'reenviar_tudo') x.erro = r.erro;
+    else if(!r.erro){
+      x.ultimo = Date.now(); x.recebidas = r.recebidas; x.invalidas = r.invalidas || 0; x.ignoradas = r.ignoradas || 0; x.arquivo = r.arquivo; delete x.erro;
+    }
+    props_().setProperty(prop, JSON.stringify(x));
+  } catch(e){}
+  return r;
+}
+
+// Base de operação para o painel (parte B). versao = a que a página já tem; sem mudança → {mudou:false}.
+function obterOperacao(token, versao){ return comErroBase_('operacao', function(){ return obterOperacao_(token, versao); }); }
+
+function obterOperacao_(token, versao){
+  if(!contaComToken_(token)) return {erro:'senha_necessaria'};
+  var pastaV = pastaVendas_();
+  if(!pastaV) return {erro:'pasta_vendas'};
+  var pasta = pastaDevolucoes_(pastaV);
+  if(!pasta) return {erro:'pasta_devolucoes'};
+  var pastaBase = pastaBaseVendas_(pastaV);
+  var c = consolidarOperacao_(pasta, pastaBase);
+  if(c.erro) return c;
+  var estado = c.estado;
+  if(!Object.keys(estado.arqs).length) return {erro:'sem_arquivo'};
+  var assinatura = Object.keys(estado.arqs).sort().map(function(n){ return n + '@' + estado.arqs[n]; }).join('|') + '#' + (estado.epoca || '');
+  var novaVersao = Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, assinatura));
+  if(versao && versao === novaVersao) return {mudou:false, versao:novaVersao};
+  var base = carregarOperacao_(pastaBase).base;
+  var arquivos = Object.keys(estado.info).map(function(n){ return estado.info[n]; })
+    .sort(function(a, b){ return a.modificadoEm < b.modificadoEm ? -1 : 1; });
+  return {mudou:true, versao:novaVersao, formato:OP_FORMATO, colunasNf:OP_NF_COLS.concat(['vistaEm']), colunasPed:OP_PED_COLS.concat(['lidoEm']),
+    ped:base.ped, pedRev:base.pedRev, nfs:base.nfs, nfRev:base.nfRev, hist:base.hist, inicio:base.inicio || 0,
+    arquivos:arquivos, avisos:Object.keys(estado.avisos).map(function(n){ return estado.avisos[n]; }), auto:estadoOperExt_()};
 }
 
 /* ===================== Nuvem Pago (extratos soltos numa pasta do Drive) ===================== */
