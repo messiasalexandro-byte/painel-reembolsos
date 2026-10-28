@@ -7,10 +7,16 @@ Painel executivo para acompanhar **estornos, cupons e chargebacks** a partir da 
 | ver o painel com os dados atuais | [Acessar o painel](#acessar-o-painel) |
 | saber onde está cada informação | [Navegação](#navegação) |
 | preparar ou corrigir a planilha | [Formato esperado da planilha](#formato-esperado-da-planilha) |
+| ver as vendas da Nuvemshop | [Vendas (Nuvemshop)](#vendas-nuvemshop) |
 | mudar o painel e publicar | [Para quem mantém](#para-quem-mantém) |
+
+### Novidades (21/10/2026)
+
+- **Devoluções reestruturadas:** cada solicitação vira um caso lido em quatro eixos (enquadramento, etapa, desfecho e motivo), com ciclo de vida de 7 etapas, filas de trabalho por prioridade, lista de casos com filtros por eixo, taxa de devolução por coorte sem trocas, tempo de ciclo e uma aba de regras e prazos. Veja [Devoluções (AfterClick)](#devoluções-afterclick).
 
 ### Novidades (01/10/2026)
 
+- **Vendas da Nuvemshop:** novas páginas **Vendas** (abas Mês, Semana e Dia) e **Pedidos**, alimentadas pelas exportações de pedidos salvas na pasta `nuvemshop` do Drive. Mostram faturamento, pedidos, ticket médio, líquido recebido, formas de pagamento, cupons e o que ficou fora das vendas. Veja [Vendas (Nuvemshop)](#vendas-nuvemshop).
 - **Cadastro com senha no painel online:** só entra quem foi liberado na página **Acesso**, e cada pessoa cria a própria senha no primeiro acesso. Veja [Quem acessa e senha](#quem-acessa-e-senha).
 - **Semana já marcada:** ao abrir o painel, o filtro de semana vem na semana do último lançamento.
 
@@ -141,6 +147,122 @@ A data de referência ("hoje" do painel) é a do **último lançamento até a da
 
 Não há taxa de chargeback de mercado (chargeback ratio = chargebacks ÷ transações de venda): a planilha não traz o total de vendas. O painel mostra o **peso de chargeback no valor reembolsado**, que é outra coisa.
 
+## Vendas (Nuvemshop)
+
+### Como alimentar
+
+1. No admin da Nuvemshop, vá em **Vendas → Exportar** e baixe o CSV do período (de preferência com **todos os status, inclusive cancelados**).
+2. Salve o arquivo na pasta **`nuvemshop`** do Google Drive, sem converter para Planilha Google. Pode ficar na raiz ou numa subpasta, por exemplo `nuvemshop/historico` para as exportações antigas.
+3. O painel online lê **todos** os CSVs da pasta e das subpastas e junta os pedidos pelo **número do pedido**. Se o mesmo pedido aparece em duas exportações, vale a do arquivo modificado por último. Assim, as exportações podem se sobrepor em datas, e o status mais novo prevalece.
+
+**Histórico (desde fev/2026):** exporte em pedaços de 2 ou 3 meses, por exemplo fev–abr e mai–jul. Cada CSV é lido **uma vez só** e guardado numa base compacta por ano, em `nuvemshop/_base/vendas-AAAA.json`, que o painel cria e mantém sozinho. Não mexa nessa pasta.
+- Na primeira abertura depois de um arquivo novo, a página mostra "Organizando as exportações novas…" até terminar. Isso pode levar alguns minutos com o histórico.
+- Se um CSV for **apagado** da pasta, a base é refeita sem ele.
+- Na página Vendas, **Origem das vendas** mostra o período de cada exportação e o total de pedidos sem repetição.
+- Com mais de um ano na base, aparece o seletor de **Ano** acima dos meses.
+
+Fora do painel online (GitHub Pages), use **Importar CSV da Nuvemshop** na página Vendas. As vendas ficam só naquele navegador.
+
+### Regras das métricas
+
+- **Data base:** sempre a **data do pedido**. A data de pagamento aparece só no detalhe do pedido.
+- **Situação do pedido**, nesta ordem:
+  - **Cancelado:** status do pedido ou do pagamento cancelado, ou com data de cancelamento preenchida.
+  - **Pagamento recusado:** status do pagamento "Recusado".
+  - **Cortesia:** "Pedido com 100% de desconto" ou total zero.
+  - **Venda:** pagamento confirmado, inclusive os estornados depois.
+  - **Aguardando pagamento:** os demais.
+- Só a **venda** entra no faturamento. As outras situações aparecem em **Fora das vendas**.
+- **Faturamento** = soma do Total dos pedidos de venda, ou seja, subtotal − desconto + frete.
+- **Líquido recebido** = Total líquido da Nuvemshop, isto é, faturamento − taxas − juros do parcelamento − estornos + devolução dos custos.
+- **Formas de pagamento:**
+  - Pix;
+  - Cartão à vista (1 parcela);
+  - Cartão parcelado (2 ou mais parcelas);
+  - Boleto;
+  - Outros (ex.: "A combinar").
+- **Comparações:**
+  - O **mês** em andamento é comparado com os mesmos dias do mês anterior (MoM).
+  - A **semana** (de segunda a domingo) é comparada com a anterior (WoW), nos mesmos dias se ela estiver em curso.
+  - O **dia** é comparado com o mesmo dia da semana anterior (D-7). No dia do último pedido, a comparação vai até o mesmo horário.
+  - Sem base completa, ou seja, quando a base começa antes da primeira exportação, não há comparação.
+
+### Privacidade
+
+O CSV da Nuvemshop traz nome, e-mail, CPF, telefone e endereço. Esses dados **não saem do servidor**: o `obterVendas` devolve só número, datas, status, valores, pagamento, cupom, estado, canal e envio.
+
+## Devoluções (AfterClick)
+
+### Como alimentar
+
+1. Na AfterClick (Trocas e devoluções), exporte as solicitações com **todos os status** dos **últimos 60 dias**, de preferência todo dia.
+2. Salve o arquivo (.xlsx ou .csv) na subpasta **`nuvemshop/AJD`** do Google Drive.
+3. O painel lê cada exportação **uma vez** e junta as solicitações pelo **Nº do Pedido** da AfterClick (ex.: D-TLG-53088-1). Vale o arquivo modificado por último. A base fica em `nuvemshop/_base/devolucoes.json` e o controle dos arquivos em `devolucoes-estado.json`. Não mexa nesses arquivos.
+
+A primeira carga foi o export completo desde mar/2026 (`Pedidos.xlsx`).
+
+### Como a página está organizada (desde 21/10/2026)
+
+Cada solicitação da AfterClick é um **caso** (Nº da solicitação, ex.: D-TLG-53088-1). A página vai do resumo ao detalhe: **Filas de trabalho** (resumo, ciclo de vida e filas) → **Casos** (lista segmentada) → **detalhe do caso** (drawer). O endereço guarda a aba e os filtros (ex.: `#/devolucoes?aba=casos&et=recebida&al=fora_sla`).
+
+Todo caso é lido em quatro eixos independentes, com os mesmos nomes e cores em todas as telas:
+
+| Eixo | Valores | De onde vem |
+|---|---|---|
+| **Enquadramento** (sugerido) | Arrependimento · Vício do produto · Erro da loja · Não entregue · Troca comercial · Fora de prazo · A classificar | Motivo + data de entrega do pedido de origem, nesta ordem: vício → erro da loja → não entregue → até 7 dias da entrega → política |
+| **Etapa** | 1 Solicitada · 2 Autorizada · 3 Em trânsito · 4 Recebida · 5 Conferida · 6 Encerrada · 7 Cancelada | Status AfterClick + rastreio da reversa |
+| **Desfecho** | Forma (estorno no cartão, Pix, boleto/TED, crédito em loja, troca) × situação (não devido, devido, solicitado, concluído na loja, divergente) | Solução pretendida + meio de pagamento do pedido + card FINA |
+| **Motivo** | Tamanho · Caimento · Aparência · Arrependimento · Defeito · Erro da loja · Logística · Sinais de uso (achado de conferência) · Outro | Motivo da AfterClick (um por solicitação) |
+
+**Alertas** (marcam o caso, não mudam a etapa): fora do SLA, prazo vencendo, divergente, chargeback, sem movimento e desatualizado.
+
+### Telas
+
+- **Filas de trabalho:**
+  - quatro indicadores: casos em andamento (com quantos estão fora do SLA ou sem movimento), peça na loja sem desfecho, **a devolver em dinheiro** e **crédito em loja a emitir** (a troca aparece à parte, sem valor a devolver);
+  - **ciclo de vida:** um cartão por etapa com quantidade, valor, mediana de dias na etapa e quantos passaram do SLA. Clicar abre a lista de casos da etapa. A tabela por etapa fica em "Ver etapas em tabela";
+  - **filas**, em ordem de prioridade: prazo legal ou da plataforma vencendo, conferida sem desfecho, recebida sem conferência, NF pendente ou fora do prazo, aguardando triagem, postagem expirada ou sem movimento, desfecho divergente, chargeback ligado a devolução, dados a revisar e devido acima do saldo Nuvem Pago (esta sem dado). Cada fila diz o critério e a ordem, e todas têm as mesmas colunas;
+  - rastreio da reversa (autorizados e em trânsito) e notas fiscais de devolução.
+- **Casos:** lista com busca (caso, pedido, SKU ou produto) e um filtro por eixo (etapa, enquadramento, desfecho previsto, motivo, alerta, período de abertura). Cada opção mostra quantos casos sobram. Chips com os filtros, paginação e **Baixar CSV**.
+- **Ritmo e taxas:** casos abertos (com cancelados depois e válidos), peças, recebidas e encerradas por dia, semana ou mês; **taxa de devolução por mês da venda** (pedidos, efetivada, troca, peças e valor, sobre pedidos de venda ou entregues); **tempo de ciclo** (mediana, P90 e % no SLA de cada trecho); **enquadramento × desfecho previsto**.
+- **Peças e motivos:** produtos mais devolvidos com taxa de devolução, contados pela data da venda (coorte, padrão) ou da solicitação, com ou sem trocas; tamanhos; motivos com grupo e enquadramento pelo motivo, para conferir o mapeamento.
+- **Regras e prazos:** ciclo de vida, cadeia de SLA, prazos da lei e da plataforma, ordem do enquadramento, desfecho, vocabulário e dados que ainda não chegam ao painel. É gerada das mesmas constantes que as telas usam.
+- **Detalhe do caso:** pílulas dos quatro eixos e dos alertas, resumo, linha do tempo das etapas, SLA, enquadramento e prazos (arrependimento, vício, Nuvem Pago), desfecho (valor a devolver, valor devolvido quando a Nuvemshop ou a planilha mostram, divergência), conferência e peça, NF e Financeiro, peças, lançamentos da planilha de reembolsos e dados técnicos (status AfterClick, rastreio e visto por último).
+- No **drawer do pedido** (Pedidos) aparecem os casos daquele pedido com as mesmas pílulas. Os indicadores de **Vendas** têm a linha "Pedidos com devolução" com a mesma regra da taxa (sem cancelados; trocas à parte).
+
+### Regras
+
+- **Etapas:**
+  - `replacement` = Solicitada;
+  - `replacement-authorized` = Autorizada (peça ainda não postada), **Em trânsito** (rastreio de postagem, coleta ou transporte) ou **Recebida** (rastreio "Entregue");
+  - `replacement-approved` = Conferida, com resultado Aprovada (reprovada e parcial não vêm no export);
+  - `replacement-completed` = Encerrada;
+  - `canceled` = Cancelada.
+  - Status ou evento de rastreio que o painel não reconhece não vira etapa nem "aguardando": vai para a fila **Dados a revisar**.
+- **Cadeia única de SLA** (`DV_SLA` no `index.html`, dias corridos): triagem 2, postagem pela cliente 30, transporte sem novo evento 10, conferência 2, desfecho 3, NF de devolução 7, Financeiro após a NF 7, ciclo interno total 14. Passar do SLA da loja = **fora do SLA**; passar do da cliente ou da transportadora = **sem movimento** (não é mais "parada" nem sai das contas).
+- **Válidos** = casos sem os cancelados. É a base de peças, valores, taxa, aba Peças e da linha de Vendas. O ritmo mostra também os cancelados depois, à parte.
+- **Taxa de devolução:** pela data do pedido de origem (coorte), sem trocas (a troca tem taxa própria). Denominador: pedidos de venda ou entregues, de todos os anos da base de vendas.
+- **Data de entrega:** a API da Nuvemshop não informa. O servidor guarda em `_base/entregas.json` a primeira vez em que viu o pedido como entregue; o painel trata a entrega como um intervalo (data do pedido ou último registro sem entrega → primeira vez visto entregue). Com o intervalo incerto, o enquadramento fica "A classificar".
+- **Visto por último:** dia do export mais novo que trouxe o caso. Caso em andamento que ficou para trás saiu da janela de 60 dias: status congelado, alerta "desatualizado".
+- **Datas de status:** o export não traz. O painel registra quando viu cada caso mudar de status, de uma exportação para a seguinte. Autorização, conferência, encerramento e cancelamento só têm data a partir do início do controle (05/10/2026); antes disso, os dias na etapa aparecem com "≈".
+- **Taxa por produto:** usa as peças vendidas (SKU e Quantidade Comprada dos CSVs da Nuvemshop) nos meses do período escolhido. Taxa acima de 100% aparece como "—", porque as vendas do recorte não cobrem as devoluções.
+
+### NF de devolução (desde 21/10/2026)
+
+- **De onde vem:** da planilha mais nova "… - Exportação do Painel - Financeiro" (cards FINA), na pasta do Drive `1Cy5a2oVeecFEo6_Z8na99gZUv5rP6v2w`. A propriedade `NF_PASTA` troca essa pasta.
+- **Como o painel acha a NF:** o número e a data saem do texto "NF emitida: Nº … - Emitida em …" (ou "NF emitida em dd/mm"), na Descrição ou nas Observações. Se não houver texto, usa a coluna "Data NF emitida".
+- **Como liga à solicitação:** o card entra na solicitação pelo **Pedido Nuvem**, que pode ser o nº D-TLG da AfterClick ou o pedido da Nuvemshop. No segundo caso, só liga se o pedido tiver uma única solicitação.
+- **Cache:** o resultado fica em `_base/nf-financeiro.json` e só é refeito quando a planilha muda.
+- **Dois prazos, os dois de 7 dias corridos:**
+  - **recebimento → NF**. O recebimento é a data da entrega no rastreio ou, sem ela, o dia em que o painel viu a solicitação aprovada.
+  - **NF → estorno/cupom**. Conta enquanto o card não está Concluído, ou até a "Data de processamento", quando ela está preenchida.
+- **Onde aparece:** na fila **NF pendente ou fora do prazo** e no painel **Notas fiscais de devolução** da aba Filas de trabalho, e no detalhe do caso. Os dois prazos vêm da cadeia única de SLA.
+- **Privacidade:** do card, só entram código, fase, pedido, ação, número e data da NF, criação e processamento.
+
+### Privacidade
+
+O export da AfterClick traz nome, CPF e e-mail do cliente e a nota fiscal. Esses dados **não entram na base nem saem do servidor**: o `obterDevolucoes` devolve só número, datas, status, motivo, solução, valores e as peças (SKU, preço e quantidade). Dos pedidos de origem, devolve só data, status do pagamento e do envio, meio de pagamento, parcelas, estorno, total e as datas de entrega registradas pelo painel.
+
 ## Formato esperado da planilha
 
 | Item | Regra |
@@ -172,7 +294,9 @@ Nada é descartado sem aviso. Cada ocorrência mostra aba, linha, campo e o valo
   - acesso ao painel online (`localStorage`: `reembolsos_acesso_v1`), apagado ao clicar em **Sair**;
   - metas mensais (`localStorage`: `reembolsos_metas_v1`);
   - projeções (`localStorage`: `reembolsos_projecoes_v1`);
-  - tema (`localStorage`: `reembolsos_tema_v1`; valores `auto`, `light`, `dark`, `nimbus`, `grafite`, `contraste`).
+  - tema (`localStorage`: `reembolsos_tema_v1`; valores `auto`, `light`, `dark`, `nimbus`, `grafite`, `contraste`);
+  - vendas importadas à mão fora do painel online (IndexedDB `vendas_db`), apagadas em **Esquecer as vendas deste navegador**.
+- No painel online, as vendas não ficam guardadas no navegador: o ano aberto é buscado a cada abertura. No Drive, a base `nuvemshop/_base` guarda só as colunas sem dados pessoais.
 - Limpar os dados do site no navegador apaga essas informações.
 
 ---
@@ -187,11 +311,18 @@ painel-reembolsos/
 ├── README.md
 ├── .claude/agents/       ← agentes do Claude Code (arquiteto, auditor, redator, revisor)
 └── apps-script/          ← projeto do Google Apps Script que serve o painel online
-    ├── Codigo.gs         ← doGet() entrega a página; cadastro e senha; obterPlanilha(versao, token) devolve a planilha do Drive
-    ├── appsscript.json   ← escopos e acesso restrito ao domínio (DOMAIN)
+    ├── Codigo.gs         ← doGet() entrega a página; cadastro e senha; obterPlanilha(versao, token) devolve a planilha do Drive;
+    │                       obterVendas(token, versao, ano) consolida os CSVs da pasta nuvemshop na base por ano
+    ├── appsscript.json   ← escopos (Drive com escrita, para a base de vendas) e acesso restrito ao domínio (DOMAIN)
     ├── .clasp.json       ← scriptId usado pelo clasp
+    ├── testar.sh         ← envia o index.html para o /dev (sem mexer no /exec)
     └── publicar.sh       ← publica o index.html no Apps Script, mesma URL
 ```
+
+- A pasta das vendas é achada pelo nome `nuvemshop`. O id fica guardado na propriedade `NUVEMSHOP_PASTA`, e também pode ser posto lá à mão, para usar outra pasta.
+- `VENDAS_BASE` (propriedade): quais CSVs já entraram na base (id → data de modificação), o período de cada um e o id do arquivo de cada ano em `_base`.
+  - Apagar essa propriedade faz a base ser refeita do zero na próxima abertura.
+  - Os arquivos antigos de `_base` podem ser jogados fora.
 
 - `apps-script/Index.html` **não é mantido à mão**: o `publicar.sh` o gera copiando o `index.html` a cada publicação (e o `.gitignore` o exclui do Git). Não edite esse arquivo.
 - O mesmo `index.html` serve os dois lugares: ele detecta se está dentro do Apps Script (`google.script.run`) e, nesse caso, busca a planilha no Drive e verifica mudanças a cada 5 minutos.
