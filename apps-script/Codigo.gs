@@ -78,7 +78,7 @@ function exigirDonoEditor_(){
 }
 
 // Versão deste código. Só mude ao publicar uma versão nova (veja gatilhoLiberado_ e marcarProducaoVersao).
-var CODIGO_VERSAO = 'etapa28-2026-10-28';
+var CODIGO_VERSAO = 'etapa30-2026-10-29';
 
 // Os gatilhos de 15 min rodam o código HEAD (o último push, mesmo que só para teste) sobre as bases reais.
 // Depois que o dono roda marcarProducaoVersao() (com a versão publicada), os gatilhos só trabalham se
@@ -453,21 +453,25 @@ function obterPlanilha(versao, token){
 // subpastas (ex.: "historico"). Cada CSV é lido UMA vez e entra numa base compacta por ano, gravada em
 // nuvemshop/_base/vendas-AAAA.json. Os pedidos são juntados pelo número: vale o do arquivo modificado
 // por último (o status muda com o tempo e as exportações se sobrepõem em datas).
-// Só as colunas abaixo entram na base e saem do servidor — nada de nome, e-mail, CPF, telefone ou endereço.
+// Só as colunas abaixo entram na base e saem do servidor. Do cliente entram o nome do comprador e a cidade de entrega
+// (decisão do usuário em 29/10/2026, para os rankings de clientes e de cidades); o e-mail só como "Cliente", uma chave
+// (resumo) que junta os pedidos da mesma pessoa vindos do CSV e da API. Nada de e-mail, CPF, telefone ou endereço.
 // O CSV vem com uma linha por produto: os dados do pedido ficam na primeira linha dele.
 var VENDAS_PASTA_NOME = 'nuvemshop';
 var VENDAS_BASE_PASTA = '_base';
 var VENDAS_COLUNAS = ['Número do Pedido','Data','Status do Pedido','Status do Pagamento','Status do Envio',
   'Subtotal','Desconto','Valor do Frete','Total','Estado','Forma de Entrega','Forma de Pagamento','Cupom de Desconto',
   'Data de pagamento','Canal','Data e hora do cancelamento','Motivo do cancelamento','Estorno','Data de estorno',
-  'Taxas','Parcelas','Juros','Devolução dos custos','Total líquido','Meio de pagamento'];
+  'Taxas','Parcelas','Juros','Devolução dos custos','Total líquido','Meio de pagamento',
+  'Cidade','Nome do comprador','Cliente'];
+var VENDAS_COL_CLIENTE = 27;              // "Cliente": chaveCliente_ do e-mail (não vem pronto no CSV nem na API)
 var VENDAS_ITENS = VENDAS_COLUNAS.length; // posição da soma de "Quantidade Comprada" na linha do pedido
 var VENDAS_SKUS = VENDAS_ITENS + 1;       // "sku:qtd,sku:qtd" do pedido (só na base: alimenta a taxa de devolução por peça)
 var VENDAS_TS = VENDAS_SKUS + 1;          // posição da data de modificação do CSV de origem (só na base)
-var VENDAS_FORMATO = 2;                   // muda quando a linha da base muda: força reler todos os CSVs uma vez
+var VENDAS_FORMATO = 3;                   // muda quando a linha da base muda: força reler todos os CSVs uma vez
 var VENDAS_PASTAS_FORA = ['_base', 'AJD']; // subpastas de "nuvemshop" que não têm CSV de vendas (AJD = devoluções)
 // na resposta, textos repetidos viram índice de um dicionário e valores viram número (resposta ~3x menor)
-var VENDAS_CODIFICADAS = [2, 3, 4, 9, 10, 11, 14, 16, 24];
+var VENDAS_CODIFICADAS = [2, 3, 4, 9, 10, 11, 14, 16, 24, 25, 26, 27];
 var VENDAS_NUMERICAS = [5, 6, 7, 8, 17, 19, 21, 22, 23];
 var VENDAS_TEMPO_MAX = 4 * 60 * 1000; // o Apps Script para em 6 min: guarda o progresso antes disso
 
@@ -523,6 +527,7 @@ function lerCsvVendas_(arquivo){
   var idx = VENDAS_COLUNAS.map(function(c){ return cab.indexOf(c); });
   if(idx[0] < 0 || idx[1] < 0 || idx[8] < 0) return {erro:'csv_formato'};
   var iQtd = cab.indexOf('Quantidade Comprada'), iSku = cab.indexOf('SKU'), iNome = cab.indexOf('Nome do Produto');
+  var iEmail = cab.indexOf('E-mail'), iPreco = cab.indexOf('Valor do Produto');
   var porNum = {}, ordem = [], nomes = {};
   for(var i = 1; i < linhas.length; i++){
     var l = linhas[i];
@@ -531,18 +536,42 @@ function lerCsvVendas_(arquivo){
     var qtd = iQtd >= 0 ? Number(l[iQtd]) || 0 : 0;
     var sku = iSku >= 0 ? String(l[iSku] || '').trim().replace(/[,:]/g, '') : '';
     if(sku && iNome >= 0 && l[iNome]) nomes[sku] = String(l[iNome]).trim();
-    var item = sku ? sku + ':' + qtd : '';
+    var item = sku ? itemSkuTexto_(sku, qtd, iPreco >= 0 ? l[iPreco] : '') : '';
     if(porNum[num]){
       porNum[num][VENDAS_ITENS] += qtd;
       if(item) porNum[num][VENDAS_SKUS] += (porNum[num][VENDAS_SKUS] ? ',' : '') + item;
       continue;
     }
     var r = idx.map(function(j){ return j >= 0 ? String(l[j] == null ? '' : l[j]).trim() : ''; });
+    r[VENDAS_COL_CLIENTE] = iEmail >= 0 ? chaveCliente_(l[iEmail]) : '';
     r.push(qtd, item);
     porNum[num] = r;
     ordem.push(num);
   }
   return {linhas: ordem.map(function(n){ return porNum[n]; }), nomes: nomes};
+}
+
+// e-mail → chave do cliente: resumo de 12 caracteres do e-mail em minúsculas ('' sem e-mail). O e-mail nunca é guardado;
+// a chave só serve para juntar os pedidos da mesma pessoa (ranking de clientes, novos × recorrentes).
+function chaveCliente_(email){
+  var e = String(email == null ? '' : email).trim().toLowerCase();
+  if(!e || e.indexOf('@') < 0) return '';
+  return Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, 'talgui|' + e)).slice(0, 12);
+}
+
+// item do pedido na base: "sku:qtd:preço unitário" (preço com ponto; desde o formato 3 — antes era só "sku:qtd").
+// O preço é o do produto no pedido, antes do desconto do pedido (CSV "Valor do Produto"; API products[].price).
+function itemSkuTexto_(sku, qtd, preco){
+  var t = String(preco == null ? '' : preco).trim(), n;
+  if(/,\d{1,2}$/.test(t)) t = t.replace(/\./g, '').replace(',', '.');
+  n = Number(t);
+  return sku + ':' + qtd + (t !== '' && isFinite(n) ? ':' + Math.round(n * 100) / 100 : '');
+}
+function itensSku_(texto){
+  return String(texto || '').split(',').map(function(item){
+    var p = item.split(':');
+    return {sku:p[0], q:Number(p[1]) || 0, preco:p.length > 2 && p[2] !== '' ? Number(p[2]) || 0 : null};
+  }).filter(function(it){ return it.sku; });
 }
 
 // "16/08/2026 22:09:01" → "2026-08-16" ('' se não for data)
@@ -565,21 +594,17 @@ function juntarPedidos_(pedidos, linhas, ts){
   });
 }
 
-// O controle da base de vendas ({formato, arqs, info, avisos, anos, apiMudou}) mora em _base/vendas-estado.json
-// (como devolucoes-estado.json): na propriedade VENDAS_BASE ele crescia a cada CSV e estouraria os 9 KB.
-// MIGRAÇÃO sem reconsolidar: se a propriedade existe e o arquivo não, o arquivo é criado com o MESMO conteúdo.
-// As propriedades são compartilhadas entre /dev e /exec e a versão publicada antes desta (@38) continua lendo/gravando
-// VENDAS_BASE até ser substituída. Por isso a propriedade NÃO é apagada aqui e vira um ESPELHO:
-//  - ao gravar o arquivo, o mesmo estado vai para VENDAS_BASE se couber (VENDAS_PROP_MAX); a propriedade
-//    VENDAS_BASE_ESPELHO guarda o resumo (MD5) do último texto que o espelho tinha;
-//  - ao ler, se VENDAS_BASE já não bate com esse resumo, quem gravou por último foi a versão antiga: ela vale e o arquivo é refeito.
-// Depois de publicar, o dono roda limparVendasBaseAntiga() e o espelho some.
-var VENDAS_ESTADO_ARQ = 'vendas-estado.json';
-var VENDAS_PROP = 'VENDAS_BASE';
-var VENDAS_ESPELHO = 'VENDAS_BASE_ESPELHO';
-var VENDAS_PROP_MAX = 8500; // cada propriedade aceita ~9 KB
-
-function resumoTexto_(t){ return Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, String(t))); }
+// O controle da base de vendas ({formato, arqs, info, avisos, anos, apiMudou}) mora em _base/vendas3-estado.json.
+// Etapa 30 (formato 3, com cidade e cliente): a base nova é PARALELA à antiga — vendas3-estado.json, vendas3-AAAA.json e
+// a propriedade VENDAS_API3. Enquanto o /exec roda a versão anterior, ela segue lendo e gravando vendas-estado.json,
+// vendas-AAAA.json, VENDAS_API e VENDAS_BASE (o espelho da etapa 27); se as duas versões usassem os mesmos arquivos,
+// uma zeraria a base da outra a cada chamada (o formato diferente força refazer do zero). A base nova começa vazia e é
+// montada pelos CSVs da pasta e pela API desde o início da loja. Depois de publicar e rodar marcarProducaoVersao(),
+// limparVendasBaseAntiga() apaga o que era só da versão anterior.
+var VENDAS_ESTADO_ARQ = 'vendas3-estado.json';
+var VENDAS_ANO_PREFIXO = 'vendas3-';
+var VENDAS_API_PROP = 'VENDAS_API3';
+var VENDAS_ANTIGA = {estado:'vendas-estado.json', prefixo:'vendas-', api:'VENDAS_API', prop:'VENDAS_BASE', espelho:'VENDAS_BASE_ESPELHO'};
 
 function normalizarEstadoVendas_(e){
   e = e && typeof e === 'object' ? e : {};
@@ -587,54 +612,32 @@ function normalizarEstadoVendas_(e){
   return e;
 }
 
-function lerPropriedadeVendas_(raw){
-  var e;
-  try{ e = JSON.parse(raw); } catch(err){ throw erroBase_('a propriedade ' + VENDAS_PROP, 'conteúdo inválido'); }
-  if(!e || typeof e !== 'object') throw erroBase_('a propriedade ' + VENDAS_PROP, 'conteúdo inesperado');
-  return e;
-}
-
+// sem a pasta ou sem o arquivo = base nova (vazia); arquivo que não abre lança erro (lerJsonBase_)
 function estadoVendas_(){
-  var p = props_(), raw = p.getProperty(VENDAS_PROP);
   var pasta = pastaVendas_();
-  if(!pasta) return normalizarEstadoVendas_(raw !== null ? lerPropriedadeVendas_(raw) : null);
-  var pastaBase = pastaBaseVendas_(pasta);
-  var doArquivo = lerJsonBase_(pastaBase, VENDAS_ESTADO_ARQ); // null = arquivo não existe; erro de leitura lança
-  if(raw !== null && (doArquivo === null || resumoTexto_(raw) !== p.getProperty(VENDAS_ESPELHO))){
-    // sem arquivo ainda (migração) ou a versão antiga gravou a propriedade depois de nós: a propriedade vale
-    doArquivo = lerPropriedadeVendas_(raw);
-    gravarJsonBase_(pastaBase, VENDAS_ESTADO_ARQ, doArquivo);
-    p.setProperty(VENDAS_ESPELHO, resumoTexto_(raw));
-  }
-  return normalizarEstadoVendas_(doArquivo);
+  if(!pasta) return normalizarEstadoVendas_(null);
+  return normalizarEstadoVendas_(lerJsonBase_(pastaBaseVendas_(pasta), VENDAS_ESTADO_ARQ));
 }
 
-// o arquivo é a fonte de verdade; a propriedade só é atualizada enquanto existir (não é recriada depois de limpa)
-function gravarEstadoVendas_(estado, pastaBase){
-  gravarJsonBase_(pastaBase, VENDAS_ESTADO_ARQ, estado);
-  var p = props_(), raw = p.getProperty(VENDAS_PROP);
-  if(raw === null) return;
-  var texto = JSON.stringify(estado);
-  if(texto.length <= VENDAS_PROP_MAX){
-    try{ p.setProperty(VENDAS_PROP, texto); p.setProperty(VENDAS_ESPELHO, resumoTexto_(texto)); return; } catch(e){}
-  }
-  // não coube: a versão antiga fica com o texto anterior; o resumo dele evita confundi-lo com uma gravação dela
-  p.setProperty(VENDAS_ESPELHO, resumoTexto_(raw));
-}
+function gravarEstadoVendas_(estado, pastaBase){ gravarJsonBase_(pastaBase, VENDAS_ESTADO_ARQ, estado); }
 
-// rodar no editor DEPOIS de publicar a versão nova no /exec e de rodar marcarProducaoVersao(): remove a propriedade
-// VENDAS_BASE (e o espelho). Antes disso a versão antiga publicada ainda a usa; apagá-la a faria reler todos os CSVs.
+// rodar no editor DEPOIS de publicar a versão nova no /exec e de rodar marcarProducaoVersao(): apaga a base da versão
+// anterior (vendas-AAAA.json e vendas-estado.json vão para a lixeira) e as propriedades VENDAS_API, VENDAS_BASE e
+// VENDAS_BASE_ESPELHO. Antes disso a versão antiga publicada ainda as usa.
 function limparVendasBaseAntiga(){
   exigirDonoEditor_();
   var p = props_();
-  if(p.getProperty('PRODUCAO_VERSAO') !== CODIGO_VERSAO) throw new Error('Publique a versão nova e rode marcarProducaoVersao() antes de limpar a propriedade antiga.');
-  if(p.getProperty(VENDAS_PROP) === null){ console.log('VENDAS_BASE já foi removida.'); return; }
-  var estado = estadoVendas_(); // se a versão antiga gravou por último, adota o conteúdo dela no arquivo antes de apagar
+  if(p.getProperty('PRODUCAO_VERSAO') !== CODIGO_VERSAO) throw new Error('Publique a versão nova e rode marcarProducaoVersao() antes de limpar a base antiga.');
   var pasta = pastaVendas_();
-  if(!pasta || lerJsonBase_(pastaBaseVendas_(pasta), VENDAS_ESTADO_ARQ) === null) throw new Error('O arquivo ' + VENDAS_ESTADO_ARQ + ' não existe: não removi a propriedade.');
-  p.deleteProperty(VENDAS_PROP);
-  p.deleteProperty(VENDAS_ESPELHO);
-  console.log('Propriedade VENDAS_BASE removida. O controle das vendas fica só em _base/' + VENDAS_ESTADO_ARQ + ' (' + Object.keys(estado.arqs).length + ' arquivos).');
+  if(!pasta) throw new Error('Pasta nuvemshop não encontrada.');
+  var pastaBase = pastaBaseVendas_(pasta);
+  var nova = lerJsonBase_(pastaBase, VENDAS_ESTADO_ARQ);
+  if(!nova || !Object.keys(nova.anos || {}).length) throw new Error('A base nova (' + VENDAS_ESTADO_ARQ + ') ainda não existe: não apaguei a antiga.');
+  var it = pastaBase.getFiles(), lixo = 0, rx = /^vendas-(\d{4}|estado)\.json$/;
+  while(it.hasNext()){ var f = it.next(); if(rx.test(f.getName())){ f.setTrashed(true); lixo++; } }
+  [VENDAS_ANTIGA.api, VENDAS_ANTIGA.prop, VENDAS_ANTIGA.espelho].forEach(function(k){ p.deleteProperty(k); });
+  console.log('Base antiga das vendas apagada: ' + lixo + ' arquivo(s) na lixeira e as propriedades ' + VENDAS_ANTIGA.api + ', ' +
+    VENDAS_ANTIGA.prop + ' e ' + VENDAS_ANTIGA.espelho + ' removidas.');
 }
 
 // base de um ano. Ano sem base ainda = vazio (base nova). Arquivo que existe no estado mas não abre, não é JSON
@@ -642,7 +645,7 @@ function limparVendasBaseAntiga(){
 function lerBaseAno_(estado, ano){
   var id = estado.anos[ano];
   if(!id) return {};
-  var nome = 'vendas-' + ano + '.json', dados;
+  var nome = VENDAS_ANO_PREFIXO + ano + '.json', dados;
   try{ dados = JSON.parse(DriveApp.getFileById(id).getBlob().getDataAsString('UTF-8')); }
   catch(e){ throw erroBase_(nome, textoErro_(e)); }
   if(!dados || !dados.pedidos || typeof dados.pedidos !== 'object') throw erroBase_(nome, 'conteúdo inesperado');
@@ -654,7 +657,7 @@ function lerBaseAno_(estado, ano){
 function gravarBaseAno_(estado, pastaBase, ano, pedidos){
   var antigo = estado.anos[ano];
   if(Object.keys(pedidos).length){
-    var blob = Utilities.newBlob(JSON.stringify({ano:Number(ano), pedidos:pedidos}), 'application/json', 'vendas-' + ano + '.json');
+    var blob = Utilities.newBlob(JSON.stringify({ano:Number(ano), pedidos:pedidos}), 'application/json', VENDAS_ANO_PREFIXO + ano + '.json');
     estado.anos[ano] = pastaBase.createFile(blob).getId();
   } else delete estado.anos[ano];
   if(antigo){ try{ DriveApp.getFileById(antigo).setTrashed(true); } catch(e){} }
@@ -685,7 +688,7 @@ function consolidarVendasNucleo_(pasta){
       estado.arqs = {}; estado.info = {}; estado.avisos = {}; estado.formato = VENDAS_FORMATO;
       Object.keys(bases).forEach(function(ano){ gravarBaseAno_(estado, pastaBase, ano, bases[ano]); });
       gravarEstadoVendas_(estado, pastaBase);
-      props_().deleteProperty('VENDAS_API'); // a base zerou: a API recarrega tudo desde o início da loja
+      props_().deleteProperty(VENDAS_API_PROP); // a base zerou: a API recarrega tudo desde o início da loja
     }
     falta = arquivos.filter(function(f){ return estado.arqs[f.getId()] !== atuais[f.getId()]; });
     var feitos = 0, nomes = null;
@@ -729,12 +732,25 @@ function consolidarVendasNucleo_(pasta){
   } finally { lock.releaseLock(); }
 }
 
-// pedidos da base → formato da resposta (sem os SKUs e a coluna ts, textos repetidos num dicionário)
-function codificarVendas_(pedidos){
+// pedidos da base → formato da resposta (sem a coluna ts, textos repetidos num dicionário). Os SKUs do pedido vão
+// na última posição como [índice em skus, qtd, preço unitário (ou null), índice, qtd, preço, ...]; skus = [[sku, índice do modelo, cor, tamanho]] e
+// modelos = nomes dos modelos (partesProduto_ sobre o nome do produto, o mesmo corte das Devoluções).
+function codificarVendas_(pedidos, nomesProduto){
   var dic = {}, idx = {};
+  var skus = [], idxSku = Object.create(null), modelos = [], idxModelo = Object.create(null);
+  function skuIdx(sku){
+    var i = idxSku[sku];
+    if(i === undefined){
+      var p = partesProduto_(nomesProduto[sku], sku), m = idxModelo[p.modelo];
+      if(m === undefined){ m = idxModelo[p.modelo] = modelos.length; modelos.push(p.modelo); }
+      i = idxSku[sku] = skus.length; skus.push([sku, m, p.cor, p.tam]);
+    }
+    return i;
+  }
   VENDAS_CODIFICADAS.forEach(function(c){ dic[c] = []; idx[c] = Object.create(null); });
   var linhas = Object.keys(pedidos).map(function(k){
-    var x = pedidos[k].slice(0, VENDAS_SKUS);
+    var x = pedidos[k].slice(0, VENDAS_SKUS), pecas = [];
+    itensSku_(pedidos[k][VENDAS_SKUS]).forEach(function(it){ pecas.push(skuIdx(it.sku), it.q, it.preco); });
     VENDAS_CODIFICADAS.forEach(function(c){
       var v = x[c] == null ? '' : String(x[c]);
       var i = idx[c][v];
@@ -746,9 +762,10 @@ function codificarVendas_(pedidos){
       var n = Number(x[c]);
       if(isFinite(n)) x[c] = n;
     });
+    x.push(pecas);
     return x;
   });
-  return {dic:dic, linhas:linhas};
+  return {dic:dic, linhas:linhas, skus:skus, modelos:modelos};
 }
 
 // ano: o que a página quer ver (padrão: o mais recente). versao: a que a página já tem; se nenhum CSV
@@ -779,7 +796,8 @@ function obterVendas_(token, versao, ano){
   // npVersao: extratos do Nuvem Pago completam Taxas/Juros/Líquido das vendas que vieram só da API
   var npVersao = props_().getProperty('NUVEMPAGO_VERSAO') || '';
   var assinatura = Object.keys(estado.arqs).sort().map(function(id){ return id + '@' + estado.arqs[id]; }).join('|') + '|' + ano +
-    (api ? '|api@' + (estado.apiMudou || '') : '') + (npVersao ? '|np@' + npVersao : '');
+    (api ? '|api@' + (estado.apiMudou || '') : '') + (npVersao ? '|np@' + npVersao : '') +
+    '|fotos@' + (props_().getProperty('FOTOS_VERSAO') || '');
   var novaVersao = Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, assinatura));
   if(versao && versao === novaVersao) return {mudou:false, versao:novaVersao, ano:ano, api:api};
   var pedidos = lerBaseAno_(estado, ano);
@@ -787,11 +805,16 @@ function obterVendas_(token, versao, ano){
     try{ completarComNuvemPago_(pedidos, financeiroNuvemPago_(lerBaseNuvemPago_(pastaBaseVendas_(pasta)))); }
     catch(e){ console.warn('Nuvem Pago nas vendas: ' + (e && e.message || e)); }
   }
-  var cod = codificarVendas_(pedidos);
+  var pastaBaseV = pastaBaseVendas_(pasta);
+  var cod = codificarVendas_(pedidos, lerJsonBase_(pastaBaseV, PRODUTOS_ARQ) || {});
+  // fotos só dos SKUs vendidos no ano (endereço da imagem); falha das fotos nunca derruba as vendas
+  var fotos = {};
+  try{ var todasFotos = lerFotos_(pastaBaseV); cod.skus.forEach(function(x){ if(todasFotos[x[0]]) fotos[x[0]] = todasFotos[x[0]]; }); }
+  catch(e){ fotos = {}; }
   var arquivos = Object.keys(estado.info).map(function(id){ return estado.info[id]; })
     .sort(function(a, b){ return a.modificadoEm < b.modificadoEm ? -1 : 1; });
-  return {mudou:true, versao:novaVersao, ano:ano, anos:anos, colunas:VENDAS_COLUNAS.concat(['Itens']),
-    dic:cod.dic, linhas:cod.linhas, arquivos:arquivos, avisos:avisos, api:api};
+  return {mudou:true, versao:novaVersao, ano:ano, anos:anos, colunas:VENDAS_COLUNAS.concat(['Itens', 'Peças']),
+    dic:cod.dic, linhas:cod.linhas, skus:cod.skus, modelos:cod.modelos, fotos:fotos, arquivos:arquivos, avisos:avisos, api:api};
 }
 
 /* ===================== Vendas pela API da Nuvemshop ===================== */
@@ -813,7 +836,8 @@ var VENDAS_API_POR_PAGINA = 200;
 var VENDAS_API_JANELA = 7 * 24 * 3600 * 1000;
 var VENDAS_API_CAMPOS = ['id','number','created_at','updated_at','status','payment_status','shipping_status',
   'subtotal','discount','shipping_cost_customer','total','shipping_address','shipping_option','gateway','gateway_name',
-  'payment_details','coupon','paid_at','completed_at','storefront','cancelled_at','cancel_reason','products'].join(',');
+  'payment_details','coupon','paid_at','completed_at','storefront','cancelled_at','cancel_reason','products',
+  'contact_name','contact_email','customer'].join(',');
 // tradução para os rótulos do CSV (o front classifica por esses textos: Index.html, vSituacao).
 // Confirmado, Vencido, Mobile e Cancelamento automático conferidos na api-amostra de 20/10/2026.
 var VENDAS_API_STATUS = {open:'Aberto', closed:'Fechado', cancelled:'Cancelado'};
@@ -840,7 +864,7 @@ function apiNuvemshopLigada_(){ return apiNuvemshopConfigurada_() && props_().ge
 
 function estadoVendasApi_(){
   var e = null;
-  try{ e = JSON.parse(props_().getProperty('VENDAS_API') || 'null'); } catch(err){}
+  try{ e = JSON.parse(props_().getProperty(VENDAS_API_PROP) || 'null'); } catch(err){}
   return e || {};
 }
 
@@ -892,7 +916,8 @@ function dataPagamentoApi_(o){
 }
 
 // pedido da API → linha da base (mesmo layout de lerCsvVendas_: VENDAS_COLUNAS + itens + SKUs).
-// Nada de nome, e-mail, CPF, telefone ou endereço: do endereço só sai a UF.
+// Do cliente: o nome (contact_name), a cidade de entrega e a chave do e-mail (chaveCliente_). Nada de e-mail,
+// CPF, telefone ou endereço: do endereço só saem a UF e a cidade.
 function pedidoApiParaLinha_(o, nomes, fotos){
   var pd = o.payment_details || {};
   var cupom = Array.isArray(o.coupon) ? o.coupon.map(function(c){ return c && c.code; }).filter(String).join(', ') : textoApi_(o.coupon);
@@ -917,7 +942,10 @@ function pedidoApiParaLinha_(o, nomes, fotos){
     'Data e hora do cancelamento':dataApiParaCsv_(o.cancelled_at),
     'Motivo do cancelamento':VENDAS_API_MOTIVO[o.cancel_reason] || textoApi_(o.cancel_reason),
     'Parcelas':pd.method === 'credit_card' && pd.installments ? String(pd.installments) : '', // no CSV, Pix fica vazio
-    'Meio de pagamento':VENDAS_API_MEIO[pd.method] || textoApi_(pd.method)
+    'Meio de pagamento':VENDAS_API_MEIO[pd.method] || textoApi_(pd.method),
+    'Cidade':textoApi_((o.shipping_address || {}).city),
+    'Nome do comprador':textoApi_(o.contact_name || (o.customer || {}).name),
+    'Cliente':chaveCliente_(o.contact_email || (o.customer || {}).email)
   };
   var r = VENDAS_COLUNAS.map(function(c){ return col[c] || ''; });
   var qtd = 0, itens = [];
@@ -925,7 +953,7 @@ function pedidoApiParaLinha_(o, nomes, fotos){
     var q = Number(it.quantity) || 0, sku = textoApi_(it.sku).replace(/[,:]/g, '');
     qtd += q;
     if(sku){
-      itens.push(sku + ':' + q); if(it.name) nomes[sku] = textoApi_(it.name);
+      itens.push(itemSkuTexto_(sku, q, it.price)); if(it.name) nomes[sku] = textoApi_(it.name);
       // foto do item (só o endereço da imagem, nunca dado do cliente); vazio não sobrescreve
       if(fotos){ var u = urlFotoValida_(it.image && it.image.src); if(u) fotos[sku] = u; }
     }
@@ -1020,7 +1048,7 @@ function sincronizarVendasApiNucleo_(relogio){
     if(erro){ s.erro = erro; s.retomar = pend; }
     else if(pend) s.pendente = pend;
     else s.ultimo = cicloIni;
-    props_().setProperty('VENDAS_API', JSON.stringify(s));
+    props_().setProperty(VENDAS_API_PROP, JSON.stringify(s));
     return s.pendente && !erro ? {erro:'consolidando'} : s;
   } finally { lock.releaseLock(); }
 }
@@ -1085,9 +1113,11 @@ function amostraApiNuvemshop(){
     });
     x.shipping_address = {province:(o.shipping_address || {}).province};
     var linha = pedidoApiParaLinha_(o, nomes), traduzido = {}, csv = {};
-    VENDAS_COLUNAS.forEach(function(c, i){ traduzido[c] = linha[i]; });
+    // a amostra é para conferir o mapeamento: nome e cidade do cliente ficam de fora (só "preenchido" ou vazio)
+    var semCliente = function(c, v){ return c === 'Nome do comprador' || c === 'Cidade' ? (v ? '(preenchido)' : '') : v; };
+    VENDAS_COLUNAS.forEach(function(c, i){ traduzido[c] = semCliente(c, linha[i]); });
     var b = base[String(o.number)];
-    if(b) VENDAS_COLUNAS.forEach(function(c, i){ csv[c] = b[i]; });
+    if(b) VENDAS_COLUNAS.forEach(function(c, i){ csv[c] = semCliente(c, b[i]); });
     return {api:x, traduzido:traduzido, base_csv:b ? csv : null};
   });
   var pastaBase = pastaBaseVendas_(pastaVendas_());
@@ -1614,8 +1644,8 @@ function obterDevolucoes_(token, versao){
       }
       if(origens[n]) pedidosOrigem[n] = resumoPedidoDevol_(r, venda, entregas[n], dia);
       if(!r[VENDAS_SKUS] || !venda) return;
-      String(r[VENDAS_SKUS]).split(',').forEach(function(item){
-        var k = item.lastIndexOf(':'), sku = item.slice(0, k), q = Number(item.slice(k + 1)) || 0;
+      itensSku_(r[VENDAS_SKUS]).forEach(function(it){
+        var sku = it.sku, q = it.q;
         var p = parte(sku), m = idxModelo[p.modelo];
         if(m === undefined) return;
         [String(m), m + '|' + p.tam].forEach(function(chave){
@@ -2304,6 +2334,65 @@ function salvarSaldoNP(token, dados){
     props_().setProperty(NP_SALDO_PROP, JSON.stringify(x));
   } finally { lock.releaseLock(); }
   return obterSaldoNP(token);
+}
+
+/* ===================== Metas e prazos de Vendas (etapa 30) ===================== */
+
+// Metas mensais aprovadas pelo usuário em 29/10/2026 (proposta do vendas-ecommerce sobre o histórico de mar–out/2026).
+// verde = a partir de quanto é verde; amarelo = a partir de quanto é amarelo (abaixo disso, vermelho). Em "pct" o valor
+// é percentual (38 = 38%). Os prazos (dias) são das filas de Vendas. Ficam na propriedade VENDAS_METAS; só o
+// administrador grava; todo cadastrado lê. Sem propriedade gravada valem os padrões abaixo.
+var VENDAS_METAS_PROP = 'VENDAS_METAS';
+var VENDAS_METAS_PADRAO = {
+  faturamento:{verde:2180000, amarelo:1490000},
+  pedidos:{verde:5000, amarelo:3500},
+  ticket:{verde:400, amarelo:340},
+  recorrentes:{verde:38, amarelo:30},
+  prazos:{pendente:2, boleto:4, cancelPago:5, topProblema:3, recusadoRecorrente:1, emRisco:90}
+};
+
+function metasVendas_(){
+  var x = null;
+  try{ x = JSON.parse(props_().getProperty(VENDAS_METAS_PROP) || 'null'); } catch(e){}
+  var m = JSON.parse(JSON.stringify(VENDAS_METAS_PADRAO));
+  if(x && typeof x === 'object'){
+    Object.keys(m).forEach(function(k){
+      if(!x[k] || typeof x[k] !== 'object') return;
+      Object.keys(m[k]).forEach(function(c){ var v = Number(x[k][c]); if(isFinite(v) && v >= 0) m[k][c] = v; });
+    });
+    m.autor = x.autor || ''; m.em = x.em || '';
+  }
+  return m;
+}
+
+function obterMetasVendas(token){
+  if(!contaComToken_(token)) return {erro:'senha_necessaria'};
+  return {metas:metasVendas_(), padrao:VENDAS_METAS_PADRAO};
+}
+
+// metas: mesmo formato de VENDAS_METAS_PADRAO (só os campos conhecidos são lidos); {padrao:true} volta aos padrões
+function salvarMetasVendas(token, metas){
+  var conta = contaAdmin_(token);
+  if(!conta) return {erro:'sem_permissao'};
+  metas = metas || {};
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try{
+    if(metas.padrao === true){ props_().deleteProperty(VENDAS_METAS_PROP); return obterMetasVendas(token); }
+    var nova = {};
+    for(var k in VENDAS_METAS_PADRAO){
+      nova[k] = {};
+      for(var c in VENDAS_METAS_PADRAO[k]){
+        var v = metas[k] && metas[k][c] !== '' && metas[k][c] != null ? Number(metas[k][c]) : VENDAS_METAS_PADRAO[k][c];
+        if(!isFinite(v) || v < 0 || v > 1e9) return {erro:'valor_invalido', campo:k + '.' + c};
+        nova[k][c] = Math.round(v * 100) / 100;
+      }
+      if(k !== 'prazos' && nova[k].amarelo > nova[k].verde) return {erro:'faixa_invalida', campo:k};
+    }
+    nova.autor = conta.email; nova.em = new Date().toISOString();
+    props_().setProperty(VENDAS_METAS_PROP, JSON.stringify(nova));
+  } finally { lock.releaseLock(); }
+  return obterMetasVendas(token);
 }
 
 /* ===================== Relatório da manhã por e-mail ===================== */
