@@ -78,7 +78,7 @@ function exigirDonoEditor_(){
 }
 
 // Versão deste código. Só mude ao publicar uma versão nova (veja gatilhoLiberado_ e marcarProducaoVersao).
-var CODIGO_VERSAO = 'etapa29-2026-10-29';
+var CODIGO_VERSAO = 'etapa28-2026-10-28';
 
 // Os gatilhos de 15 min rodam o código HEAD (o último push, mesmo que só para teste) sobre as bases reais.
 // Depois que o dono roda marcarProducaoVersao() (com a versão publicada), os gatilhos só trabalham se
