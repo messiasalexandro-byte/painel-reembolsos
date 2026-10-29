@@ -2025,13 +2025,15 @@ table.data-table tbody tr:has(> td.empty-cell):hover{ background:transparent; }
 .ped-table tbody tr[data-id]:focus-within{ background:var(--row-hover); }
 @media (hover:hover){ .ped-table tbody tr[data-id]:hover .row-open{ transform:translateX(2px); } }
 @media (prefers-reduced-motion:reduce){ .ped-table tbody tr[data-id]:hover .row-open{ transform:none; } }
+.ped-table td.ped-ajd{ font-size:11.5px; line-height:1.4; }
+.ped-table td.ped-ajd .v-sit{ white-space:normal; }
 /* Pedidos no celular: cartão com nº, data, total, líquido, reembolso e devolução */
 @media (max-width:640px){
   .ped-table thead{ display:none; }
   .ped-table, .ped-table tbody, .ped-table tfoot{ display:block; }
   .ped-table tbody tr[data-id]{
     display:grid; grid-template-columns:minmax(0,1fr) auto 32px; gap:4px 12px; padding:12px 4px; border-bottom:1px solid var(--row-sep);
-    grid-template-areas:"num total open" "data liq open" "sit reemb open" "devol devol open";
+    grid-template-areas:"num total open" "data liq open" "sit reemb open" "devol devol open" "ajd ajd open";
   }
   .ped-table tbody tr:not([data-id]){ display:block; }
   .ped-table tbody td{ display:block; border:none; padding:0; white-space:normal; position:static; box-shadow:none; background:none; }
@@ -2043,6 +2045,8 @@ table.data-table tbody tr:has(> td.empty-cell):hover{ background:transparent; }
   .ped-table td.ped-sit{ grid-area:sit; }
   .ped-table td.ped-reemb{ grid-area:reemb; font-size:12px; text-align:right; }
   .ped-table td.ped-devol{ grid-area:devol; font-size:12px; }
+  .ped-table td.ped-ajd{ grid-area:ajd; font-size:12px; }
+  .ped-table tbody td.ped-ajd::before{ content:'AJD '; color:var(--text-muted); }
   .ped-table tbody td.ped-liq::before{ content:'Líquido '; color:var(--text-muted); }
   .ped-table tbody td.ped-reemb::before{ content:'Reembolso '; color:var(--text-muted); }
   .ped-table tbody td.ped-devol::before{ content:'Devolução '; color:var(--text-muted); }
@@ -2425,6 +2429,7 @@ table.data-table tbody tr:has(> td.empty-cell):hover{ background:transparent; }
       <div class="nav-group-label">Comercial e Operação</div>
         <a class="side-link" href="#/vendas" data-route="vendas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span>Vendas</span></a>
         <a class="side-link" href="#/pedidos" data-route="pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span>Pedidos</span></a>
+        <a class="side-link" href="#/pedidos?aba=pago" data-route="pedidos" data-nav-aba="pago"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M12 12.5v3M12 18.5h.01"/></svg><span>Pago e não faturado</span><span class="nav-count" id="nav-pago-count" hidden></span></a>
       <div class="nav-sub-label">Reembolsos e Devoluções</div>
         <a class="side-link" href="#/devolucoes" data-route="devolucoes" data-nav-aba="fila"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span>Filas de trabalho</span><span class="nav-count" id="nav-filas-count" hidden></span></a>
         <a class="side-link" href="#/devolucoes?aba=casos" data-route="devolucoes" data-nav-aba="casos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h5l2 3h4l2-3h5"/><path d="M5.5 5h13L21 13v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"/></svg><span>Casos de devolução</span></a>
@@ -3057,7 +3062,17 @@ table.data-table tbody tr:has(> td.empty-cell):hover{ background:transparent; }
         <div class="panel" id="sem-permissao-painel"></div>
       </section>
 
+      <!-- Pedidos: Lista de pedidos (vendas da Nuvemshop) + quatro visões da operação AJD (pedidos e NFs de venda da AfterClick).
+           Abas no endereço: #/pedidos?aba=pago | tempo | vxnf | envio (sem aba = a lista). O desenho das abas novas é feito por op* -->
       <section class="page" data-page="pedidos" hidden>
+        <div class="page-tabs" id="tabs-ped" role="tablist" aria-label="Pedidos">
+          <button type="button" class="page-tab" role="tab" id="ptab-btn-lista" data-paba="lista" aria-controls="ptab-lista" aria-selected="true">Lista de pedidos</button>
+          <button type="button" class="page-tab" role="tab" id="ptab-btn-pago" data-paba="pago" aria-controls="ptab-pago" aria-selected="false" tabindex="-1">Pago e não faturado</button>
+          <button type="button" class="page-tab" role="tab" id="ptab-btn-tempo" data-paba="tempo" aria-controls="ptab-tempo" aria-selected="false" tabindex="-1">Tempo para faturar</button>
+          <button type="button" class="page-tab" role="tab" id="ptab-btn-vxnf" data-paba="vxnf" aria-controls="ptab-vxnf" aria-selected="false" tabindex="-1">Venda × NF</button>
+          <button type="button" class="page-tab" role="tab" id="ptab-btn-envio" data-paba="envio" aria-controls="ptab-envio" aria-selected="false" tabindex="-1">Envio e entrega</button>
+        </div>
+        <div class="tab-panel" id="ptab-lista" role="tabpanel" aria-labelledby="ptab-btn-lista" data-paba="lista">
         <div class="panel vendas-vazio" id="pedidos-vazio" hidden></div>
         <div class="panels-grid" id="pedidos-conteudo" hidden>
           <div class="form-row page-filters panel-wide" role="group" aria-label="Filtros dos pedidos">
@@ -3072,6 +3087,26 @@ table.data-table tbody tr:has(> td.empty-cell):hover{ background:transparent; }
             <div class="panel-header"><div class="panel-title" id="pedidos-title">Pedidos</div><div class="panel-meta" id="pedidos-meta"></div></div>
             <div class="table-wrap"><table class="data-table ped-table" id="table-pedidos"></table></div>
             <div class="pager" id="pedidos-pager"></div>
+          </div>
+        </div>
+        </div>
+
+        <!-- visões da operação AJD (desenhadas por opRender; nada aqui vem de cliente) -->
+        <div id="op-raiz" hidden>
+          <div id="op-aviso" aria-live="polite"></div>
+          <div class="panel vendas-vazio" id="op-vazio" hidden></div>
+          <div id="op-conteudo" hidden>
+            <div class="tab-panel" id="ptab-pago" role="tabpanel" aria-labelledby="ptab-btn-pago" data-paba="pago" hidden></div>
+            <div class="tab-panel" id="ptab-tempo" role="tabpanel" aria-labelledby="ptab-btn-tempo" data-paba="tempo" hidden>
+              <div class="form-row page-filters" role="group" aria-label="Período do tempo para faturar">
+                <div class="form-field"><label for="op-tempo-per">Período (data do pedido)</label><select class="select" id="op-tempo-per"><option value="mes">Mês</option><option value="semana">Semana</option><option value="dia">Dia</option><option value="tudo">Todo o histórico</option></select></div>
+                <div class="form-field" id="op-tempo-mes-campo"><label for="op-tempo-mes">Mês</label><select class="select" id="op-tempo-mes"></select></div>
+                <div class="form-field" id="op-tempo-dia-campo" hidden><label for="op-tempo-dia" id="op-tempo-dia-label">Dia</label><input type="date" class="date-input" id="op-tempo-dia"></div>
+              </div>
+              <div id="op-tempo-res"></div>
+            </div>
+            <div class="tab-panel" id="ptab-vxnf" role="tabpanel" aria-labelledby="ptab-btn-vxnf" data-paba="vxnf" hidden></div>
+            <div class="tab-panel" id="ptab-envio" role="tabpanel" aria-labelledby="ptab-btn-envio" data-paba="envio" hidden></div>
           </div>
         </div>
       </section>
@@ -4659,7 +4694,7 @@ function renderPageSub(){
   } else if(route.id === 'sem-permissao'){
     parts.push('O módulo Financeiro abre só para o perfil financeiro');
   } else if(V_ROTAS.indexOf(route.id) >= 0){
-    parts.push(vSubtitulo(route.id));
+    parts.push(route.id === 'pedidos' && oper.aba !== 'lista' ? opSubtitulo() : vSubtitulo(route.id));
   } else if(route.id === 'nuvem-pago'){
     parts.push(npSubtitulo());
   } else if(route.id === 'financeiro'){
@@ -4692,7 +4727,7 @@ function renderPageSub(){
     else parts.push('Todas as categorias');
   }
   // período de trabalho que esta página não pôde adotar (outro ano, ano de vendas não carregado, mês sem lançamento)
-  var aviso = periodoAviso(route.id);
+  var aviso = route.id === 'pedidos' && oper.aba !== 'lista' ? '' : periodoAviso(route.id);   // as visões da AJD não seguem o período de Vendas
   if(aviso) parts.push(aviso);
   document.getElementById('page-sub').textContent = parts.join(' · ');
 }
@@ -5113,7 +5148,7 @@ function syncNavAtivo(){
   var route = currentRoute();
   // abas que acendem item próprio: Devoluções (devol.aba), Recebimentos (np.aba: Conciliação tem o seu item, as outras acendem
   // Recebimentos) e Dia a dia e metas. Na fila NF (f=nf) acende o item NF, e não Filas de trabalho.
-  var aba = route.id === 'devolucoes' ? (devol ? devol.aba : null) : route.id === 'nuvem-pago' ? np.aba : (routeAba(route) ? routeAba(route).id : null);
+  var aba = route.id === 'devolucoes' ? (devol ? devol.aba : null) : route.id === 'nuvem-pago' ? np.aba : route.id === 'pedidos' ? (oper ? oper.aba : null) : (routeAba(route) ? routeAba(route).id : null);
   var fila = route.id === 'devolucoes' && aba === 'fila' && devol.fila ? devol.fila : '';
   var links = Array.prototype.slice.call(document.querySelectorAll('.side-link'));
   var daRota = links.filter(function(a){ return a.dataset.route === route.id; });
@@ -5131,6 +5166,7 @@ function syncNavAtivo(){
 function tituloPagina(route){
   route = route || currentRoute();
   if(route.id === 'devolucoes') return (devol && devol.aba === 'fila' && devol.fila === 'nf') ? 'NF de devolução' : (devol && DV_ABA_TITULOS[devol.aba]) || route.title;
+  if(route.id === 'pedidos' && oper && oper.aba === 'pago') return 'Pago e não faturado';   // o nome do item do menu
   var aba = routeAba(route);
   return aba ? aba.title : route.title;
 }
@@ -6162,6 +6198,8 @@ function startDrivePolling(){
     if(np.linhas) carregarNuvemPago(true);
     // devoluções: só depois da primeira carga (a extensão manda um export novo por hora)
     if(devol.sols && !devol.consolidando) carregarDevolucoes(true);
+    // operação da AJD: só depois da primeira carga (aberta ao visitar Pedidos); a extensão manda envios novos ao longo do dia
+    if(oper.dados && !oper.consolidando) carregarOperacao(true);
   }, DRIVE_POLL_MS);
   // aba que volta ao primeiro plano depois de muito tempo verifica na hora
   document.addEventListener('visibilitychange', function(){
@@ -6169,6 +6207,7 @@ function startDrivePolling(){
     if(!drive.checkedAt || Date.now() - drive.checkedAt.getTime() >= DRIVE_POLL_MS) loadFromDrive(true);
     if(vendas.fonte === 'drive' && (!vendas.checkedAt || Date.now() - vendas.checkedAt.getTime() >= DRIVE_POLL_MS)) carregarVendas(true);
     if(devol.sols && !devol.consolidando && (!devol.checkedAt || Date.now() - devol.checkedAt.getTime() >= DRIVE_POLL_MS)) carregarDevolucoes(true);
+    if(oper.dados && !oper.consolidando && (!oper.checkedAt || Date.now() - oper.checkedAt.getTime() >= DRIVE_POLL_MS)) carregarOperacao(true);
   });
 }
 
@@ -8069,8 +8108,14 @@ function searchDestinos(){
       add(r, 'Ritmo e taxas', '#/devolucoes?aba=ritmo', 'devolucoes taxa de devolucao ciclo');
       add(r, 'Produtos devolvidos', '#/devolucoes?aba=pecas', 'devolucoes pecas fotos tamanho modelo');
       add(r, 'Regras e prazos', '#/devolucoes?aba=regras', 'devolucoes sla prazos politica');
+    } else if(r.id === 'pedidos'){
+      add(r, r.title, '#/pedidos', 'pedidos lista nuvemshop');
+      add(r, 'Pago e não faturado', '#/pedidos?aba=pago', 'ajd afterclick nota fiscal nf sla faturar handling atrasado');
+      add(r, 'Tempo para faturar', '#/pedidos?aba=tempo', 'ajd afterclick sla faturamento mediana horas dias uteis');
+      add(r, 'Venda × NF', '#/pedidos?aba=vxnf', 'ajd afterclick nota fiscal valor diferente divergencia cancelado sem pedido');
+      add(r, 'Envio e entrega', '#/pedidos?aba=envio', 'ajd afterclick despacho transito entrega falha na entrega');
     } else if(r.id === 'nuvem-pago'){
-      add(r, r.title, '#/nuvem-pago', 'financeiro extrato saldo liberar custos estornos chargebacks');
+      add(r, r.title, '#/nuvem-pago','financeiro extrato saldo liberar custos estornos chargebacks');
       add(r, 'Conciliação', '#/nuvem-pago?aba=conciliacao', 'financeiro conciliar extrato estornos saldo');
     } else {
       add(r, r.title, '#/' + r.id, r.financeiro ? 'financeiro' : '');
@@ -8185,6 +8230,7 @@ function runCmdkItem(it){
 var REEMB_ROTAS = ['reembolsos', 'lancamentos', 'dia-a-dia', 'mensal', 'canais', 'motivos'];
 function exportDaPagina(){
   var id = currentRoute().id;
+  if(id === 'pedidos' && oper.aba !== 'lista') return oper.dados ? {label:'Lista da aba (CSV)', sub:'a lista principal desta aba da AJD', run:function(){ opExportarCsv(opCsvPrincipal()); }} : null;
   if(id === 'pedidos' && vendas.pedidos) return {label:'Pedidos (CSV)', sub:'com os filtros desta página', run:vExportarPedidosCsv};
   if(id === 'devolucoes' && devol.sols) return {label:'Casos de devolução (CSV)', sub:devol.aba === 'casos' ? 'com os filtros desta página' : 'com os filtros da aba Casos', run:dvExportarCasosCsv};
   if(id === 'dre' && vendas.pedidos && np.linhas) return {label:'DRE de receitas (CSV)', sub:'mês a mês, a mesma tabela da tela', run:dreExportarCsv};
@@ -8753,7 +8799,7 @@ function vAplicar(dados, fonte){
   if(vendas.paramsPendentes){
     var pp = vendas.paramsPendentes;
     vendas.paramsPendentes = null;
-    vApplyParams(pp.params, pp.routeId);
+    vApplyParams(pp.params, pp.routeId, true);
   } else if(periodoVendasPendente){
     // entrou em Vendas/Pedidos antes de as vendas chegarem: adota o período de trabalho agora, se o ano veio
     periodoVendasPendente = false;
@@ -9001,6 +9047,7 @@ function vIrParaPedidos(o){
 /* ---- Endereço ---- */
 
 function vBuildHash(routeId){
+  if(routeId === 'pedidos' && oper.aba !== 'lista') return opBuildHash();   // abas da operação AJD: endereço próprio
   var q = [];
   function add(k, v){ q.push(k + '=' + encodeURIComponent(v)); }
   if(vendas.ano != null && vendas.dia){
@@ -9025,7 +9072,13 @@ function vBuildHash(routeId){
 }
 
 // parâmetros do endereço (link compartilhado, favorito, voltar do navegador); antes das vendas chegarem, ficam guardados
-function vApplyParams(params, routeId){
+function vApplyParams(params, routeId, adiado){
+  // Pedidos tem abas: a da operação AJD não usa os parâmetros da lista (nem espera as vendas chegarem).
+  // adiado = parâmetros guardados até as vendas chegarem: a aba já foi decidida na hora, e a pessoa pode ter trocado de aba.
+  if(routeId === 'pedidos' && !adiado){
+    opApplyParams(params);
+    if(oper.aba !== 'lista') return;
+  }
   if(!vendas.pedidos){ vendas.paramsPendentes = {params:params, routeId:routeId}; return; }
   // link de outro ano no painel online: busca aquele ano e aplica o resto quando ele chegar
   var anoLink = parseInt(params.ano || String(params.dia || params.sem || '').slice(0, 4), 10);
@@ -9079,6 +9132,8 @@ function renderVendasSeVisivel(){
   if(IS_APPS_SCRIPT && !vendas.pedidos && !vendas.carregando && !vendas.erro && !vendas.consolidando) carregarVendas(false);
   // devoluções em segundo plano: taxa de devolução nos indicadores e seção no drawer do pedido
   if(IS_APPS_SCRIPT && vendas.pedidos && !devol.sols && !devol.carregando && !devol.erro && !devol.consolidando) carregarDevolucoes(true);
+  // operação da AJD (status e NFs dos pedidos): carrega na primeira visita a Pedidos; depois, o ciclo de verificação mantém em dia
+  if(r === 'pedidos' && IS_APPS_SCRIPT && !oper.dados && !oper.carregando && !oper.erro && !oper.consolidando) carregarOperacao(false);
   if(r === 'vendas') renderVendas(); else renderPedidos();
 }
 
@@ -9546,6 +9601,9 @@ function vPagamentoTxt(x){
 }
 
 function renderPedidos(){
+  opSyncAbas();
+  // abas da operação AJD: desenhadas por opRender (a lista de pedidos abaixo fica como está)
+  if(oper.aba !== 'lista'){ opRender(); renderPageSub(); syncUrl(); return; }
   if(!vSyncVazio('pedidos')){ renderPageSub(); syncUrl(); return; }
   var p = vendas.ped;
   var sit = document.getElementById('ped-sit'), meio = document.getElementById('ped-meio');
@@ -9584,18 +9642,18 @@ function renderPedidos(){
     return '<td class="ped-devol"><span class="v-sit dv-etapa is-' + cs[cs.length - 1].etapa + '" title="Etapa do caso mais recente">' + escapeHtml(txt) + '</span></td>';
   }
 
-  var head = '<thead><tr><th class="ped-num">Pedido</th><th class="ped-data">Data</th><th class="ped-sit">Situação</th><th class="ped-pag">Pagamento</th><th class="ped-cupom">Cupom de desconto</th><th class="num ped-total">Total</th><th class="num ped-desc">Desconto</th><th class="num ped-taxas">Taxas + juros</th><th class="num ped-estorno">Estorno (Nuvem Pago)</th><th class="num ped-liq">Líquido</th><th class="num ped-reemb">Reembolso</th><th class="ped-devol">Devolução</th><th class="col-open"><span class="sr-only">Detalhe</span></th></tr></thead>';
+  var head = '<thead><tr><th class="ped-num">Pedido</th><th class="ped-data">Data</th><th class="ped-sit">Situação</th><th class="ped-pag">Pagamento</th><th class="ped-cupom">Cupom de desconto</th><th class="num ped-total">Total</th><th class="num ped-desc">Desconto</th><th class="num ped-taxas">Taxas + juros</th><th class="num ped-estorno">Estorno (Nuvem Pago)</th><th class="num ped-liq">Líquido</th><th class="num ped-reemb">Reembolso</th><th class="ped-devol">Devolução</th><th class="ped-ajd">AJD · NF</th><th class="col-open"><span class="sr-only">Detalhe</span></th></tr></thead>';
   var body = pageRows.map(function(x){
     var venda = x.situacao === 'venda' && !x.semFin;
     return '<tr data-id="v' + escapeHtml(x.num) + '" data-v-pedido="' + escapeHtml(x.num) + '"><td class="ped-num">#' + escapeHtml(x.num) + '</td><td class="ped-data">' + fmtDate(x.data) + ' ' + vHora(x.data) + '</td>' +
       '<td class="ped-sit"><span class="v-sit is-' + x.situacao + '">' + escapeHtml(vSituacaoLabel(x.situacao)) + '</span></td><td class="ped-pag">' + escapeHtml(vPagamentoTxt(x)) + '</td>' +
       '<td class="ped-cupom' + (x.cupom ? '' : ' is-empty') + '">' + escapeHtml(x.cupom || '—') + '</td><td class="num ped-total">' + fmtValor(x.total) + '</td>' +
       '<td class="num ped-desc">' + fmtValor(x.desconto) + '</td><td class="num ped-taxas">' + (venda ? fmtValor(x.taxas + x.juros) : '—') + '</td><td class="num ped-estorno">' + (x.estorno ? fmtValor(x.estorno) : '—') + '</td><td class="num ped-liq">' + (venda ? fmtValor(x.liquido) : x.semFin && x.situacao === 'venda' ? '<span title="Taxa, juros e estorno chegam com o extrato do Nuvem Pago">aguardando</span>' : '—') + '</td>' +
-      reembTd(x) + devolTd(x) +
+      reembTd(x) + devolTd(x) + opCelulaLista(x.num) +
       '<td class="col-open"><button type="button" class="row-open" aria-label="Abrir pedido ' + escapeHtml(x.num) + '">›</button></td></tr>';
   }).join('');
-  if(!body) body = '<tr><td colspan="13" class="empty-cell">Nenhum pedido para os filtros atuais.</td></tr>';
-  var foot = '<tfoot><tr><td colspan="5" class="ped-foot-label">Vendas filtradas</td><td class="num ped-total">' + fmtValor(tot.faturamento) + '</td><td class="num ped-desc">' + fmtValor(tot.desconto) + '</td><td class="num ped-taxas">' + fmtValor(tot.custoPag) + '</td><td class="num ped-estorno">' + fmtValor(tot.estorno) + '</td><td class="num ped-liq">' + fmtValor(tot.liquido) + '</td><td></td><td></td><td></td></tr></tfoot>';
+  if(!body) body = '<tr><td colspan="14" class="empty-cell">Nenhum pedido para os filtros atuais.</td></tr>';
+  var foot = '<tfoot><tr><td colspan="5" class="ped-foot-label">Vendas filtradas</td><td class="num ped-total">' + fmtValor(tot.faturamento) + '</td><td class="num ped-desc">' + fmtValor(tot.desconto) + '</td><td class="num ped-taxas">' + fmtValor(tot.custoPag) + '</td><td class="num ped-estorno">' + fmtValor(tot.estorno) + '</td><td class="num ped-liq">' + fmtValor(tot.liquido) + '</td><td></td><td></td><td></td><td></td></tr></tfoot>';
   document.getElementById('table-pedidos').innerHTML = head + '<tbody>' + body + '</tbody>' + foot;
   document.getElementById('pedidos-pager').innerHTML = rows.length > V_PAGE_SIZE
     ? '<button class="btn btn-sm" type="button" data-page="prev"' + (p.page === 0 ? ' disabled' : '') + '>Anterior</button><span>Página ' + (p.page + 1) + ' de ' + pages + '</span><button class="btn btn-sm" type="button" data-page="next"' + (p.page >= pages - 1 ? ' disabled' : '') + '>Próxima</button>'
@@ -9615,6 +9673,817 @@ function vExportarPedidosCsv(){
       x.semFin ? '' : csvNum(x.taxas, 2), x.semFin ? '' : csvNum(x.juros, 2), x.semFin ? '' : csvNum(x.estorno, 2), x.semFin ? '' : csvNum(x.liquido, 2), x.canal, x.uf].map(esc).join(';'));
   });
   downloadBlob(new Blob(['﻿' + linhas.join('\r\n')], {type:'text/csv;charset=utf-8'}), 'pedidos-nuvemshop-' + isoDate(new Date()) + '.csv');
+}
+
+/* ===================== Operação AJD: pedidos e notas fiscais de venda (AfterClick) ===================== */
+// Base que a extensão da AfterClick manda para o Drive (obterOperacao): pedidos da AJD (status, valor) e NFs de venda.
+// Só dados operacionais; nada de cliente. Datas "AAAA-MM-DD HH:MM" em horário de Brasília (como vêm da AJD).
+// A parte "OPR-PURO" não mexe na tela: são as regras e as contas (dias úteis, SLA, filas, conciliação), testadas em Node
+// contra a base real. A tela (funções op*) vem depois e só desenha o que estas funções devolvem.
+
+/* OPR-PURO-INICIO */
+var OPR_SLA_DIAS = 2;            // SLA de faturamento: até 2 dias úteis da CRIAÇÃO do pedido até a emissão da NF
+var OPR_TOLERANCIA = 0.05;       // venda × NF: diferenças de até R$ 0,05 não contam
+var OPR_HIST_BASE_MS = 30 * 60 * 1000; // marcas do histórico até 30 min depois da primeira são "já estava assim" (carga inicial)
+var OPR_PARADA_H = 3;            // extensão sem enviar pedidos há mais de 3 h = possível parada
+var OPR_PED_COLS = ['orderId','orderNumber','creationDate','orderStatus','orderStatusSub','totalValue','origin','orderType','uf','lastMessage','lidoEm'];
+var OPR_NF_COLS = ['invoiceId','orderId','orderNumber','typeInvoice','invoiceNumber','invoiceSeries','invoiceKey','creationDate','issuanceDate','authorizationDate','invoiceValue','invoiceStatus','isCanceled','cancelationDate','dispatchedDate','vistaEm'];
+// Feriados que não contam como dia útil (AAAA-MM-DD). Nacionais oficiais + Carnaval (segunda e terça, que a empresa não trabalha).
+// Corpus Christi é ponto facultativo e NÃO está na lista (2026: 04/06; 2027: 27/05): se a empresa folgar, é só acrescentar a data.
+// Sem 2028 em diante: quando chegar o fim de 2027, acrescente os feriados do ano novo aqui.
+var OPR_FERIADOS = [
+  // 2026
+  '2026-01-01',                 // Confraternização Universal
+  '2026-02-16', '2026-02-17',   // Carnaval (segunda e terça)
+  '2026-04-03',                 // Sexta-feira Santa
+  '2026-04-21',                 // Tiradentes
+  '2026-05-01',                 // Dia do Trabalho
+  '2026-09-07',                 // Independência
+  '2026-10-12',                 // Nossa Senhora Aparecida
+  '2026-11-02',                 // Finados
+  '2026-11-15',                 // Proclamação da República (domingo)
+  '2026-11-20',                 // Consciência Negra
+  '2026-12-25',                 // Natal
+  // 2027
+  '2027-01-01',
+  '2027-02-08', '2027-02-09',   // Carnaval
+  '2027-03-26',                 // Sexta-feira Santa
+  '2027-04-21',
+  '2027-05-01',
+  '2027-09-07',
+  '2027-10-12',
+  '2027-11-02',
+  '2027-11-15',
+  '2027-11-20',
+  '2027-12-25'
+];
+var OPR_FERIADOS_SET = null;
+
+// "AAAA-MM-DD..." → número do dia (dias desde 1970), sem fuso: só contamos dias de calendário
+function oprDia(s){
+  var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || ''));
+  return m ? Math.floor(Date.UTC(+m[1], +m[2] - 1, +m[3]) / 864e5) : null;
+}
+function oprDiaTxt(n){ return new Date(n * 864e5).toISOString().slice(0, 10); }
+// "AAAA-MM-DD HH:MM" → ms (as duas pontas da conta estão no mesmo fuso, então a diferença é exata)
+function oprMs(s){
+  var m = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/.exec(String(s || ''));
+  return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0)) : null;
+}
+// Date local (o relógio do navegador, no Brasil) → "AAAA-MM-DD HH:MM"
+function oprAgoraTxt(d){
+  function p(n){ return (n < 10 ? '0' : '') + n; }
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+function oprUtil(dia){
+  if(!OPR_FERIADOS_SET){ OPR_FERIADOS_SET = {}; OPR_FERIADOS.forEach(function(f){ OPR_FERIADOS_SET[oprDia(f)] = true; }); }
+  var w = (dia + 4) % 7;   // 1970-01-01 foi quinta: 0 = domingo … 6 = sábado
+  return w !== 0 && w !== 6 && !OPR_FERIADOS_SET[dia];
+}
+// Dias úteis decorridos entre duas datas: conta cada dia útil depois do dia de "de" até o dia de "ate" (inclusive).
+// Pedido de sexta à noite, NF na segunda = 1; pedido e NF no mesmo dia = 0; pedido de segunda, NF na quarta = 2.
+function oprDiasUteis(de, ate){
+  var a = oprDia(de), b = oprDia(ate), n = 0;
+  if(a == null || b == null) return null;
+  for(var d = a + 1; d <= b; d++) if(oprUtil(d)) n++;
+  return n;
+}
+function oprQuantil(ord, q){   // ord já ordenado; posição pelo "posto mais próximo" (p90 de 10 itens = o 9º)
+  if(!ord.length) return null;
+  return ord[Math.min(ord.length - 1, Math.max(0, Math.ceil(q * ord.length) - 1))];
+}
+function oprMediana(ord){
+  var n = ord.length;
+  if(!n) return null;
+  return n % 2 ? ord[(n - 1) / 2] : (ord[n / 2 - 1] + ord[n / 2]) / 2;
+}
+function oprArred(v){ return Math.round(v * 100) / 100; }
+function oprCancelada(v){ return v === true || v === 1 || v === '1' || v === 'true'; }
+
+// status da AJD → rótulo e cor (as classes são as das pílulas .v-sit)
+function oprStatusInfo(status, sub){
+  if(status === 'delivered') return {label:'Entregue', cls:'is-venda'};
+  if(status === 'canceled') return {label:'Cancelado', cls:'is-cancelado'};
+  if(status === 'handling') return {label:'Em processamento', cls:'is-pendente'};
+  if(status === 'payment-approved') return {label:'Pagamento aprovado', cls:'is-pendente'};
+  if(status === 'payment-pending') return {label:'Aguardando pagamento', cls:''};
+  if(status === 'invoiced'){
+    if(!sub) return {label:'Faturado (aguardando despacho)', cls:''};
+    if(sub === 'dispatched') return {label:'Em trânsito', cls:''};
+    if(sub === 'shipping-failed') return {label:'Falha na entrega', cls:'is-cancelado'};
+    return {label:'Faturado · ' + sub, cls:''};
+  }
+  return {label:status ? status + (sub ? ' · ' + sub : '') : 'Sem status', cls:''};
+}
+
+// resposta de obterOperacao → pedidos com as NFs ligadas, prontos para as contas
+function oprPreparar(r){
+  var cp = r.colunasPed || OPR_PED_COLS, cn = r.colunasNf || OPR_NF_COLS, ip = {}, inf = {};
+  cp.forEach(function(c, i){ ip[c] = i; });
+  cn.forEach(function(c, i){ inf[c] = i; });
+  var hist = r.hist || {}, peds = [], porNum = {}, minCriado = '';
+  Object.keys(r.ped || {}).forEach(function(n){
+    var a = r.ped[n];
+    var p = {num:n, criado:String(a[ip.creationDate] || ''), status:String(a[ip.orderStatus] || ''), sub:String(a[ip.orderStatusSub] || ''),
+      total:Number(a[ip.totalValue]) || 0, uf:String(a[ip.uf] || ''), nfs:[], validas:[], hist:hist[n] || {}};
+    if(p.criado && (!minCriado || p.criado < minCriado)) minCriado = p.criado;
+    peds.push(p);
+    porNum[n] = p;
+  });
+  var orfas = [];
+  Object.keys(r.nfs || {}).forEach(function(n){
+    (r.nfs[n] || []).forEach(function(a){
+      var tipo = String(a[inf.typeInvoice] || '');
+      if(tipo === 'input') return;   // NF de entrada (devolução) não é NF de venda
+      var nf = {num:n, numero:String(a[inf.invoiceNumber] || ''), serie:String(a[inf.invoiceSeries] || ''), pedidoEm:String(a[inf.creationDate] || ''),
+        emissao:String(a[inf.issuanceDate] || a[inf.authorizationDate] || ''), valor:Number(a[inf.invoiceValue]) || 0, cancelada:oprCancelada(a[inf.isCanceled])};
+      var p = porNum[n];
+      if(p){ p.nfs.push(nf); if(!nf.cancelada) p.validas.push(nf); }
+      else if(!nf.cancelada) orfas.push(nf);
+    });
+  });
+  peds.forEach(function(p){ p.validas.sort(function(x, y){ return x.emissao < y.emissao ? -1 : x.emissao > y.emissao ? 1 : 0; }); });
+  peds.sort(function(x, y){ return x.criado < y.criado ? -1 : x.criado > y.criado ? 1 : 0; });
+  var minMarca = null;
+  Object.keys(hist).forEach(function(n){ Object.keys(hist[n]).forEach(function(k){ var v = hist[n][k]; if(minMarca == null || v < minMarca) minMarca = v; }); });
+  return {peds:peds, porNum:porNum, orfas:orfas, minCriado:minCriado, histInicio:minMarca, histBase:minMarca == null ? null : minMarca + OPR_HIST_BASE_MS};
+}
+
+// 1) Pago e não faturado: handling ou payment-approved sem NF válida. payment-pending fica fora (não está pago).
+function oprPago(D, agora){
+  var itens = [], pendentes = 0, valor = 0, fora = 0, valorFora = 0;
+  D.peds.forEach(function(p){
+    if(p.validas.length) return;
+    if(p.status === 'payment-pending'){ pendentes++; return; }
+    if(p.status !== 'handling' && p.status !== 'payment-approved') return;
+    var u = oprDiasUteis(p.criado, agora);
+    var it = {p:p, dias:u, atraso:u > OPR_SLA_DIAS};
+    itens.push(it);
+    valor += p.total;
+    if(it.atraso){ fora++; valorFora += p.total; }
+  });
+  itens.sort(function(a, b){ return b.dias - a.dias || (a.p.criado < b.p.criado ? -1 : a.p.criado > b.p.criado ? 1 : 0); });
+  return {itens:itens, qtd:itens.length, valor:oprArred(valor), fora:fora, valorFora:oprArred(valorFora), maisAntigo:itens[0] || null, pendentes:pendentes};
+}
+
+// período do "Tempo para faturar": {ini, fim} em AAAA-MM-DD (fim exclusivo; null = sem limite) pela data de CRIAÇÃO do pedido
+function oprFiltroPeriodo(per, mes, dia){
+  if(per === 'mes' && /^\d{4}-\d{2}$/.test(mes || '')){
+    var a = +mes.slice(0, 4), m = +mes.slice(5, 7);
+    return {ini:mes + '-01', fim:(m === 12 ? (a + 1) + '-01' : a + '-' + (m < 9 ? '0' : '') + (m + 1)) + '-01'};
+  }
+  var d = oprDia(dia);
+  if(d != null && per === 'dia') return {ini:oprDiaTxt(d), fim:oprDiaTxt(d + 1)};
+  if(d != null && per === 'semana'){ var seg = d - (((d + 4) % 7) + 6) % 7; return {ini:oprDiaTxt(seg), fim:oprDiaTxt(seg + 7)}; }
+  return {ini:null, fim:null};
+}
+// 2) Tempo para faturar: pedidos com NF válida criados no período (1ª NF válida emitida = a que conta)
+function oprTempo(D, f){
+  var itens = [], semNf = 0, semData = 0;
+  D.peds.forEach(function(p){
+    var dia = p.criado.slice(0, 10);
+    if(f.ini && dia < f.ini) return;
+    if(f.fim && dia >= f.fim) return;
+    if(!p.validas.length){ if(p.status === 'handling' || p.status === 'payment-approved') semNf++; return; }
+    var nf = p.validas[0], t0 = oprMs(p.criado), t1 = oprMs(nf.emissao);
+    if(t0 == null || t1 == null){ semData++; return; }
+    var u = oprDiasUteis(p.criado, nf.emissao);
+    itens.push({p:p, nf:nf, horas:(t1 - t0) / 36e5, dias:u, noSla:u <= OPR_SLA_DIAS});
+  });
+  var horas = itens.map(function(x){ return x.horas; }).sort(function(a, b){ return a - b; });
+  var noSla = itens.filter(function(x){ return x.noSla; }).length;
+  // por dia; por mês quando a faixa passa de 62 dias (ou não tem limite)
+  var span = f.ini && f.fim ? oprDia(f.fim) - oprDia(f.ini) : null;
+  var gran = span != null && span <= 62 ? 'dia' : 'mes', grupos = {};
+  itens.forEach(function(x){
+    var k = gran === 'dia' ? x.p.criado.slice(0, 10) : x.p.criado.slice(0, 7);
+    var g = grupos[k] = grupos[k] || {chave:k, n:0, noSla:0, horas:[]};
+    g.n++; if(x.noSla) g.noSla++; g.horas.push(x.horas);
+  });
+  var serie = Object.keys(grupos).sort().reverse().map(function(k){
+    var g = grupos[k]; g.horas.sort(function(a, b){ return a - b; });
+    return {chave:k, n:g.n, noSla:g.noSla, pct:g.noSla / g.n, mediana:oprMediana(g.horas)};
+  });
+  var fora = itens.filter(function(x){ return !x.noSla; }).sort(function(a, b){ return b.dias - a.dias || b.horas - a.horas; });
+  return {itens:itens, n:itens.length, noSla:noSla, pct:itens.length ? noSla / itens.length : null, mediana:oprMediana(horas), p90:oprQuantil(horas, 0.9),
+    gran:gran, serie:serie, fora:fora, semNf:semNf, semData:semData, negativos:itens.filter(function(x){ return x.horas < 0; }).length};
+}
+
+// 3) Venda × NF. ns(num) devolve o pedido da Nuvemshop (ou null quando as vendas não estão carregadas / o pedido é de outro ano)
+function oprVendaNf(D, ns){
+  var valor = [], semNf = [], cancelada = [], semPed = [], foraJanela = [];
+  D.peds.forEach(function(p){
+    var soma = oprArred(p.validas.reduce(function(a, n){ return a + n.valor; }, 0));
+    if(p.status === 'canceled'){ if(p.validas.length) cancelada.push({p:p, soma:soma}); return; }
+    if(!p.validas.length){ if(p.status === 'invoiced' || p.status === 'delivered') semNf.push({p:p}); return; }
+    var dif = oprArred(soma - p.total);
+    if(Math.abs(dif) > OPR_TOLERANCIA + 1e-9) valor.push({p:p, soma:soma, dif:dif, ns:ns ? ns(p.num) : null});
+  });
+  valor.sort(function(a, b){ return Math.abs(b.dif) - Math.abs(a.dif); });
+  var cmp = function(a, b){ return a.p.criado < b.p.criado ? 1 : a.p.criado > b.p.criado ? -1 : 0; };
+  semNf.sort(cmp); cancelada.sort(cmp);
+  D.orfas.forEach(function(nf){
+    // NF de pedido anterior ao primeiro pedido da base: a base de pedidos ainda não chega lá, não é divergência
+    if(nf.pedidoEm && D.minCriado && nf.pedidoEm.slice(0, 16) < D.minCriado.slice(0, 16)) foraJanela.push(nf); else semPed.push(nf);
+  });
+  var cn = function(a, b){ return a.emissao < b.emissao ? 1 : a.emissao > b.emissao ? -1 : 0; };
+  semPed.sort(cn); foraJanela.sort(cn);
+  return {valor:valor, semNf:semNf, cancelada:cancelada, semPed:semPed, foraJanela:foraJanela};
+}
+// leitura da diferença entre o pedido da AJD, a NF e o total da Nuvemshop
+function oprLeitura(x){
+  if(!x.ns) return '';
+  var t = x.ns.total;
+  if(Math.abs(t - x.soma) <= OPR_TOLERANCIA + 1e-9) return 'Nuvemshop = NF (o pedido da AJD é o diferente)';
+  if(Math.abs(t - x.p.total) <= OPR_TOLERANCIA + 1e-9) return 'Nuvemshop = pedido da AJD (a NF é a diferente)';
+  return 'Os três valores diferem';
+}
+
+// 4) Envio e entrega: contagem por etapa e filas (dias úteis desde a emissão da NF; "desde" real pelo histórico quando houver)
+var OPR_ETAPAS = [
+  {id:'despacho', label:'Faturado, aguardando despacho', marca:'s:invoiced', teste:function(p){ return p.status === 'invoiced' && !p.sub; }},
+  {id:'transito', label:'Em trânsito', marca:'u:dispatched', teste:function(p){ return p.status === 'invoiced' && p.sub === 'dispatched'; }},
+  {id:'falha', label:'Falha na entrega', marca:'u:shipping-failed', teste:function(p){ return p.status === 'invoiced' && p.sub === 'shipping-failed'; }},
+  {id:'entregue', label:'Entregue', marca:null, teste:function(p){ return p.status === 'delivered'; }}
+];
+function oprEnvio(D, agora){
+  var filas = {}, contagem = {}, outros = 0;
+  OPR_ETAPAS.forEach(function(e){ filas[e.id] = []; contagem[e.id] = 0; });
+  D.peds.forEach(function(p){
+    var e = OPR_ETAPAS.filter(function(x){ return x.teste(p); })[0];
+    if(!e){ if(p.status === 'invoiced') outros++; return; }
+    contagem[e.id]++;
+    if(e.id === 'entregue') return;
+    var nf = p.validas[0] || null, ms = p.hist[e.marca];
+    filas[e.id].push({p:p, nf:nf, dias:nf && nf.emissao ? oprDiasUteis(nf.emissao, agora) : null,
+      desde:ms != null && D.histBase != null && ms > D.histBase ? ms : null, desdeAntes:ms != null && !(D.histBase != null && ms > D.histBase)});
+  });
+  OPR_ETAPAS.forEach(function(e){
+    filas[e.id].sort(function(a, b){
+      if(a.dias == null && b.dias == null) return 0;
+      if(a.dias == null) return 1;
+      if(b.dias == null) return -1;
+      return b.dias - a.dias;
+    });
+  });
+  return {contagem:contagem, filas:filas, outros:outros};
+}
+/* OPR-PURO-FIM */
+
+/* ---- Operação AJD: estado, carga e verificação ---- */
+
+var OPER_ERROS = {
+  sem_arquivo:'Ainda não chegou nenhum envio da extensão da AfterClick (pedidos e notas fiscais da AJD) para a pasta "nuvemshop/AJD" do Drive.'
+};
+var OP_ABAS = ['lista', 'pago', 'tempo', 'vxnf', 'envio'];
+var OP_TEMPO_PERS = ['mes', 'semana', 'dia', 'tudo'];
+var OP_VXNF = [
+  {id:'valor', label:'Valor diferente'},
+  {id:'semnf', label:'Faturado ou entregue sem NF'},
+  {id:'cancelada', label:'Cancelado com NF válida'},
+  {id:'semped', label:'NF sem pedido'}
+];
+var OP_FILAS_ENVIO = ['despacho', 'transito', 'falha'];
+var oper = {
+  dados:null, versao:null, carregando:false, erro:null, consolidando:null, retryTimer:null, checkedAt:null,
+  arquivos:[], avisos:[], auto:{},
+  aba:'lista',
+  tempo:{per:'mes', mes:'', dia:''},
+  vxnf:{f:'valor'},
+  envio:{f:''},
+  pag:{},      // página aberta de cada lista (chave da lista → número)
+  listas:{},   // listas desenhadas por último (colunas e linhas): servem ao "Baixar CSV"
+  cache:{}
+};
+
+function opErroTxt(r){ return OPER_ERROS[r.erro] || DEVOL_ERROS[r.erro] || VENDAS_ERROS[r.erro] || ('Erro: ' + r.erro); }
+
+// painel online: busca pedidos e NFs da AJD (versão igual à que a página já tem = sem reenvio, como nas outras bases)
+function carregarOperacao(silent){
+  if(!IS_APPS_SCRIPT || oper.carregando || !acessoToken) return;
+  clearTimeout(oper.retryTimer);
+  oper.carregando = true;
+  if(!silent){ oper.erro = null; renderOperSeVisivel(); }
+  var semNovidade = false, tinhaErro = !!oper.erro, tinha = !!oper.dados;
+  chamarComToken('obterOperacao', oper.versao || '').then(function(r){
+    if(!r) throw new Error('O Google Drive não devolveu resposta.');
+    if(r.erro === 'senha_necessaria'){ var e = new Error('É preciso digitar a senha.'); e.code = r.erro; throw e; }
+    if(r.erro === 'consolidando'){
+      oper.consolidando = {feitos:r.feitos, total:r.total};
+      oper.retryTimer = setTimeout(function(){ carregarOperacao(true); }, 8000);
+      return;
+    }
+    oper.consolidando = null;
+    if(r.erro) throw new Error(opErroTxt(r));
+    oper.erro = null;
+    oper.checkedAt = new Date();
+    if(r.mudou === false){ semNovidade = silent && !tinhaErro; if(!silent) toast('Operação em dia: nenhum envio novo da AJD.'); return; }
+    oper.versao = r.versao;
+    opAplicar(r);
+    if(tinha && !silent) toast('Operação da AJD atualizada: ' + fmtQtd(oper.dados.peds.length) + ' pedidos.', 'good');
+  }).catch(function(err){
+    oper.consolidando = null;
+    if(err && err.code === 'senha_necessaria'){ pedirSenha('Seu acesso mudou (nova senha ou cadastro liberado de novo). Entre novamente para continuar.'); return; }
+    // falha passageira numa verificação automática, com dados já na tela: não acende o aviso de erro
+    if(silent && oper.dados && !tinhaErro){ semNovidade = true; return; }
+    oper.erro = err && err.message ? err.message : String(err);
+    if(!silent && oper.dados) toast('Não foi possível atualizar a operação da AJD. ' + oper.erro);
+  }).then(function(){
+    oper.carregando = false;
+    // verificação sem novidade: só o aviso "dados até…" (a extensão pode ter parado) é refeito
+    if(semNovidade){ if(isDashboardVisible() && currentRoute().id === 'pedidos' && oper.aba !== 'lista') opSyncAviso(); return; }
+    renderOperSeVisivel();
+    syncNavPago();
+    renderInicioSeVisivel();
+    redesenharDrawer();   // gaveta do pedido aberta: entra a seção "Na AJD"
+  });
+}
+
+function opAplicar(r){
+  oper.dados = oprPreparar(r);
+  oper.arquivos = r.arquivos || [];
+  oper.avisos = r.avisos || [];
+  oper.auto = r.auto || {};
+  oper.cache = {};
+  // período inicial do Tempo para faturar: o mês (e o dia) do pedido mais recente
+  var ps = oper.dados.peds, ult = ps.length ? ps[ps.length - 1].criado : '';
+  if(!oper.tempo.mes) oper.tempo.mes = ult.slice(0, 7);
+  if(!oper.tempo.dia) oper.tempo.dia = ult.slice(0, 10);
+}
+
+function renderOperSeVisivel(){
+  if(!isDashboardVisible() || currentRoute().id !== 'pedidos') return;
+  renderPedidos();
+}
+
+/* ---- Endereço: #/pedidos?aba=pago | aba=tempo&tper=semana&tdia=2026-10-26 | aba=vxnf&f=semnf | aba=envio&f=transito ---- */
+
+function opApplyParams(params){
+  oper.aba = OP_ABAS.indexOf(params.aba) >= 0 ? params.aba : 'lista';
+  if(oper.aba === 'tempo'){
+    oper.tempo.per = OP_TEMPO_PERS.indexOf(params.tper) >= 0 ? params.tper : 'mes';
+    if(/^\d{4}-\d{2}$/.test(params.tmes || '')) oper.tempo.mes = params.tmes;
+    if(/^\d{4}-\d{2}-\d{2}$/.test(params.tdia || '')) oper.tempo.dia = params.tdia;
+  }
+  if(oper.aba === 'vxnf') oper.vxnf.f = OP_VXNF.some(function(x){ return x.id === params.f; }) ? params.f : 'valor';
+  if(oper.aba === 'envio') oper.envio.f = OP_FILAS_ENVIO.indexOf(params.f) >= 0 ? params.f : '';
+}
+function opBuildHash(){
+  var q = [];
+  function add(k, v){ q.push(k + '=' + encodeURIComponent(v)); }
+  add('aba', oper.aba);
+  if(oper.aba === 'tempo'){
+    var t = oper.tempo;
+    if(t.per !== 'mes') add('tper', t.per);
+    if(t.per === 'mes' && t.mes) add('tmes', t.mes);
+    if((t.per === 'dia' || t.per === 'semana') && t.dia) add('tdia', t.dia);
+  }
+  if(oper.aba === 'vxnf' && oper.vxnf.f !== 'valor') add('f', oper.vxnf.f);
+  if(oper.aba === 'envio' && oper.envio.f) add('f', oper.envio.f);
+  return '#/pedidos?' + q.join('&');
+}
+
+/* ---- Textos e peças de tela ---- */
+
+// "2026-10-13 15:17" → "13/10/2026 15:17" (texto puro, sem passar por Date)
+function opDataTxt(s){
+  var m = /^(\d{4})-(\d{2})-(\d{2})(?: (\d{2}):(\d{2}))?/.exec(String(s || ''));
+  return m ? m[3] + '/' + m[2] + '/' + m[1] + (m[4] ? ' ' + m[4] + ':' + m[5] : '') : '—';
+}
+function opDmTxt(ms){ var d = new Date(ms); return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + ' ' + vHora(d); }
+function opDiaSemTxt(s){ var n = oprDia(s); return opDataTxt(s) + (n == null ? '' : ' (' + V_DOW_CURTO[(n + 4) % 7] + ')'); }
+function opMesTxt(s){ return vMesNome(+s.slice(5, 7) - 1) + ' ' + s.slice(0, 4); }
+function opDiasTxt(n){ return fmtQtd(n) + (n === 1 ? ' dia útil' : ' dias úteis'); }
+function opAgora(){ return oprAgoraTxt(new Date()); }
+function opStatusHtml(p){ var s = oprStatusInfo(p.status, p.sub); return '<span class="v-sit' + (s.cls ? ' ' + s.cls : '') + '">' + escapeHtml(s.label) + '</span>'; }
+function opKpi(cls, label, valor, sub){
+  return '<div class="kpi-card ' + cls + '"><div class="kpi-label">' + label + '</div><div class="kpi-value">' + valor + '</div><div class="kpi-sub">' + sub + '</div></div>';
+}
+function opNfTxt(nf){ return nf ? escapeHtml(nf.numero || '—') : '<span class="dv-muted">sem NF</span>'; }
+function opSomaValor(lista, f){ return oprArred(lista.reduce(function(a, x){ return a + f(x); }, 0)); }
+
+// pagos sem NF e fila de envio dependem do dia de hoje (dias úteis): guardados por versão + dia
+function opCalcHoje(chave, fn){
+  var hoje = opAgora(), k = oper.versao + '|' + hoje.slice(0, 10), c = oper.cache[chave];
+  if(!c || c.k !== k) c = oper.cache[chave] = {k:k, v:fn(oper.dados, hoje)};
+  return c.v;
+}
+function opPagoCalc(){ return opCalcHoje('pago', oprPago); }
+function opEnvioCalc(){ return opCalcHoje('envio', oprEnvio); }
+
+// tabela paginada de uma lista; as colunas servem também ao CSV (c.csv; soCsv = só no arquivo, nunca na tela)
+function opTabela(key, arquivo, cols, rows, vazio){
+  oper.listas[key] = {cols:cols, rows:rows, arquivo:arquivo};
+  var tela = cols.filter(function(c){ return !c.soCsv; });
+  var pages = Math.max(1, Math.ceil(rows.length / V_PAGE_SIZE)), pg = Math.min(oper.pag[key] || 0, pages - 1);
+  oper.pag[key] = pg;
+  var head = '<thead><tr>' + tela.map(function(c){ return '<th' + (c.num ? ' class="num"' : '') + '>' + c.t + '</th>'; }).join('') + '</tr></thead>';
+  var body = rows.slice(pg * V_PAGE_SIZE, (pg + 1) * V_PAGE_SIZE).map(function(x){
+    return '<tr>' + tela.map(function(c){
+      var cls = ((c.num ? 'num ' : '') + (c.cls ? c.cls(x) : '')).trim();
+      return '<td' + (cls ? ' class="' + cls + '"' : '') + '>' + c.html(x) + '</td>';
+    }).join('') + '</tr>';
+  }).join('');
+  if(!body) body = '<tr><td colspan="' + tela.length + '" class="empty-cell">' + escapeHtml(vazio || 'Nada a mostrar.') + '</td></tr>';
+  var pager = rows.length > V_PAGE_SIZE
+    ? '<div class="pager"><button class="btn btn-sm" type="button" data-op-page="prev" data-op-key="' + key + '"' + (pg === 0 ? ' disabled' : '') + '>Anterior</button><span>Página ' + (pg + 1) + ' de ' + pages + '</span><button class="btn btn-sm" type="button" data-op-page="next" data-op-key="' + key + '"' + (pg >= pages - 1 ? ' disabled' : '') + '>Próxima</button></div>'
+    : '';
+  return '<div class="table-wrap"><table class="data-table"><caption class="sr-only">' + escapeHtml(arquivo.replace(/-/g, ' ')) + '</caption>' + head + '<tbody>' + body + '</tbody></table></div>' + pager;
+}
+function opPainel(titulo, meta, key, corpo){
+  return '<div class="panel panel-wide"><div class="panel-header"><div class="panel-title">' + titulo + '</div><div class="panel-meta">' + meta + '</div>' +
+    '<button class="btn btn-sm" type="button" data-op-csv="' + key + '">Baixar CSV</button></div>' + corpo + '</div>';
+}
+
+// colunas que várias listas repetem
+function opColPedido(){ return {t:'Pedido', html:function(x){ return dvPedidoHtml(x.p.num); }, csv:function(x){ return x.p.num; }}; }
+function opColData(){ return {t:'Data do pedido', html:function(x){ return opDataTxt(x.p.criado); }, csv:function(x){ return opDataTxt(x.p.criado); }}; }
+function opColStatus(){ return {t:'Status na AJD', html:function(x){ return opStatusHtml(x.p); }, csv:function(x){ return oprStatusInfo(x.p.status, x.p.sub).label; }}; }
+function opColValor(t, f){ return {t:t, num:true, html:function(x){ return fmtValor(f(x)); }, csv:function(x){ return csvNum(f(x), 2); }}; }
+function opColUf(){ return {t:'UF', html:function(x){ return escapeHtml(x.p.uf || '—'); }, csv:function(x){ return x.p.uf; }}; }
+
+/* ---- Abas, estado vazio e aviso de atualização ---- */
+
+function opSyncAbas(){
+  Array.prototype.forEach.call(document.querySelectorAll('#tabs-ped [role=tab]'), function(t){
+    var sel = t.dataset.paba === oper.aba;
+    t.setAttribute('aria-selected', sel ? 'true' : 'false');
+    t.tabIndex = sel ? 0 : -1;
+    t.classList.toggle('active', sel);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.tab-panel[data-paba]'), function(p){ p.hidden = p.dataset.paba !== oper.aba; });
+  document.getElementById('op-raiz').hidden = oper.aba === 'lista';
+}
+
+function opSetAba(aba){
+  if(OP_ABAS.indexOf(aba) < 0) aba = 'lista';
+  var trocou = oper.aba !== aba;
+  oper.aba = aba;
+  renderPedidos();
+  // "Pago e não faturado" tem item próprio no menu: o realce e o título acompanham a troca de aba
+  if(currentRoute().id === 'pedidos') syncPageTitle();
+  syncNavAtivo();
+  syncNavThumb(true);
+  if(trocou){ var shown = document.getElementById('ptab-' + aba); replayClass(shown && shown.closest('.page'), 'is-entering', 900); }
+}
+
+function opSubtitulo(){
+  if(!oper.dados) return 'Pedidos e notas fiscais de venda da AJD (AfterClick)';
+  var ps = oper.dados.peds, ini = ps.length ? ps[0].criado : '', fim = ps.length ? ps[ps.length - 1].criado : '';
+  return 'AJD (AfterClick) · ' + vPedidosTxt(ps.length) + ', de ' + opDataTxt(ini).slice(0, 10) + ' a ' + opDataTxt(fim).slice(0, 10) +
+    (oper.aba === 'pago' || oper.aba === 'tempo' ? ' · SLA de faturamento: ' + opDiasTxt(OPR_SLA_DIAS) + ' da criação do pedido' : '');
+}
+
+// último envio da extensão por tipo ('pedidos' | 'nfs'): o mais novo entre o registro do servidor e o arquivo do dia na pasta AJD
+function opUltimoEnvio(tipo){
+  var ms = 0, a = oper.auto && oper.auto[tipo];
+  if(a && a.ultimo) ms = a.ultimo;
+  (oper.arquivos || []).forEach(function(x){
+    if(x.tipo !== tipo) return;
+    var t = Date.parse(x.modificadoEm);
+    if(t > ms) ms = t;
+  });
+  return ms || null;
+}
+function opSyncAviso(){
+  var el = document.getElementById('op-aviso');
+  if(!el) return;
+  if(!oper.dados){ el.innerHTML = ''; return; }
+  var up = opUltimoEnvio('pedidos'), un = opUltimoEnvio('nfs'), html = '';
+  var antigo = up && un ? Math.min(up, un) : (up || un);
+  html += '<p class="empty-note is-tight">Dados da AJD até <strong>' + (antigo ? opDmTxt(antigo) : 'data desconhecida') + '</strong>' +
+    (up && un && Math.abs(up - un) > 36e5 ? ' <span class="dv-muted">(pedidos às ' + opDmTxt(up) + ' · notas fiscais às ' + opDmTxt(un) + ')</span>' : '') + '.</p>';
+  if(antigo && Date.now() - antigo > OPR_PARADA_H * 36e5){
+    html += '<div class="drive-status alert-warning" role="status">A extensão da AfterClick parece parada: o último envio foi em ' + opDmTxt(antigo) + ' (há mais de ' + OPR_PARADA_H + ' horas). Os números abaixo são dessa hora. Confira se a extensão está ativa no navegador de quem faz o envio.</div>';
+  }
+  ['pedidos', 'nfs'].forEach(function(t){
+    var a = oper.auto && oper.auto[t];
+    if(a && a.erro) html += '<div class="drive-status alert-warning" role="status">O último envio de ' + (t === 'nfs' ? 'notas fiscais' : 'pedidos') + ' da extensão veio com erro (' + escapeHtml(String(a.erro)) + '). Os dados mostrados são do último envio que deu certo.</div>';
+  });
+  el.innerHTML = html;
+}
+
+function opSyncVazio(){
+  var vazio = document.getElementById('op-vazio'), conteudo = document.getElementById('op-conteudo');
+  var tem = !!oper.dados;
+  conteudo.hidden = !tem; vazio.hidden = tem;
+  if(tem) return true;
+  var html = '<div class="panel-header"><div class="panel-title">Operação da AJD (AfterClick)</div></div>';
+  if(!IS_APPS_SCRIPT){
+    html += '<p class="empty-note">Os pedidos e as notas fiscais da AJD chegam pela extensão da AfterClick ao Google Drive e só aparecem no <a href="' + PAINEL_ONLINE_URL + '" target="_blank" rel="noopener">painel online</a>.</p>';
+  } else if(oper.consolidando){
+    var c = oper.consolidando;
+    html += '<div class="drive-status loading" role="status">Organizando os envios novos da AJD no Drive…' + (c.feitos != null && c.total ? ' (' + c.feitos + ' de ' + c.total + ' arquivos)' : '') + '</div>';
+  } else if(oper.carregando || !oper.erro){
+    html += '<div class="drive-status loading" role="status">Buscando os pedidos e as notas fiscais da AJD no Google Drive…</div>';
+  } else {
+    html += '<div class="drive-status alert-critical" role="alert">' + escapeHtml(oper.erro) + '</div>' +
+      '<p class="empty-note">Os dados vêm da extensão da AfterClick, que envia os pedidos e as notas fiscais de venda para a pasta "nuvemshop/AJD".</p>' +
+      '<div class="form-row"><button class="btn btn-primary btn-sm" type="button" data-op-acao="atualizar">Tentar de novo</button></div>';
+  }
+  vazio.innerHTML = html;
+  return false;
+}
+
+function opRender(){
+  opSyncAviso();
+  if(!opSyncVazio()) return;
+  if(oper.aba === 'pago') opRenderPago();
+  else if(oper.aba === 'tempo') opRenderTempo();
+  else if(oper.aba === 'vxnf') opRenderVxnf();
+  else opRenderEnvio();
+  syncNavPago();
+}
+
+/* ---- 1. Pago e não faturado ---- */
+
+function opRenderPago(){
+  var P = opPagoCalc(), mais = P.maisAntigo;
+  var kpis = '<div class="kpi-grid">' +
+    opKpi('is-neutro', 'Pagos sem nota fiscal', fmtQtd(P.qtd), '<span>em processamento ou com pagamento aprovado</span>') +
+    opKpi('is-neutro', 'Valor parado (R$)', fmtValor(P.valor), '<span>soma dos pedidos sem NF</span>') +
+    opKpi(P.fora ? 'is-critico' : 'is-neutro', 'Fora do SLA (mais de ' + OPR_SLA_DIAS + ' dias úteis)', fmtQtd(P.fora),
+      '<span>' + fmtValor(P.valorFora) + (P.qtd ? ' · ' + fmtPct(P.fora / P.qtd) + ' dos pagos sem NF' : '') + '</span>') +
+    opKpi(mais ? 'is-alerta' : 'is-neutro', 'Mais antigo', mais ? opDiasTxt(mais.dias) : '—',
+      '<span>' + (mais ? '#' + escapeHtml(mais.p.num) + ' · pedido de ' + opDataTxt(mais.p.criado) : 'nenhum pedido pago sem NF') + '</span>') +
+    '</div>';
+  var cols = [
+    opColPedido(), opColData(),
+    {t:'Dias úteis em aberto', num:true, cls:function(x){ return x.atraso ? 'dv-alerta' : ''; },
+      html:function(x){ return fmtQtd(x.dias) + (x.atraso ? ' <span class="v-sit is-cancelado">fora do SLA</span>' : ''); }, csv:function(x){ return x.dias; }},
+    {t:'Fora do SLA', soCsv:true, csv:function(x){ return x.atraso ? 'Sim' : 'Não'; }},
+    opColValor('Valor', function(x){ return x.p.total; }), opColUf(), opColStatus()
+  ];
+  var nota = '<p class="empty-note">Dias úteis: segunda a sexta, sem os feriados nacionais (lista no código, até 2027), contados da <strong>criação do pedido</strong> até hoje; o SLA é de ' + opDiasTxt(OPR_SLA_DIAS) + '.' +
+    (P.pendentes ? ' Ficam fora desta lista ' + vPedidosTxt(P.pendentes) + ' aguardando pagamento (ainda não estão pagos).' : '') + '</p>';
+  document.getElementById('ptab-pago').innerHTML = kpis +
+    '<div class="panels-grid">' + opPainel('Pagos e ainda sem nota fiscal', 'mais dias úteis em aberto primeiro', 'pago',
+      opTabela('pago', 'pago-e-nao-faturado', cols, P.itens, 'Nenhum pedido pago sem nota fiscal agora.') + nota) + '</div>';
+}
+
+/* ---- 2. Tempo para faturar ---- */
+
+function opTempoMeses(){
+  var m = {};
+  oper.dados.peds.forEach(function(p){ if(p.criado) m[p.criado.slice(0, 7)] = true; });
+  if(oper.tempo.mes) m[oper.tempo.mes] = true;
+  return Object.keys(m).sort();
+}
+function opTempoCalc(f){
+  var k = oper.versao + '|' + f.ini + '|' + f.fim;
+  if(!oper.cache.tempo || oper.cache.tempo.k !== k) oper.cache.tempo = {k:k, v:oprTempo(oper.dados, f)};
+  return oper.cache.tempo.v;
+}
+function opRenderTempo(){
+  var t = oper.tempo, ps = oper.dados.peds;
+  // controles: as opções do mês só são refeitas quando mudam (não tira o foco de quem usa o teclado)
+  var meses = opTempoMeses(), perEl = document.getElementById('op-tempo-per'), mesEl = document.getElementById('op-tempo-mes'), diaEl = document.getElementById('op-tempo-dia');
+  if(mesEl.dataset.sig !== meses.join(',')){
+    mesEl.innerHTML = meses.map(function(m){ return '<option value="' + m + '">' + escapeHtml(opMesTxt(m + '-01')) + '</option>'; }).join('');
+    mesEl.dataset.sig = meses.join(',');
+  }
+  perEl.value = t.per; mesEl.value = t.mes;
+  if(document.activeElement !== diaEl) diaEl.value = t.dia;
+  diaEl.min = ps.length ? ps[0].criado.slice(0, 10) : ''; diaEl.max = ps.length ? ps[ps.length - 1].criado.slice(0, 10) : '';
+  document.getElementById('op-tempo-mes-campo').hidden = t.per !== 'mes';
+  document.getElementById('op-tempo-dia-campo').hidden = t.per !== 'dia' && t.per !== 'semana';
+  document.getElementById('op-tempo-dia-label').textContent = t.per === 'semana' ? 'Semana que contém o dia' : 'Dia';
+
+  var f = oprFiltroPeriodo(t.per, t.mes, t.dia), T = opTempoCalc(f);
+  var rot = t.per === 'mes' ? opMesTxt(t.mes + '-01') : t.per === 'dia' ? opDataTxt(f.ini)
+    : t.per === 'semana' && f.ini ? 'semana de ' + opDataTxt(f.ini).slice(0, 5) + ' a ' + opDataTxt(oprDiaTxt(oprDia(f.fim) - 1)).slice(0, 5) : 'todo o histórico';
+  var h = function(v){ return v == null ? '—' : fmtDec1(v) + ' h'; };
+  var kpis = '<div class="kpi-grid">' +
+    opKpi('is-neutro', 'No SLA (até ' + OPR_SLA_DIAS + ' dias úteis)', T.pct == null ? '—' : fmtPct(T.pct), '<span>' + fmtQtd(T.noSla) + ' de ' + fmtQtd(T.n) + ' faturados</span>') +
+    opKpi('is-neutro', 'Mediana', h(T.mediana), '<span>da criação do pedido à emissão da NF</span>') +
+    opKpi('is-neutro', 'P90', h(T.p90), '<span>' + (T.p90 == null ? 'sem pedidos faturados' : '9 em cada 10 saem em até ' + fmtDec1(T.p90) + ' h') + '</span>') +
+    opKpi('is-neutro', 'Pedidos faturados', fmtQtd(T.n), '<span>' + (T.semNf ? fmtQtd(T.semNf) + ' do período ainda sem NF (veja Pago e não faturado)' : 'nenhum pago do período ficou sem NF') + '</span>') +
+    '</div>';
+  var serieCols = [
+    {t:T.gran === 'dia' ? 'Dia' : 'Mês', html:function(x){ return T.gran === 'dia' ? opDiaSemTxt(x.chave) : escapeHtml(opMesTxt(x.chave + '-01')); }, csv:function(x){ return T.gran === 'dia' ? opDataTxt(x.chave) : opMesTxt(x.chave + '-01'); }},
+    {t:'Faturados', num:true, html:function(x){ return fmtQtd(x.n); }, csv:function(x){ return x.n; }},
+    {t:'No SLA', num:true, html:function(x){ return fmtQtd(x.noSla); }, csv:function(x){ return x.noSla; }},
+    {t:'% no SLA', num:true, html:function(x){ return fmtPct(x.pct); }, csv:function(x){ return csvNum(x.pct * 100, 1); }},
+    {t:'Mediana (h)', num:true, html:function(x){ return fmtDec1(x.mediana); }, csv:function(x){ return csvNum(x.mediana, 1); }}
+  ];
+  var foraCols = [
+    opColPedido(), opColData(),
+    {t:'NF', html:function(x){ return opNfTxt(x.nf); }, csv:function(x){ return x.nf.numero; }},
+    {t:'Emissão da NF', html:function(x){ return opDataTxt(x.nf.emissao); }, csv:function(x){ return opDataTxt(x.nf.emissao); }},
+    {t:'Horas até a NF', num:true, html:function(x){ return fmtDec1(x.horas); }, csv:function(x){ return csvNum(x.horas, 1); }},
+    {t:'Dias úteis', num:true, cls:function(){ return 'dv-alerta'; }, html:function(x){ return fmtQtd(x.dias); }, csv:function(x){ return x.dias; }},
+    opColValor('Valor', function(x){ return x.p.total; }), opColUf(), opColStatus()
+  ];
+  var nota = '<p class="empty-note">Pedidos criados em ' + escapeHtml(rot) + ' (pela data de criação do pedido) que já têm NF válida; vale a primeira NF emitida. Dias úteis: segunda a sexta, sem os feriados nacionais. ' +
+    'Pedidos ainda sem NF não entram na conta (estão em Pago e não faturado), então o mês corrente tende a melhorar à medida que eles são faturados.' +
+    (T.negativos ? ' ' + fmtQtd(T.negativos) + ' NF(s) com emissão anterior ao pedido (horas negativas).' : '') + '</p>';
+  document.getElementById('op-tempo-res').innerHTML = kpis +
+    '<div class="panels-grid">' +
+    opPainel('Faturamento por ' + (T.gran === 'dia' ? 'dia' : 'mês') + ' · ' + escapeHtml(rot), 'dia do pedido; mais recente primeiro', 'tempo-serie',
+      opTabela('tempo-serie', 'tempo-para-faturar-por-' + (T.gran === 'dia' ? 'dia' : 'mes'), serieCols, T.serie, 'Nenhum pedido faturado neste período.') + nota) +
+    opPainel('Fora do SLA · ' + escapeHtml(rot), fmtQtd(T.fora.length) + (T.fora.length === 1 ? ' pedido' : ' pedidos') + ' · mais dias úteis primeiro', 'tempo-fora',
+      opTabela('tempo-fora', 'tempo-para-faturar-fora-do-sla', foraCols, T.fora, 'Nenhum pedido fora do SLA neste período.')) +
+    '</div>';
+}
+
+/* ---- 3. Venda × NF ---- */
+
+function opRenderVxnf(){
+  var D = oper.dados, temNs = !!vendas.pedidos;
+  var k = [oper.versao, temNs ? vendas.versao + '|' + vendas.pedidos.length : '-'].join('|');
+  if(!oper.cache.vxnf || oper.cache.vxnf.k !== k) oper.cache.vxnf = {k:k, v:oprVendaNf(D, temNs ? function(n){ return vendas.porNum[n] || null; } : null)};
+  var V = oper.cache.vxnf.v;
+  var maior = V.valor.filter(function(x){ return x.dif > 0; }).length;
+  var listas = {
+    valor:{n:V.valor.length, sub:V.valor.length ? 'NF maior em ' + fmtQtd(maior) + ' · menor em ' + fmtQtd(V.valor.length - maior) : 'nenhuma diferença'},
+    semnf:{n:V.semNf.length, sub:V.semNf.length ? fmtValor(opSomaValor(V.semNf, function(x){ return x.p.total; })) : 'nada pendente'},
+    cancelada:{n:V.cancelada.length, sub:V.cancelada.length ? fmtValor(opSomaValor(V.cancelada, function(x){ return x.soma; })) + ' em NF' : 'nada pendente'},
+    semped:{n:V.semPed.length, sub:V.semPed.length ? fmtValor(opSomaValor(V.semPed, function(x){ return x.valor; })) : 'nada pendente'}
+  };
+  var sel = OP_VXNF.some(function(x){ return x.id === oper.vxnf.f; }) ? oper.vxnf.f : 'valor';
+  var cards = '<div class="dv-filas" aria-label="Escolha a conferência">' + OP_VXNF.map(function(d){
+    var l = listas[d.id], on = d.id === sel;
+    return '<button type="button" class="dv-fila' + (on ? ' selected' : '') + (l.n ? ' is-alerta' : ' is-zero') + '" data-op-sel="' + d.id + '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
+      '<span class="dv-fila-t">' + escapeHtml(d.label) + '</span><span class="dv-fila-n">' + fmtQtd(l.n) + '</span><span class="dv-fila-s">' + l.sub + '</span></button>';
+  }).join('') + '</div>';
+  var desc, cols, rows, vazio, arq = 'venda-x-nf-' + sel;
+  var nfCol = function(t, f){ return {t:t, html:function(x){ return opNfTxt(f(x)); }, csv:function(x){ var n = f(x); return n ? n.numero : ''; }}; };
+  if(sel === 'valor'){
+    desc = 'Pedido da AJD com valor diferente da soma das NFs válidas (tolerância de ' + fmtValor(OPR_TOLERANCIA) + '). Diferença = NF − pedido, maior diferença primeiro.' +
+      (temNs ? ' O total e a situação do pagamento da Nuvemshop vêm das vendas, quando o pedido está carregado.' : ' As vendas da Nuvemshop ainda não carregaram: o total e a situação do pagamento entram quando chegarem.');
+    cols = [opColPedido(), opColData(), opColStatus(),
+      opColValor('Pedido (AJD)', function(x){ return x.p.total; }), opColValor('Soma das NFs', function(x){ return x.soma; }),
+      {t:'Diferença', num:true, cls:function(x){ return x.dif ? 'dv-alerta' : ''; }, html:function(x){ return fmtValor(x.dif); }, csv:function(x){ return csvNum(x.dif, 2); }},
+      {t:'Total na Nuvemshop', num:true, html:function(x){ return x.ns ? fmtValor(x.ns.total) : '—'; }, csv:function(x){ return x.ns ? csvNum(x.ns.total, 2) : ''; }},
+      {t:'Pagamento na Nuvemshop', html:function(x){ return x.ns ? escapeHtml(x.ns.statusPag || '—') + (x.ns.estorno ? '<br><span class="dv-muted">estorno ' + fmtValor(x.ns.estorno) + '</span>' : '') : '—'; },
+        csv:function(x){ return x.ns ? x.ns.statusPag + (x.ns.estorno ? ' (estorno ' + csvNum(x.ns.estorno, 2) + ')' : '') : ''; }},
+      {t:'Leitura', html:function(x){ return escapeHtml(oprLeitura(x) || '—'); }, csv:function(x){ return oprLeitura(x); }}];
+    rows = V.valor; vazio = 'Nenhum pedido com valor diferente da NF.';
+  } else if(sel === 'semnf'){
+    desc = 'Pedido que a AJD já marca como faturado, em trânsito, com falha de entrega ou entregue, mas sem nenhuma NF de venda válida na base.';
+    cols = [opColPedido(), opColData(), opColStatus(), opColValor('Valor', function(x){ return x.p.total; }), opColUf()];
+    rows = V.semNf; vazio = 'Nenhum pedido faturado ou entregue sem NF.';
+  } else if(sel === 'cancelada'){
+    desc = 'Pedido cancelado na AJD que ainda tem NF de venda válida (não cancelada). Conferir se a NF deve ser cancelada.';
+    cols = [opColPedido(), opColData(), opColStatus(), opColValor('Pedido (AJD)', function(x){ return x.p.total; }),
+      nfCol('NF', function(x){ return x.p.validas[0]; }), {t:'Emissão da NF', html:function(x){ return opDataTxt(x.p.validas[0].emissao); }, csv:function(x){ return opDataTxt(x.p.validas[0].emissao); }},
+      opColValor('Soma das NFs', function(x){ return x.soma; })];
+    rows = V.cancelada; vazio = 'Nenhum pedido cancelado com NF válida.';
+  } else {
+    desc = 'NF de venda válida cujo pedido não está na base de pedidos da AJD. As NFs de pedidos anteriores ao primeiro pedido da base não entram aqui (ver nota abaixo).';
+    cols = [{t:'Pedido', html:function(x){ return dvPedidoHtml(x.num); }, csv:function(x){ return x.num; }},
+      {t:'Data do pedido', html:function(x){ return opDataTxt(x.pedidoEm); }, csv:function(x){ return opDataTxt(x.pedidoEm); }},
+      {t:'NF', html:function(x){ return opNfTxt(x); }, csv:function(x){ return x.numero; }},
+      {t:'Emissão da NF', html:function(x){ return opDataTxt(x.emissao); }, csv:function(x){ return opDataTxt(x.emissao); }},
+      opColValor('Valor da NF', function(x){ return x.valor; })];
+    rows = V.semPed; vazio = 'Nenhuma NF sem pedido.';
+  }
+  var foraJan = V.foraJanela.length
+    ? '<p class="empty-note">' + fmtQtd(V.foraJanela.length) + (V.foraJanela.length === 1 ? ' NF é' : ' NFs são') + ' de pedidos anteriores ao primeiro pedido da base (' + opDataTxt(D.minCriado).slice(0, 10) +
+      ') e <strong>não contam como divergência</strong>: a base de pedidos ainda não chega até lá.</p>' : '';
+  var label = OP_VXNF.filter(function(d){ return d.id === sel; })[0].label;
+  document.getElementById('ptab-vxnf').innerHTML = '<div class="panels-grid"><div class="panel panel-wide"><div class="panel-header"><div class="panel-title">Conferência entre o pedido e a nota fiscal</div><div class="panel-meta">pedidos e NFs de venda da AJD</div></div>' +
+    cards + '<div class="dv-fila-desc">' + escapeHtml(desc) + '</div></div>' +
+    opPainel(escapeHtml(label), fmtQtd(rows.length) + (rows.length === 1 ? ' registro' : ' registros'), 'vxnf-' + sel, opTabela('vxnf-' + sel, arq, cols, rows, vazio) + foraJan) + '</div>';
+}
+
+/* ---- 4. Envio e entrega ---- */
+
+function opRenderEnvio(){
+  var E = opEnvioCalc(), D = oper.dados;
+  var sel = OP_FILAS_ENVIO.indexOf(oper.envio.f) >= 0 ? oper.envio.f
+    : (OP_FILAS_ENVIO.filter(function(id){ return E.filas[id].length; })[0] || 'despacho');
+  var cards = '<div class="dv-filas" aria-label="Etapas do envio">' + OPR_ETAPAS.map(function(e){
+    var n = E.contagem[e.id], l = E.filas[e.id], fila = e.id !== 'entregue', on = e.id === sel;
+    var maior = l.reduce(function(a, x){ return x.dias != null && x.dias > a ? x.dias : a; }, 0);
+    var sub = !fila ? 'sem fila: já concluído' : !n ? 'nada pendente' : fmtValor(opSomaValor(l, function(x){ return x.p.total; })) + ' · o mais antigo: ' + opDiasTxt(maior) + ' desde a NF';
+    var inner = '<span class="dv-fila-t">' + escapeHtml(e.label) + '</span><span class="dv-fila-n">' + fmtQtd(n) + '</span><span class="dv-fila-s">' + sub + '</span>';
+    if(!fila) return '<div class="dv-fila">' + inner + '</div>';
+    return '<button type="button" class="dv-fila' + (on ? ' selected' : '') + (n ? '' : ' is-zero') + '" data-op-sel="' + e.id + '" aria-pressed="' + (on ? 'true' : 'false') + '">' + inner + '</button>';
+  }).join('') + '</div>';
+  var etapa = OPR_ETAPAS.filter(function(e){ return e.id === sel; })[0], lista = E.filas[sel];
+  var inicioHist = D.histInicio ? fmtDate(new Date(D.histInicio)) : null;
+  var cols = [opColPedido(), opColData(),
+    {t:'NF', html:function(x){ return opNfTxt(x.nf); }, csv:function(x){ return x.nf ? x.nf.numero : ''; }},
+    {t:'Emissão da NF', html:function(x){ return x.nf ? opDataTxt(x.nf.emissao) : '—'; }, csv:function(x){ return x.nf ? opDataTxt(x.nf.emissao) : ''; }},
+    {t:'Dias úteis desde a NF', num:true, html:function(x){ return x.dias == null ? '—' : fmtQtd(x.dias); }, csv:function(x){ return x.dias == null ? '' : x.dias; }},
+    {t:'Nesta etapa desde', html:function(x){
+        return x.desde ? opDmTxt(x.desde) : x.desdeAntes ? '<span class="dv-muted" title="O painel já encontrou o pedido nesta etapa na primeira leitura; a data real não existe na AJD.">antes de ' + inicioHist + '</span>' : '—';
+      }, csv:function(x){ return x.desde ? opDmTxt(x.desde) : ''; }},
+    opColValor('Valor', function(x){ return x.p.total; }), opColUf()];
+  var nota = '<div class="drive-status alert-warning" role="note"><strong>A AJD não informa a data de despacho nem a de entrega.</strong> Por isso o tempo de cada fila conta da emissão da NF. ' +
+    'A coluna "Nesta etapa desde" mostra a data em que o painel viu o pedido mudar de etapa' + (inicioHist ? ': os tempos reais vão se formando a partir de ' + inicioHist + ' (início do histórico), e os pedidos que já estavam na etapa nessa data aparecem como "antes de ' + inicioHist + '"' : '') + '.</div>';
+  document.getElementById('ptab-envio').innerHTML = '<div class="panels-grid"><div class="panel panel-wide"><div class="panel-header"><div class="panel-title">Do faturamento à entrega</div><div class="panel-meta">status dos pedidos faturados na AJD</div></div>' +
+    cards + nota + (E.outros ? '<p class="empty-note">' + vPedidosTxt(E.outros) + ' faturado' + (E.outros === 1 ? '' : 's') + ' com um status de envio que o painel não reconhece (não entram nas filas).</p>' : '') + '</div>' +
+    opPainel(escapeHtml(etapa.label), fmtQtd(lista.length) + (lista.length === 1 ? ' pedido' : ' pedidos') + ' · mais dias úteis desde a NF primeiro', 'envio-' + sel,
+      opTabela('envio-' + sel, 'envio-' + sel, cols, lista, 'Nenhum pedido nesta etapa agora.')) + '</div>';
+}
+
+/* ---- CSV, menu lateral e peças que aparecem em outras telas ---- */
+
+function opExportarCsv(key){
+  var l = oper.listas[key];
+  if(!l) return;
+  var cols = l.cols.filter(function(c){ return c.csv; });
+  var esc = function(v){ var s = v == null ? '' : String(v); return /[";\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  var linhas = [cols.map(function(c){ return esc(c.t); }).join(';')];
+  l.rows.forEach(function(x){ linhas.push(cols.map(function(c){ return esc(c.csv(x)); }).join(';')); });
+  downloadBlob(new Blob(['﻿' + linhas.join('\r\n')], {type:'text/csv;charset=utf-8'}), 'operacao-ajd-' + l.arquivo + '-' + isoDate(new Date()) + '.csv');
+}
+// CSV do menu Exportar na aba aberta: a lista principal dela
+function opCsvPrincipal(){
+  var a = oper.aba;
+  if(a === 'pago') return 'pago';
+  if(a === 'tempo') return 'tempo-fora';
+  if(a === 'vxnf') return 'vxnf-' + oper.vxnf.f;
+  return 'envio-' + (OP_FILAS_ENVIO.indexOf(oper.envio.f) >= 0 ? oper.envio.f : 'despacho');
+}
+
+// contagem de pedidos pagos fora do SLA ao lado do item do menu (só depois de a base da AJD carregar, que acontece ao abrir Pedidos)
+function syncNavPago(){
+  var el = document.getElementById('nav-pago-count');
+  if(!el) return;
+  var n = oper.dados ? opPagoCalc().fora : 0;
+  el.textContent = n ? fmtQtd(n) : '';
+  el.hidden = !n;
+  el.title = n ? vPedidosTxt(n) + ' pagos sem nota fiscal há mais de ' + OPR_SLA_DIAS + ' dias úteis' : '';
+}
+
+// coluna "AJD · NF" da Lista de pedidos
+function opCelulaLista(num){
+  if(!oper.dados) return '<td class="ped-ajd">' + (IS_APPS_SCRIPT && !oper.erro ? '<span class="dv-muted" title="Dados da AJD ainda não carregados">…</span>' : '—') + '</td>';
+  var p = oper.dados.porNum[num];
+  if(!p) return '<td class="ped-ajd">—</td>';
+  var nf = p.validas[0], semNfEsperada = ['handling', 'payment-approved', 'invoiced', 'delivered'].indexOf(p.status) >= 0;
+  return '<td class="ped-ajd">' + opStatusHtml(p) +
+    (nf ? ' <span class="dv-muted" title="NF emitida em ' + escapeHtml(opDataTxt(nf.emissao)) + ' · ' + escapeHtml(fmtValor(nf.valor)) + '">NF ' + escapeHtml(nf.numero) + '</span>'
+      : semNfEsperada ? ' <span class="dv-muted">sem NF</span>' : '') + '</td>';
+}
+
+// seção "Na AJD" da gaveta do pedido: status, valor, NFs e tempo até faturar
+function opSecaoPedido(num){
+  var tit = '<div class="panel-sub-title">Na AJD (AfterClick)</div>';
+  if(!IS_APPS_SCRIPT) return '';
+  if(!oper.dados){
+    return tit + '<div class="empty-note is-tight">' + (oper.erro ? 'Os dados da AJD não carregaram: ' + escapeHtml(oper.erro) : oper.carregando ? 'Carregando os dados da AJD…' : 'Os dados da AJD carregam ao abrir a página Pedidos.') + '</div>';
+  }
+  var p = oper.dados.porNum[num];
+  if(!p) return tit + '<div class="empty-note is-tight">Pedido não encontrado na base da AJD (ela começa nos pedidos de ' + escapeHtml(opDataTxt(oper.dados.minCriado).slice(0, 10)) + ').</div>';
+  var itens = [['Status', opStatusHtml(p)], ['Pedido na AJD', fmtValor(p.total) + ' · criado em ' + escapeHtml(opDataTxt(p.criado))]];
+  if(!p.nfs.length) itens.push(['Nota fiscal', '<span class="dv-muted">nenhuma NF de venda na base</span>']);
+  p.nfs.forEach(function(nf){
+    itens.push(['Nota fiscal ' + escapeHtml(nf.numero || ''), 'emitida em ' + escapeHtml(opDataTxt(nf.emissao)) + ' · ' + fmtValor(nf.valor) + (nf.cancelada ? ' · <strong>cancelada</strong>' : '')]);
+  });
+  var nf1 = p.validas[0];
+  if(nf1 && nf1.emissao){
+    var u = oprDiasUteis(p.criado, nf1.emissao);
+    itens.push(['Tempo até faturar', opDiasTxt(u) + (u > OPR_SLA_DIAS ? ' · <span class="v-sit is-cancelado">fora do SLA</span>' : ' · dentro do SLA')]);
+  } else if(p.status === 'handling' || p.status === 'payment-approved'){
+    var ab = oprDiasUteis(p.criado, opAgora());
+    itens.push(['Sem NF há', opDiasTxt(ab) + (ab > OPR_SLA_DIAS ? ' · <span class="v-sit is-cancelado">fora do SLA</span>' : '')]);
+  }
+  return tit + '<ul class="indicator-list">' + itens.map(function(it){ return '<li><span class="ind-label">' + it[0] + '</span><span class="ind-value">' + it[1] + '</span></li>'; }).join('') + '</ul>';
+}
+
+function setupOperacao(){
+  var tabs = document.getElementById('tabs-ped');
+  tabs.addEventListener('click', function(e){ var t = e.target.closest('[role=tab]'); if(t) opSetAba(t.dataset.paba); });
+  tabs.addEventListener('keydown', function(e){
+    var lista = Array.prototype.slice.call(tabs.querySelectorAll('[role=tab]'));
+    var i = lista.indexOf(document.activeElement), n = -1;
+    if(i < 0) return;
+    if(e.key === 'ArrowRight') n = (i+1) % lista.length;
+    else if(e.key === 'ArrowLeft') n = (i-1+lista.length) % lista.length;
+    else if(e.key === 'Home') n = 0;
+    else if(e.key === 'End') n = lista.length-1;
+    if(n < 0) return;
+    e.preventDefault();
+    opSetAba(lista[n].dataset.paba);
+    lista[n].focus();
+  });
+  document.getElementById('op-tempo-per').addEventListener('change', function(e){ oper.tempo.per = e.target.value; renderPedidos(); });
+  document.getElementById('op-tempo-mes').addEventListener('change', function(e){ oper.tempo.mes = e.target.value; renderPedidos(); });
+  document.getElementById('op-tempo-dia').addEventListener('change', function(e){ if(/^\d{4}-\d{2}-\d{2}$/.test(e.target.value)){ oper.tempo.dia = e.target.value; renderPedidos(); } });
+  // ações por delegação (o conteúdo é redesenhado a cada troca)
+  document.getElementById('op-raiz').addEventListener('click', function(e){
+    var b;
+    if((b = e.target.closest('[data-op-csv]'))){ opExportarCsv(b.dataset.opCsv); return; }
+    if((b = e.target.closest('[data-op-page]'))){
+      if(b.disabled) return;
+      var k = b.dataset.opKey;
+      oper.pag[k] = (oper.pag[k] || 0) + (b.dataset.opPage === 'next' ? 1 : -1);
+      renderPedidos();
+      var painel = b.closest('.panel');
+      if(painel) painel.scrollIntoView({block:'start'});
+      return;
+    }
+    if((b = e.target.closest('[data-op-sel]'))){
+      if(oper.aba === 'vxnf') oper.vxnf.f = b.dataset.opSel; else oper.envio.f = b.dataset.opSel;
+      renderPedidos();
+      return;
+    }
+    if((b = e.target.closest('[data-op-acao]')) && b.dataset.opAcao === 'atualizar') carregarOperacao(false);
+  });
 }
 
 // lançamentos de reembolso (Estorno, Cupom, Chargeback) que citam o número do pedido
@@ -9657,6 +10526,7 @@ function vAbrirPedido(num){
   html += reemb.length
     ? '<ul class="drawer-others">' + reemb.map(function(t){ return '<li><button type="button" class="link-cell" data-open-id="' + escapeHtml(t.id) + '">' + fmtDate(t.date) + ' · ' + escapeHtml(tipoTxt(t)) + '</button><strong>' + fmtValor(t.valor) + '</strong></li>'; }).join('') + '</ul>'
     : '<div class="empty-note is-tight">Nenhum estorno, crédito em loja ou chargeback lançado para este pedido.</div>';
+  html += opSecaoPedido(num);
   html += dvSecaoPedido(num);
   drawerAtual = {tipo:'pedido', id:num};
   document.getElementById('drawer-body').innerHTML = html;
@@ -13853,7 +14723,14 @@ function inBlocoModulos(C){
     if(P.tipo === 'mes' && P.andamento && P.decorridos) nums.push(['Projeção de fechamento', fmtValor(r.faturamento / P.decorridos * P.nDias), 'run-rate até ' + vDiaCurto(P.ultimoDia)]);
     else if(P.tipo === 'mes') nums.push(['Ritmo do mês', 'mês fechado', 'veja em Vendas']);
   }
-  cards.push(inModCartao('comercial', 'Comercial e Operação', inLinkVendas(P), nums, [['Vendas', inLinkVendas(P)], ['Pedidos', '#/pedidos'], ['Ritmo do mês', inLinkVendas(P)]]));
+  // pagos sem NF (AJD): aparece depois que a página Pedidos carregou a base da AJD (o Início não a busca sozinho)
+  var linksCom = [['Vendas', inLinkVendas(P)], ['Pedidos', '#/pedidos'], ['Ritmo do mês', inLinkVendas(P)]];
+  if(oper.dados){
+    var PG = opPagoCalc();
+    nums.push(['Pago e não faturado', '<a href="#/pedidos?aba=pago">' + fmtQtd(PG.qtd) + '</a>', PG.fora ? fmtQtd(PG.fora) + ' fora do SLA' : 'todos dentro do SLA']);
+    linksCom.push(['Pago e não faturado', '#/pedidos?aba=pago']);
+  }
+  cards.push(inModCartao('comercial', 'Comercial e Operação', inLinkVendas(P), nums, linksCom));
   // Reembolsos e Devoluções: total reembolsado (planilha), crédito em loja e casos nas filas críticas
   var RE = inCalcReemb(C), crit = '—', critSub = '';
   if(IS_APPS_SCRIPT && rotaLiberadaId('devolucoes')){
@@ -14064,7 +14941,8 @@ function inAssinatura(){
     state.data ? [state.data.fileName, state.data.importedAt ? state.data.importedAt.getTime() : 0, state.data.totals.totalRowsValid, state.referenceDate ? state.referenceDate.getTime() : 0].join(',') : '-',
     vendas.pedidos ? [vendas.pedidos.length, vendas.versao, vendas.ref ? vendas.ref.getTime() : 0].join(',') : '-', vendas.carregando ? 1 : 0, vendas.consolidando ? 1 : 0, vendas.erro || '',
     np.linhas ? [np.linhas.length, np.versao].join(',') : '-', np.carregando ? 1 : 0, np.consolidando ? 1 : 0, np.erro || '',
-    devol.sols ? [devol.sols.length, devol.versao, devol.checkedAt ? devol.checkedAt.getTime() : 0].join(',') : '-', devol.carregando ? 1 : 0, devol.consolidando ? 1 : 0, devol.erro || '', preCarga.devolDepois ? 1 : 0
+    devol.sols ? [devol.sols.length, devol.versao, devol.checkedAt ? devol.checkedAt.getTime() : 0].join(',') : '-', devol.carregando ? 1 : 0, devol.consolidando ? 1 : 0, devol.erro || '', preCarga.devolDepois ? 1 : 0,
+    oper.dados ? [oper.dados.peds.length, oper.versao].join(',') : '-'
   ].join('|');
 }
 // cada fonte carrega sozinha, em segundo plano (as mesmas funções e flags da pré-carga e do polling)
@@ -14570,6 +15448,7 @@ function boot(){
   setupInfoTips();
   setupVendas();
   setupDevolucoes();
+  setupOperacao();
   setupNuvemPago();
   setupInicio();
   setupAjustesLayout();
