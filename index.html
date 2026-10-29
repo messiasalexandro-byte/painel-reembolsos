@@ -1840,7 +1840,10 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
 /* Vendas · áreas da etapa 30 (Visão geral, Produtos, Regiões, Clientes, Cupons, Filas) */
 #tabs-vsec{ margin-top:18px; }
 #tabs-vsec .nav-count{ margin-left:6px; }
-#v-chave{ grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); margin-top:12px; }
+#v-chave, .vs-chave-grid{ grid-template-columns:repeat(6, minmax(0, 1fr)); }
+#v-chave{ margin-top:12px; }
+@media (max-width:1180px){ #v-chave, .vs-chave-grid{ grid-template-columns:repeat(3, minmax(0, 1fr)); } }
+@media (max-width:700px){ #v-chave, .vs-chave-grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
 .kpi-card.vs-mini .kpi-value{ font-size:22px; }
 .vs-sem{ display:inline-block; font-size:10.5px; font-weight:700; padding:1px 8px; border-radius:999px; margin-right:6px; white-space:nowrap; }
 .vs-sem-verde{ color:var(--good-text); background:rgba(12,163,12,.12); }
@@ -1864,7 +1867,20 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
 .vs-rank{ margin:0; padding-left:20px; font-size:12.5px; }
 .vs-rank li{ padding:3px 0; }
 .vs-rank li span.num{ float:right; color:var(--text-secondary); font-variant-numeric:tabular-nums; }
-.vs-heat td{ background:color-mix(in srgb, var(--kpi-ticket) calc(var(--h, 0) * 70%), transparent); }
+/* teto de 45% da cor: o texto claro dos temas escuros segue legível (≥ 4,5:1) mesmo na célula mais forte */
+.vs-heat td{ background:color-mix(in srgb, var(--kpi-ticket) calc(var(--h, 0) * 45%), transparent); }
+/* tabelas de Vendas: 1ª coluna fixa na rolagem lateral (mesma regra de Pedidos e da AJD) */
+.vs-table th, .vs-table td{ padding-inline:6px; }
+.vs-table thead th:first-child, .vs-table tbody td:first-child, .vs-heat tbody th[scope=row]{
+  position:sticky; left:0; z-index:1; background:var(--bg-surface); box-shadow:inset -1px 0 0 var(--row-sep);
+}
+.vs-table tbody tr:hover > td:first-child{ background-image:linear-gradient(var(--row-hover), var(--row-hover)); }
+.vs-table tbody tr.is-sel > td:first-child{ background:var(--bg-raised); box-shadow:inset 3px 0 0 var(--kpi-ticket), inset -1px 0 0 var(--row-sep); }
+.vs-table tr.vs-linha{ cursor:pointer; }
+@media (max-width:700px){ .vs-table td:first-child{ max-width:160px; white-space:normal; } }
+.panel .vs-filtros{ background:none; border:0; padding:0; box-shadow:none; }
+#vsec-filas-count{ color:var(--crit-text); background:rgba(208,59,59,.15); }
+.vs-legenda{ font-size:11.5px; color:var(--text-muted); margin-top:6px; }
 .vs-meta-in{ width:130px; text-align:right; }
 .vs-nav{ display:inline-flex; gap:4px; margin-left:8px; vertical-align:middle; }
 .v-sit.vs-abc-A{ color:var(--good-text); background:rgba(12,163,12,.12); }
@@ -2861,13 +2877,14 @@ div.dv-fila:hover{ border-color:var(--border); }
           <div class="kpi-grid" id="v-chave" role="group" aria-label="Indicadores-chave de vendas"></div>
 
           <!-- áreas de Vendas (etapa 30). Endereço: #/vendas?sec=produtos -->
-          <div class="page-tabs" id="tabs-vsec" role="tablist" aria-label="Áreas de vendas">
+          <div class="month-grid-section-title" id="vsec-titulo">Ver por área · todas seguem o período escolhido acima</div>
+          <div class="page-tabs" id="tabs-vsec" role="tablist" aria-labelledby="vsec-titulo">
             <button type="button" class="page-tab" role="tab" id="vsec-btn-geral" data-vsec="geral" aria-controls="vsec-geral" aria-selected="true">Visão geral</button>
             <button type="button" class="page-tab" role="tab" id="vsec-btn-produtos" data-vsec="produtos" aria-controls="vsec-produtos" aria-selected="false" tabindex="-1">Produtos</button>
             <button type="button" class="page-tab" role="tab" id="vsec-btn-regioes" data-vsec="regioes" aria-controls="vsec-regioes" aria-selected="false" tabindex="-1">Regiões</button>
             <button type="button" class="page-tab" role="tab" id="vsec-btn-clientes" data-vsec="clientes" aria-controls="vsec-clientes" aria-selected="false" tabindex="-1">Clientes</button>
             <button type="button" class="page-tab" role="tab" id="vsec-btn-cupons" data-vsec="cupons" aria-controls="vsec-cupons" aria-selected="false" tabindex="-1">Cupons</button>
-            <button type="button" class="page-tab" role="tab" id="vsec-btn-filas" data-vsec="filas" aria-controls="vsec-filas" aria-selected="false" tabindex="-1">Filas<span class="nav-count" id="vsec-filas-count" hidden></span></button>
+            <button type="button" class="page-tab" role="tab" id="vsec-btn-filas" data-vsec="filas" aria-controls="vsec-filas" aria-selected="false" tabindex="-1">Filas<span class="nav-count" id="vsec-filas-count" hidden></span><span class="sr-only" id="vsec-filas-sr"></span></button>
           </div>
           <div class="panels-grid vs-area" id="vsec-produtos" role="tabpanel" aria-labelledby="vsec-btn-produtos" hidden></div>
           <div class="panels-grid vs-area" id="vsec-regioes" role="tabpanel" aria-labelledby="vsec-btn-regioes" hidden></div>
@@ -9327,7 +9344,9 @@ function renderVendas(){
   else if(vendas.aba === 'semana') vRenderAbaSemana(per, r);
   else vRenderAbaDia(per, lista, r, b);
   vRenderOrigem();
-  vsRender(per, lista, r, b);   // etapa 30: indicadores-chave, metas e a área aberta (Produtos, Regiões, Clientes, Cupons, Filas)
+  // etapa 30: indicadores-chave, metas e a área aberta (Produtos, Regiões, Clientes, Cupons, Filas); uma falha aqui não derruba o resto
+  try{ vsRender(per, lista, r, b); }
+  catch(err){ console.error(err); var vsEl = document.getElementById('v-chave'); if(vsEl) vsEl.innerHTML = '<div class="drive-status alert-warning" role="status">Não consegui montar os indicadores novos de vendas. O restante da página segue normal.</div>'; }
   // gráficos criados ou atualizados com a aba oculta ficam com tamanho zero
   var aberta = document.getElementById('vtab-' + vendas.aba);
   Object.keys(state.charts).forEach(function(k){ var c = state.charts[k]; if(c.canvas && (aberta.contains(c.canvas) || /^vk-/.test(k))) c.resize(); });
@@ -10052,7 +10071,8 @@ function vsCoortes(hist, ref){
   });
   return Object.keys(m).map(Number).sort(function(a, b){ return a - b; }).map(function(k){
     var g = m[k];
-    return {ano:Math.floor(k / 12), mes:k % 12, n:g.n, pct:g.volta.map(function(v, j){ return k + j + 1 <= refMes ? (g.n ? v / g.n : null) : undefined; })};
+    // só meses já fechados: o mês da data de referência ainda está em andamento ("…")
+    return {ano:Math.floor(k / 12), mes:k % 12, n:g.n, pct:g.volta.map(function(v, j){ return k + j + 1 < refMes ? (g.n ? v / g.n : null) : undefined; })};
   });
 }
 
@@ -10083,15 +10103,19 @@ function vsCuponsRanking(lista, ehNovo){
 
 // indicadores-chave de um conjunto de pedidos (todas as situações)
 function vsIndicadores(lista){
-  var v = 0, pecas = 0, liq = 0, desc = 0, sub = 0, promo = 0, criados = 0, cancAntes = 0, cancDepois = 0, fat = 0;
+  // peças, preço e desconto: todas as vendas (a mesma base dos cartões Pedidos e Ticket, vResumo).
+  // aprovação e cancelamentos: só a loja virtual — sem a loja física (POS) e sem rascunho/edição de pedido (DRAFT-ORDER, EDIT-ORDER)
+  var v = 0, pecas = 0, liq = 0, desc = 0, sub = 0, promo = 0, criados = 0, vLoja = 0, cancAntes = 0, cancDepois = 0, fat = 0;
   lista.forEach(function(p){
-    if(/f[ií]sica|^pos$/i.test(p.canal)) return;   // venda de balcão (POS) não entra nas taxas da loja virtual
+    if(vsEhVenda(p)){
+      v++; fat += p.total; pecas += p.itens || 0; liq += Math.max(0, p.subtotal - p.desconto);
+      if(!vsSoCreditoOuSistema(p)){ desc += p.desconto; sub += p.subtotal; }
+      if(vsTemPromo(p)) promo++;
+    }
+    if(/f[ií]sica|^pos$/i.test(p.canal) || vsCupons(p).some(function(c){ return /^(DRAFT|EDIT|POS)-ORDER/i.test(c); })) return;
     criados++;
+    if(vsEhVenda(p)) vLoja++;
     if(p.situacao === 'cancelado'){ if(p.dataPag) cancDepois++; else cancAntes++; }
-    if(!vsEhVenda(p)) return;
-    v++; fat += p.total; pecas += p.itens || 0; liq += Math.max(0, p.subtotal - p.desconto);
-    if(!vsSoCreditoOuSistema(p)){ desc += p.desconto; sub += p.subtotal; }
-    if(vsTemPromo(p)) promo++;
   });
   return {
     pedidos:v, faturamento:fat, pecas:pecas,
@@ -10099,9 +10123,9 @@ function vsIndicadores(lista){
     precoPeca: pecas ? liq / pecas : null,
     pctDesconto: sub ? desc / sub : null,
     pctComCupom: v ? promo / v : null,
-    aprovacao: criados ? v / criados : null,
+    aprovacao: criados ? vLoja / criados : null,
     cancAntes: criados ? cancAntes / criados : null,
-    cancDepois: (v + cancDepois) ? cancDepois / (v + cancDepois) : null
+    cancDepois: (vLoja + cancDepois) ? cancDepois / (vLoja + cancDepois) : null
   };
 }
 
@@ -10143,7 +10167,8 @@ function vsFilas(todos, ref, prazos, hist, diasUteis, casos, perIni, perFim){
       if(d > n) out.pendente.push({p:p, dias:d, prazo:n});
     }
     // 2. cancelado depois de pago, sem estorno registrado
-    if(p.situacao === 'cancelado' && p.dataPag && !(p.estorno > 0) && !p.dataEstorno){
+    // (só cancelamentos dos últimos 90 dias: os mais antigos já passaram por conciliação ou ficam em Reembolsos)
+    if(p.situacao === 'cancelado' && p.dataPag && !(p.estorno > 0) && !p.dataEstorno && dias(p.cancelEm || p.data) <= 90){
       var du = diasUteis(p.cancelEm || p.data, ref);
       if(du != null && du > prazos.cancelPago) out.cancelPago.push({p:p, dias:du, prazo:prazos.cancelPago});
     }
@@ -10166,7 +10191,8 @@ function vsFilas(todos, ref, prazos, hist, diasUteis, casos, perIni, perFim){
     // 6. pagamento recusado (ou cancelado antes de pagar) de cliente que já comprou, nos últimos 7 dias
     if((p.situacao === 'recusado' || (p.situacao === 'cancelado' && !p.dataPag)) && p.cliente && d <= 7){
       var c = hist[p.cliente];
-      if(c && c.datas[0] < p.data) out.recusadoRecorrente.push({p:p, dias:d, prazo:prazos.recusadoRecorrente, motivo:c.datas.length + ' compra(s) paga(s) antes'});
+      // fora se ela já comprou de novo depois da recusa (a venda foi recuperada)
+      if(c && c.datas[0] < p.data && c.datas[c.datas.length - 1] < p.data) out.recusadoRecorrente.push({p:p, dias:d, prazo:prazos.recusadoRecorrente, motivo:c.datas.length + ' compra(s) paga(s) antes'});
     }
   });
   // 3b. mesmo cliente usando o mesmo cupom promocional 2 ou mais vezes (o pedido mais recente vai para a fila)
@@ -10179,7 +10205,8 @@ function vsFilas(todos, ref, prazos, hist, diasUteis, casos, perIni, perFim){
   // 5. Campeãs e Fiéis (2+ compras) há mais de N dias sem comprar
   Object.keys(hist).forEach(function(k){
     var c = hist[k], rf = vsRF(c, ref);
-    if(rf.F >= 2 && rf.R > prazos.emRisco) out.emRisco.push({cliente:c, dias:rf.R, compras:rf.F});
+    // até 180 dias: depois disso a cliente já é "Perdida" (segmento), não mais reativação imediata
+    if(rf.F >= 2 && rf.R > prazos.emRisco && rf.R <= 180) out.emRisco.push({cliente:c, dias:rf.R, compras:rf.F});
   });
   out.pendente.sort(function(a, b){ return b.dias - a.dias; });
   out.cancelPago.sort(function(a, b){ return b.dias - a.dias; });
@@ -10252,11 +10279,11 @@ var VS_SECS = [
 ];
 var VS_FILAS = [
   {id:'pendente', label:'Pagamento pendente', desc:'Pagamento ainda pendente há mais do prazo desde a criação do pedido (Pix e cartão: prazo "pendente"; boleto: prazo "boleto"). Só os últimos 30 dias; vencido e abandonado ficam fora.'},
-  {id:'cancelPago', label:'Cancelado depois de pago, sem estorno', desc:'Pedido pago e depois cancelado sem estorno registrado na Nuvemshop, há mais do prazo em dias úteis desde o cancelamento. Confira se o dinheiro voltou para a cliente (Nuvem Pago e planilha de reembolsos).'},
+  {id:'cancelPago', label:'Cancelado depois de pago, sem estorno', desc:'Pedido pago e depois cancelado sem estorno registrado na Nuvemshop, há mais do prazo em dias úteis desde o cancelamento. Só cancelamentos dos últimos 90 dias. Confira se o dinheiro voltou para a cliente (Nuvem Pago e planilha de reembolsos).'},
   {id:'recusadoRecorrente', label:'Pagamento recusado de cliente que já comprou', desc:'Pagamento recusado (ou cancelado antes de pagar) nos últimos 7 dias, de uma cliente com compra paga antes: vale um contato para recuperar a venda.'},
   {id:'topProblema', label:'Cliente top 50 com problema', desc:'Cliente entre as 50 que mais compraram com cancelamento, estorno ou devolução nos últimos 30 dias.'},
   {id:'descontoAlto', label:'Desconto fora do padrão', desc:'Pedidos do período com desconto acima de 40% do subtotal (sem crédito em loja) ou a mesma cliente usando o mesmo cupom promocional 2 ou mais vezes. Revisão semanal.'},
-  {id:'emRisco', label:'Campeãs e Fiéis sem comprar', desc:'Clientes com 2 ou mais compras e sem comprar há mais do prazo (dias). Lista para reativação, pelo faturamento acumulado.'}
+  {id:'emRisco', label:'Campeãs e Fiéis sem comprar', desc:'Clientes com 2 ou mais compras e sem comprar há mais do prazo, até 180 dias (depois disso viram "Perdidas"). Lista para reativação, pelo faturamento acumulado.'}
 ];
 var VS_SEM_TXT = {verde:'no alvo', amarelo:'atenção', vermelho:'abaixo'};
 
@@ -10264,6 +10291,12 @@ function vsEstado(){
   if(!vendas.vs) vendas.vs = {sel:null, ordModelo:'pecas', topModelo:20, abc:'', faixa:'', topCid:20, regiao:'', capital:'', ufCid:'',
     topCli:10, cliTipo:'', cliUF:'', ordCupom:'desconto', cupTipo:'', fila:'', metasPedidas:false};
   return vendas.vs;
+}
+// vsClientes é a conta mais pesada (percorre o histórico inteiro): guarda por período enquanto a lista de pedidos for a mesma
+function vsClientesCache(lista, ini, fim){
+  if(vendas._vsCliDe !== vendas.pedidos){ vendas._vsCli = {}; vendas._vsCliDe = vendas.pedidos; }
+  var k = ini.getTime() + '|' + fim.getTime();
+  return vendas._vsCli[k] || (vendas._vsCli[k] = vsClientes(lista, vsHist(), ini, fim, vendas.ref));
 }
 function vsMetas(){ return vendas.metas || VS_METAS_PADRAO; }
 function vsCat(){ return vendas.cat || {skus:[], modelos:[], fotos:{}}; }
@@ -10273,8 +10306,9 @@ function vsHist(){
 }
 // medianas dos indicadores-chave nos 6 meses fechados antes do mês do período (regra de carga)
 function vsMedianas(per){
-  var ref = per.ini, chave = vendas.pedidos.length + '|' + ref.getFullYear() + '-' + ref.getMonth();
-  if(vendas._vsMed && vendas._vsMedChave === chave) return vendas._vsMed;
+  // cache pela identidade da lista de pedidos (uma recarga cria outra lista) e pelo mês
+  var ref = per.ini, chave = ref.getFullYear() + '-' + ref.getMonth();
+  if(vendas._vsMed && vendas._vsMedChave === chave && vendas._vsMedDe === vendas.pedidos) return vendas._vsMed;
   var meses = [];
   for(var k = 1; k <= 6; k++){
     var ini = new Date(ref.getFullYear(), ref.getMonth() - k, 1), fim = new Date(ref.getFullYear(), ref.getMonth() - k + 1, 1);
@@ -10285,7 +10319,7 @@ function vsMedianas(per){
   ['pecasPorPedido', 'precoPeca', 'pctDesconto', 'pctComCupom', 'aprovacao', 'cancAntes', 'cancDepois'].forEach(function(c){
     med[c] = vsMediana(meses.map(function(m){ return m[c]; }));
   });
-  vendas._vsMed = med; vendas._vsMedChave = chave;
+  vendas._vsMed = med; vendas._vsMedChave = chave; vendas._vsMedDe = vendas.pedidos;
   return med;
 }
 
@@ -10303,7 +10337,9 @@ function vsSalvarMetas(padrao){
     ['faturamento', 'pedidos', 'ticket', 'recorrentes', 'prazos'].forEach(function(k){
       dados[k] = {};
       Array.prototype.forEach.call(document.querySelectorAll('[data-vs-meta^="' + k + '."]'), function(el){
-        dados[k][el.dataset.vsMeta.split('.')[1]] = el.value === '' ? '' : Number(String(el.value).replace(/\./g, '').replace(',', '.'));
+        // campo type=number: o value vem sempre com ponto decimal (389.9), nunca com vírgula
+        var n = el.value === '' ? NaN : Number(el.value);
+        dados[k][el.dataset.vsMeta.split('.')[1]] = isFinite(n) ? n : '';
       });
     });
   }
@@ -10318,7 +10354,13 @@ function vsSalvarMetas(padrao){
   }).catch(function(err){ toast('Não consegui salvar as metas: ' + (err && err.message || err)); });
 }
 
-function vsSemHtml(s){ return s ? '<span class="vs-sem vs-sem-' + s + '">' + VS_SEM_TXT[s] + '</span>' : ''; }
+// texto da pílula: com meta aprovada = no alvo / atenção / abaixo; pela mediana de 6 meses = normal / atenção / fora do padrão
+// (vale também para "menor é melhor", como desconto e cancelamento, em que vermelho significa acima do normal)
+function vsSemHtml(s, carga){
+  if(!s) return '';
+  var t = carga ? {verde:'normal', amarelo:'atenção', vermelho:'fora do padrão'}[s] : VS_SEM_TXT[s];
+  return '<span class="vs-sem vs-sem-' + s + '">' + t + (carga ? '<span class="sr-only"> em relação à mediana dos últimos 6 meses</span>' : '<span class="sr-only"> em relação à meta</span>') + '</span>';
+}
 // diferença em pontos percentuais (ou relativa) contra a base, com a cor certa para "menor é melhor"
 function vsDeltaHtml(cur, base, pct, menorMelhor, ctx){
   if(cur == null || base == null || !ctx) return '';
@@ -10341,9 +10383,13 @@ function vsRenderMetaCartoes(per, r){
   function linha(id, valor, meta, fmt, rotulo){
     var el = document.getElementById(id);
     if(!el) return;
-    var mp = vsMetaPeriodo(meta, per.tipo, dm);
+    // ticket é média: a meta mensal vale para semana e dia sem escala (só faturamento e pedidos são proporcionais aos dias)
+    var mp = rotulo === 'ticket' ? meta : vsMetaPeriodo(meta, per.tipo, dm);
     if(valor == null || !mp){ el.innerHTML = ''; return; }
+    // dia ainda em andamento (o do último pedido): sem semáforo, só o realizado até agora contra a meta do dia
+    if(per.tipo === 'dia' && per.parcial && rotulo !== 'ticket'){ el.innerHTML = '<span class="vs-meta-txt">até agora ' + fmt(valor) + ' · meta do dia ' + fmt(mp.verde) + infoTip('vs_meta') + '</span>'; return; }
     var s = vsSemaforoMeta(valor, mp);
+    if(rotulo === 'ticket') rotulo = '';
     el.innerHTML = vsSemHtml(s) + '<span class="vs-meta-txt">' + escapeHtml(rotulo) + fmt(valor) + ' · meta ' + fmt(mp.verde) + infoTip('vs_meta') + '</span>';
   }
   var proj = function(v){
@@ -10354,7 +10400,7 @@ function vsRenderMetaCartoes(per, r){
   var andamento = (per.tipo === 'mes' && per.info && per.info.status === 'andamento') || (per.tipo === 'semana' && per.info && per.info.andamento);
   linha('vk-fat-meta', proj(r.faturamento), metas.faturamento, fmtValor, andamento ? 'projeção ' : '');
   linha('vk-ped-meta', proj(r.pedidos), metas.pedidos, fmtQtd, andamento ? 'projeção ' : '');
-  linha('vk-ticket-meta', r.ticket, metas.ticket, fmtValor, '');
+  linha('vk-ticket-meta', r.ticket, metas.ticket, fmtValor, 'ticket');
 }
 
 // faixa dos indicadores-chave (topo de todas as áreas)
@@ -10362,20 +10408,25 @@ function vsRenderChave(per, lista, base){
   var el = document.getElementById('v-chave');
   if(!el) return;
   var i = vsIndicadores(lista), bi = base ? vsIndicadores(base) : null, med = vsMedianas(per), ctx = per.base ? per.base.label : null;
-  var cli = vsClientes(lista, vsHist(), per.ini, per.fim, vendas.ref), metas = vsMetas();
-  var cliB = base && per.base ? vsClientes(base, vsHist(), per.base.ini, per.base.fim, vendas.ref) : null;
+  var cli = vsClientesCache(lista, per.ini, per.fim), metas = vsMetas();
+  var cliB = base && per.base ? vsClientesCache(base, per.base.ini, per.base.fim) : null;
   var semRec = vsSemaforoMeta(cli.pctRecorrentes == null ? null : cli.pctRecorrentes * 100, metas.recorrentes);
   function carga(c, maior, pct){ return vsSemaforoCarga(i[c], med[c], maior, pct); }
   vendas._vsInd = i; vendas._vsSemCancDepois = carga('cancDepois', false, true);
-  function sub(c, pct, menor){ return vsSemHtml(c[0]) + vsDeltaHtml(i[c[1]], bi && bi[c[1]], pct, menor, ctx); }
   var semPecas = !vsCat().skus.length;
+  function ctxHtml(){ return ctx ? '<span class="delta-ctx">' + escapeHtml(ctx) + '</span>' : ''; }
+  function sub(c, pct, menor){
+    if(semPecas && /^(pecasPorPedido|precoPeca)$/.test(c[1])) return '<span class="delta-ctx">aguardando os produtos dos pedidos</span>';
+    var d = vsDeltaHtml(i[c[1]], bi && bi[c[1]], pct, menor, ctx);
+    return vsSemHtml(c[0], true) + d + (d ? ctxHtml() : '');
+  }
   el.innerHTML =
     vsMini('Peças por pedido', 'vs_pecas_ped', i.pecasPorPedido == null ? '—' : fmtDec1(i.pecasPorPedido), sub([carga('pecasPorPedido', true, false), 'pecasPorPedido'], false, false), carga('pecasPorPedido', true, false)) +
     vsMini('Preço médio por peça', 'vs_preco_peca', i.precoPeca == null ? '—' : fmtValor(i.precoPeca), sub([carga('precoPeca', true, false), 'precoPeca'], false, false), carga('precoPeca', true, false)) +
     vsMini('% de desconto', 'vs_desc', fmtPctOrDash(i.pctDesconto), sub([carga('pctDesconto', false, true), 'pctDesconto'], true, true), carga('pctDesconto', false, true)) +
     vsMini('Aprovação de pagamento', 'vs_aprov', fmtPctOrDash(i.aprovacao), sub([carga('aprovacao', true, true), 'aprovacao'], true, false), carga('aprovacao', true, true)) +
-    vsMini('% de clientes recorrentes', 'vs_recorr', fmtPctOrDash(cli.pctRecorrentes),
-      vsSemHtml(semRec) + vsDeltaHtml(cli.pctRecorrentes, cliB && cliB.pctRecorrentes, true, false, ctx) + (cli.semChave ? '<span class="delta-ctx">' + fmtQtd(cli.semChave) + ' pedidos sem cliente identificado</span>' : ''), semRec) +
+    vsMini('% de clientes recorrentes', 'vs_recorr', fmtPctOrDash(cli.pctRecorrentes) + ((vendas.anos || []).some(function(a){ return a < (vendas.anoServidor || vendas.ano); }) ? '<span class="delta-ctx">considera só as compras de ' + (vendas.anoServidor || vendas.ano) + '</span>' : ''),
+      vsSemHtml(semRec) + vsDeltaHtml(cli.pctRecorrentes, cliB && cliB.pctRecorrentes, true, false, ctx) + (cliB ? ctxHtml() : '') + (cli.semChave ? '<span class="delta-ctx">' + fmtQtd(cli.semChave) + ' pedidos sem cliente identificado</span>' : ''), semRec) +
     vsMini('Cancelamento depois do pagamento', 'vs_canc_depois', fmtPctOrDash(i.cancDepois), sub([carga('cancDepois', false, true), 'cancDepois'], true, true), carga('cancDepois', false, true));
   el.setAttribute('data-sem-pecas', semPecas ? '1' : '');
   return {ind:i, med:med, cli:cli};
@@ -10388,6 +10439,10 @@ function vsSyncSecs(){
     t.setAttribute('aria-selected', sel ? 'true' : 'false'); t.tabIndex = sel ? 0 : -1; t.classList.toggle('active', sel);
   });
   VS_SECS.forEach(function(s){ var el = document.getElementById('vsec-' + s.id); if(el) el.hidden = s.id !== st; });
+  // fora da Visão geral, as abas Mês/Semana/Dia controlam a área aberta (os painéis vtab-* ficam ocultos)
+  Array.prototype.forEach.call(document.querySelectorAll('#tabs-vendas [role=tab]'), function(t){
+    t.setAttribute('aria-controls', st === 'geral' ? 'vtab-' + t.dataset.vaba : 'vsec-' + st);
+  });
 }
 function vsSetSec(sec){
   if(!VS_SECS.some(function(s){ return s.id === sec; })) sec = 'geral';
@@ -10401,27 +10456,38 @@ function vsSetSec(sec){
 // navegação do período dentro das áreas (fora da Visão geral as setas da semana e do dia ficam na linha do período)
 function vsNavPeriodo(){
   if((vendas.sec || 'geral') === 'geral' || vendas.aba === 'mes') return '';
-  var a = vendas.aba === 'semana' ? 'sem' : 'dia';
-  return ' <span class="day-nav vs-nav"><button class="btn btn-sm icon-btn" type="button" data-vs-acao="' + a + '-1" aria-label="' + (a === 'sem' ? 'Semana anterior' : 'Dia anterior') + '">‹</button>' +
-    '<button class="btn btn-sm icon-btn" type="button" data-vs-acao="' + a + '1" aria-label="' + (a === 'sem' ? 'Semana seguinte' : 'Dia seguinte') + '">›</button></span>';
+  var a = vendas.aba === 'semana' ? 'sem' : 'dia', antes, depois, meio;
+  // mesmos limites das setas da Visão geral (vMoverSemana / vMoverDia)
+  if(a === 'sem'){
+    antes = !vCoberto(vAddDias(vendas.semIni, -7)); depois = vAddDias(vendas.semIni, 7) > vendas.ref;
+    meio = '<span class="v-nav-label">' + escapeHtml(vSemanaLabel(vendas.semIni)) + '</span>';
+  } else {
+    antes = !!vendas.inicio && vAddDias(vendas.dia, -1) < vInicioDia(vendas.inicio); depois = vAddDias(vendas.dia, 1) > vendas.ref;
+    meio = '<label class="sr-only" for="vs-dia-input">Dia</label><input type="date" class="date-input" id="vs-dia-input" data-vs-acao="dia-data" value="' + isoDate(vendas.dia) + '"' +
+      (vendas.inicio ? ' min="' + isoDate(vendas.inicio) + '"' : '') + ' max="' + isoDate(vendas.ref) + '">';
+  }
+  return ' <span class="day-nav vs-nav"><button class="btn btn-sm icon-btn" type="button" data-vs-acao="' + a + '-1" aria-label="' + (a === 'sem' ? 'Semana anterior' : 'Dia anterior') + '"' + (antes ? ' disabled' : '') + '>‹</button>' + meio +
+    '<button class="btn btn-sm icon-btn" type="button" data-vs-acao="' + a + '1" aria-label="' + (a === 'sem' ? 'Semana seguinte' : 'Dia seguinte') + '"' + (depois ? ' disabled' : '') + '>›</button></span>';
 }
 
 // tabela genérica: cols = [{t, def, num, f(r) → html}], linhas clicáveis com data-vs-sel="tipo|chave"
-function vsTabela(cols, rows, tipo, chaveFn, total, legenda){
-  if(!rows.length) return '<div class="empty-note">Nenhuma venda no período.</div>';
+function vsTabela(cols, rows, tipo, chaveFn, total, legenda, vazio){
+  if(!rows.length) return '<div class="empty-note">' + escapeHtml(vazio || 'Nenhuma venda no período.') + '</div>';
   var sel = vsEstado().sel;
   return '<table class="data-table vs-table"><caption class="sr-only">' + escapeHtml(legenda || '') + '</caption><thead><tr>' + cols.map(function(c){ return th(c.t, c.def, c.num); }).join('') + '</tr></thead><tbody>' +
     rows.map(function(r){
       var k = tipo ? chaveFn(r) : null, on = sel && k != null && sel.tipo === tipo && sel.chave === k;
       return '<tr' + (tipo ? ' class="vs-linha' + (on ? ' is-sel' : '') + '"' : '') + '>' + cols.map(function(c, j){
         var v = c.f(r);
-        if(j === 0 && tipo) v = '<button type="button" class="link-cell" data-vs-sel="' + escapeHtml(tipo + '|' + k) + '" aria-pressed="' + (on ? 'true' : 'false') + '">' + v + '</button>';
+        // "pedido" abre a gaveta (não alterna nada): sem aria-pressed
+        if(j === 0 && tipo) v = '<button type="button" class="link-cell" data-vs-sel="' + escapeHtml(tipo + '|' + k) + '"' + (tipo === 'pedido' ? '' : ' aria-pressed="' + (on ? 'true' : 'false') + '"') + '>' + v + '</button>';
         return '<td' + (c.num ? ' class="num"' : '') + '>' + v + '</td>';
       }).join('') + '</tr>';
     }).join('') + '</tbody>' + (total ? '<tfoot><tr>' + total.map(function(v, j){ return '<td' + (cols[j] && cols[j].num ? ' class="num"' : '') + '>' + v + '</td>'; }).join('') + '</tr></tfoot>' : '') + '</table>';
 }
+var VS_BTNS_ROTULO = {ordModelo:'Ordenar', topModelo:'Quantidade', topCid:'Quantidade', topCli:'Quantidade', cupTipo:'Tipo de cupom', ordCupom:'Ordenar'};
 function vsBtns(campo, valor, opcoes){
-  return '<div class="vs-seg" role="group">' + opcoes.map(function(o){
+  return '<div class="vs-seg" role="group" aria-label="' + escapeHtml(VS_BTNS_ROTULO[campo] || campo) + '">' + opcoes.map(function(o){
     var on = String(valor) === String(o[0]);
     return '<button type="button" class="btn btn-sm' + (on ? ' active' : '') + '" aria-pressed="' + (on ? 'true' : 'false') + '" data-vs-campo="' + campo + '" data-vs-valor="' + escapeHtml(o[0]) + '">' + escapeHtml(o[1]) + '</button>';
   }).join('') + '</div>';
@@ -10435,18 +10501,33 @@ function vsPainel(titulo, meta, corpo, extra){
   return '<div class="panel panel-wide"><div class="panel-header"><div class="panel-title">' + titulo + '</div><div class="panel-meta">' +
     (meta ? escapeHtml(meta) + ' · ' : '') + '<span class="in-selo">pelo pedido</span>' + (extra || '') + '</div></div>' + corpo + '</div>';
 }
-function vsCsvBtn(id, rotulo){ return ' <button type="button" class="btn btn-sm" data-vs-csv="' + id + '">' + escapeHtml(rotulo || 'Baixar CSV') + '</button>'; }
+var VS_CSV_NOME = {modelos:'dos modelos', cores:'das cores', tamanhos:'dos tamanhos', estados:'dos Estados', cidades:'das cidades', clientes:'das clientes', cupons:'dos cupons', fila:'da fila'};
+function vsCsvBtn(id){ return ' <button type="button" class="btn btn-sm" data-vs-csv="' + id + '" aria-label="Baixar CSV ' + escapeHtml(VS_CSV_NOME[id] || id) + '">Baixar CSV</button>'; }
 function vsBaixarCsv(nome, cab, linhas){
-  var esc = function(v){ var s = v == null ? '' : String(v); return /[";\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  var esc = function(v){
+    var s = v == null ? '' : String(v);
+    if(/^[=+\-@\t\r]/.test(s) && !/^-?\d[\d.,]*$/.test(s)) s = "'" + s;   // texto externo (nome, cidade, cupom) que viraria fórmula no Excel
+    return /[";\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
   var out = [cab.map(esc).join(';')].concat(linhas.map(function(l){ return l.map(esc).join(';'); }));
   downloadBlob(new Blob(['﻿' + out.join('\r\n')], {type:'text/csv;charset=utf-8'}), 'vendas-' + nome + '-' + isoDate(new Date()) + '.csv');
 }
 function vsPct(v){ return v == null ? '—' : fmtPct(v); }
 function vsVar(v){ return v == null ? '<span class="txt-muted">novo</span>' : '<span class="' + (v > 0 ? 'txt-good' : v < 0 ? 'txt-crit' : '') + '">' + fmtPctSigned(v) + '</span>'; }
 function vsMiniFoto(url, nome){ return typeof dvFotoHtml === 'function' ? dvFotoHtml(url, nome) : ''; }
-function vsPerTxt(per){ return per.tipo === 'mes' ? 'mês escolhido' : per.tipo === 'semana' ? 'semana escolhida' : 'dia escolhido'; }
+// nome do período nos painéis (o mesmo título da linha do período): mostra que as áreas seguem a barra Mês/Semana/Dia
+function vsPerTxt(per){ return per.titulo || (per.tipo === 'mes' ? 'mês escolhido' : per.tipo === 'semana' ? 'semana escolhida' : 'dia escolhido'); }
 
 // devolução por modelo e por modelo|tamanho dos pedidos de venda do período (casos válidos da AfterClick)
+// modelos do período; em Semana e Dia a classe ABC vem dos últimos 30 dias até o fim do período (especificação)
+function vsModelosPer(per, lista, base, cat){
+  var mods = vsModelos(lista, base, cat);
+  if(per.tipo === 'mes') return mods;
+  var abc = {};
+  vsModelos(vEntre(vAddDias(per.fim, -30), per.fim), null, cat).forEach(function(m){ abc[m.chave] = m.abc; });
+  mods.forEach(function(m){ m.abc = abc[m.chave] || 'C'; });
+  return mods;
+}
 function vsDevolucoes(lista){
   if(typeof devol === 'undefined' || !devol.sols) return null;
   var nums = {}, out = {};
@@ -10465,8 +10546,8 @@ function vsDevolucoes(lista){
 /* ---- área Produtos ---- */
 function vsRenderProdutos(per, lista, base){
   var st = vsEstado(), cat = vsCat(), el = document.getElementById('vsec-produtos');
-  if(!cat.skus.length){ el.innerHTML = vsPainel('Produtos', '', '<div class="empty-note">As peças de cada pedido chegam com a base nova de vendas (etapa 30). Se esta mensagem continuar, a base ainda está sendo montada.</div>'); return; }
-  var mods = vsModelos(lista, base, cat), dev = vsDevolucoes(lista);
+  if(!cat.skus.length){ el.innerHTML = vsPainel('Produtos', '', '<div class="empty-note">Os produtos de cada pedido ainda estão chegando ao painel. Se esta mensagem continuar amanhã, veja em <a href="#/planilha" class="text-link">Fontes de dados</a>.</div>'); return; }
+  var mods = vsModelosPer(per, lista, base, cat), dev = vsDevolucoes(lista);
   mods.forEach(function(m){ m.devol = dev ? (m.pecas ? (dev[m.chave] || 0) / m.pecas : null) : undefined; });
   var precos = mods.map(function(m){ return m.precoMedio; }).filter(function(x){ return x != null; }).sort(function(a, b){ return a - b; });
   var faixas = [[0, 100], [100, 200], [200, 300], [300, 500], [500, 1e9]];
@@ -10491,9 +10572,9 @@ function vsRenderProdutos(per, lista, base){
     {t:'Tamanho nº 1', f:function(m){ return escapeHtml(m.tam1 || '—'); }},
     {t:'Devolução', def:'vs_devol', num:true, f:function(m){ return m.devol === undefined ? '…' : vsPct(m.devol); }}
   ];
-  var html = vsPainel('Modelos mais vendidos', vsPerTxt(per) + (per.tipo !== 'mes' ? ' · ABC sobre o período escolhido' : ''), ctrl +
+  var html = vsPainel('Modelos mais vendidos', vsPerTxt(per) + (per.tipo !== 'mes' ? ' · curva ABC dos últimos 30 dias' : ''), ctrl +
     '<div class="table-wrap">' + vsTabela(cols, lst.slice(0, st.topModelo), 'modelo', function(m){ return m.chave; },
-      ['Total do período', fmtQtd(totPecas), fmtValor(totValor), '100%', totPecas ? fmtValor(totValor / totPecas) : '—', '', '', '', ''], 'Modelos mais vendidos') + '</div>' +
+      ['Total do período', fmtQtd(totPecas), fmtValor(totValor), '100%', totPecas ? fmtValor(totValor / totPecas) : '—', '', '', '', ''], 'Modelos mais vendidos', st.abc || st.faixa !== '' ? 'Nenhum modelo com estes filtros.' : '') + '</div>' +
     (lst.length > st.topModelo ? '<p class="empty-note">Mostrando ' + st.topModelo + ' de ' + fmtQtd(lst.length) + ' modelos.</p>' : '') +
     (dev ? '' : '<p class="empty-note">A devolução aparece quando as devoluções da AfterClick terminarem de carregar.</p>'));
   html += vsDetalhe(per, lista, base);
@@ -10584,7 +10665,7 @@ function vsDetalhe(per, lista, base){
       {t:'Desconto', num:true, f:function(p){ return fmtValor(p.desconto); }}, {t:'Total', num:true, f:function(p){ return fmtValor(p.total); }}], pc.slice(0, 100), null, null, null, titulo) + '</div>' +
       (pc.length > 100 ? '<p class="empty-note">Mostrando 100 de ' + fmtQtd(pc.length) + ' pedidos.</p>' : '');
   } else return '';
-  return '<div class="panel panel-wide vs-detalhe" role="region" aria-label="' + escapeHtml(titulo.replace(/<[^>]+>/g, '')) + '"><div class="panel-header"><div class="panel-title">' + titulo + '</div><div class="panel-meta">' + vsPerTxt(per) + ' ' + fechar + '</div></div>' + corpo + '</div>';
+  return '<div class="panel panel-wide vs-detalhe" role="region" aria-labelledby="vs-detalhe-titulo"><div class="panel-header"><div class="panel-title" id="vs-detalhe-titulo">' + titulo + '</div><div class="panel-meta">' + vsPerTxt(per) + ' ' + fechar + '</div></div>' + corpo + '</div>';
 }
 
 /* ---- área Regiões ---- */
@@ -10628,7 +10709,8 @@ function vsRenderRegioes(per, lista){
   html += vsPainel('Cidades que mais faturam', 'top ' + st.topCid + ' · clique numa cidade para ver as peças', '<div class="form-row page-filters vs-filtros">' +
     vsSelect('ufCid', st.ufCid, 'Estado', ufOpts) + vsSelect('capital', st.capital, 'Capital ou interior', [['', 'Todas'], ['cap', 'Só capitais'], ['int', 'Só interior']]) +
     vsBtns('topCid', st.topCid, [[20, 'Top 20'], [50, 'Top 50']]) + vsCsvBtn('cidades') + '</div><div class="table-wrap">' +
-    vsTabela(colsCid, cidF.slice(0, st.topCid), 'cidade', function(c){ return c.chave; }, null, 'Faturamento por cidade') + '</div>' +
+    vsTabela(colsCid, cidF.slice(0, st.topCid), 'cidade', function(c){ return c.chave; }, null, 'Faturamento por cidade', st.ufCid || st.capital ? 'Nenhuma cidade com estes filtros.' : '') + '</div>' +
+    '<p class="vs-legenda">Ticket "—" = menos de 5 pedidos no local (média pouco confiável).</p>' +
     (semCidade ? '<p class="empty-note">' + vPedidosTxt(semCidade.pedidos) + ' sem cidade informada (' + fmtValor(semCidade.faturamento) + ') ficam em "' + VS_SEM + '".</p>' : ''));
   html += vsDetalhe(per, lista, null);
   // frete grátis × pago
@@ -10650,8 +10732,8 @@ function vsRenderRegioes(per, lista){
 /* ---- área Clientes ---- */
 function vsRenderClientes(per, lista){
   var st = vsEstado(), el = document.getElementById('vsec-clientes'), hist = vsHist();
-  var res = vsClientes(lista, hist, per.ini, per.fim, vendas.ref);
-  if(!Object.keys(hist).length){ el.innerHTML = vsPainel('Clientes', '', '<div class="empty-note">A identificação das clientes chega com a base nova de vendas (etapa 30). Se esta mensagem continuar, a base ainda está sendo montada.</div>'); return; }
+  var res = vsClientesCache(lista, per.ini, per.fim);
+  if(!Object.keys(hist).length){ el.innerHTML = vsPainel('Clientes', '', '<div class="empty-note">A identificação das clientes ainda está chegando ao painel. Se esta mensagem continuar amanhã, veja em <a href="#/planilha" class="text-link">Fontes de dados</a>.</div>'); return; }
   var rows = res.rows.filter(function(r){ return (!st.cliTipo || (st.cliTipo === 'novo' ? r.novo : !r.novo)) && (!st.cliUF || r.uf === st.cliUF); });
   var html = '<div class="kpi-grid vs-chave-grid">' +
     vsMini('Clientes no período', 'vs_clientes', fmtQtd(res.clientes), res.semChave ? '<span class="delta-ctx">' + fmtQtd(res.semChave) + ' pedidos sem cliente identificado</span>' : '', '') +
@@ -10676,14 +10758,14 @@ function vsRenderClientes(per, lista){
   html += vsPainel('Clientes que mais compraram', vsPerTxt(per) + ' · pelo faturamento', '<div class="form-row page-filters vs-filtros">' +
     vsSelect('cliTipo', st.cliTipo, 'Tipo', [['', 'Todas'], ['novo', 'Novas'], ['rec', 'Recorrentes']]) + vsSelect('cliUF', st.cliUF, 'Estado', ufOpts) +
     vsBtns('topCli', st.topCli, [[10, 'Top 10'], [20, 'Top 20'], [50, 'Top 50']]) + vsCsvBtn('clientes') + '</div><div class="table-wrap">' +
-    vsTabela(colsCli, rows.slice(0, st.topCli), 'cliente', function(r){ return r.chave; }, null, 'Clientes que mais compraram') + '</div>');
+    vsTabela(colsCli, rows.slice(0, st.topCli), 'cliente', function(r){ return r.chave; }, null, 'Clientes que mais compraram', st.cliTipo || st.cliUF ? 'Nenhuma cliente com estes filtros.' : '') + '</div>');
   html += vsDetalhe(per, lista, null);
   // segmentos e coortes (base inteira)
   var segs = res.segmentos, totSeg = VS_SEGMENTOS.reduce(function(a, s){ return a + segs[s].n; }, 0);
   var coortes = vsCoortes(hist, vendas.ref);
-  html += '<div class="panel panel-wide"><div class="v-lado-a-lado"><div><div class="panel-header"><div class="panel-title">Segmentos' + infoTip('vs_rfm') + '</div><div class="panel-meta">toda a base, em ' + fmtDate(vendas.ref) + '</div></div>' +
+  html += '<div class="panel panel-wide"><div class="v-lado-a-lado"><div><div class="panel-header"><div class="panel-title">Segmentos' + infoTip('vs_rfm') + '</div><div class="panel-meta">toda a base, em ' + fmtDate(vendas.ref) + '</div></div><div class="table-wrap">' +
     vsTabela([{t:'Segmento', f:function(s){ return escapeHtml(s); }}, {t:'Clientes', num:true, f:function(s){ return fmtQtd(segs[s].n); }}, {t:'%', num:true, f:function(s){ return vsPct(totSeg ? segs[s].n / totSeg : null); }},
-      {t:'Faturamento acumulado', num:true, f:function(s){ return fmtValor(segs[s].fat); }}], VS_SEGMENTOS, null, null, null, 'Segmentos de clientes') +
+      {t:'Faturamento acumulado', num:true, f:function(s){ return fmtValor(segs[s].fat); }}], VS_SEGMENTOS, null, null, null, 'Segmentos de clientes') + '</div>' +
     '</div><div><div class="panel-header"><div class="panel-title">Coortes de recompra' + infoTip('vs_coorte') + '</div><div class="panel-meta">mês da 1ª compra</div></div><div class="table-wrap">' +
     vsTabela([{t:'1ª compra', f:function(c){ return vMesNome(c.mes) + ' ' + c.ano; }}, {t:'Clientes', num:true, f:function(c){ return fmtQtd(c.n); }},
       {t:'M+1', num:true, f:function(c){ return c.pct[0] === undefined ? '…' : vsPct(c.pct[0]); }}, {t:'M+2', num:true, f:function(c){ return c.pct[1] === undefined ? '…' : vsPct(c.pct[1]); }},
@@ -10744,7 +10826,11 @@ function vsCalcFilas(per){
   var hist = vsHist(), prazos = vsMetas().prazos;
   var du = function(d1, d2){ return typeof oprDiasUteis === 'function' ? oprDiasUteis(isoDate(d1), isoDate(d2)) : Math.floor((d2 - d1) / 864e5); };
   var casos = typeof vCasosValidos === 'function' && typeof devol !== 'undefined' && devol.sols ? vCasosValidos : null;
-  return vsFilas(vendas.pedidos, vendas.ref, prazos, hist, du, casos, per.ini, per.fim);
+  var chave = per.ini.getTime() + '|' + per.fim.getTime() + '|' + JSON.stringify(prazos) + '|' + (casos ? devol.versao || 'd' : '');
+  if(vendas._vsFilas && vendas._vsFilasDe === vendas.pedidos && vendas._vsFilasChave === chave) return vendas._vsFilas;
+  vendas._vsFilas = vsFilas(vendas.pedidos, vendas.ref, prazos, hist, du, casos, per.ini, per.fim);
+  vendas._vsFilasDe = vendas.pedidos; vendas._vsFilasChave = chave;
+  return vendas._vsFilas;
 }
 function vsContarFilas(f){ return f.pendente.length + f.cancelPago.length + f.recusadoRecorrente.length + f.topProblema.length; }
 function vsRenderFilas(per, f){
@@ -10764,13 +10850,13 @@ function vsRenderFilas(per, f){
     tabela = vsTabela([{t:'Cliente', f:function(x){ return escapeHtml(x.cliente.nome || 'Sem nome'); }}, {t:'Compras', num:true, f:function(x){ return fmtQtd(x.compras); }},
       {t:'Faturamento acumulado', num:true, f:function(x){ return fmtValor(x.cliente.fat); }}, {t:'Última compra', f:function(x){ return fmtDate(x.cliente.ultimaData); }},
       {t:'Dias sem comprar', num:true, f:function(x){ return fmtQtd(x.dias); }}, {t:'Local', f:function(x){ return escapeHtml((x.cliente.cidade || '') + (x.cliente.uf ? '/' + x.cliente.uf : '')); }}],
-      itens.slice(0, 100), 'cliente', function(x){ return x.cliente.chave; }, null, def.label);
+      itens.slice(0, 100), 'cliente', function(x){ return x.cliente.chave; }, null, def.label, 'Nada pendente nesta fila.');
   } else {
     tabela = vsTabela([{t:'Pedido', f:function(x){ return escapeHtml(x.p.num); }}, {t:'Data', f:function(x){ return fmtDate(x.p.data); }},
       {t:'Cliente', f:function(x){ return escapeHtml(x.p.nome || '—'); }}, {t:'Total', num:true, f:function(x){ return fmtValor(x.p.total); }},
       {t:'Pagamento', f:function(x){ return escapeHtml(x.p.meioGrupo); }},
       {t:atual === 'cancelPago' ? 'Dias úteis' : 'Dias', num:true, f:function(x){ return x.dias == null ? '—' : '<span class="' + (x.prazo != null && x.dias > x.prazo ? 'txt-crit' : '') + '">' + fmtQtd(x.dias) + '</span>'; }},
-      {t:'Motivo', f:function(x){ return escapeHtml(x.motivo || vSituacaoLabel(x.p.situacao)); }}], itens.slice(0, 100), 'pedido', function(x){ return x.p.num; }, null, def.label);
+      {t:'Motivo', f:function(x){ return escapeHtml(x.motivo || vSituacaoLabel(x.p.situacao)); }}], itens.slice(0, 100), 'pedido', function(x){ return x.p.num; }, null, def.label, 'Nada pendente nesta fila.');
   }
   var html = vsPainel('Filas de vendas', 'posição em ' + fmtDate(vendas.ref) + ' · clique no pedido para abrir', cards +
     '<div class="dv-fila-desc">' + escapeHtml(def.desc) + ' ' + escapeHtml(prazoTxt) + '</div><div class="form-row">' + vsCsvBtn('fila') + '</div><div class="table-wrap">' + tabela + '</div>' +
@@ -10797,10 +10883,10 @@ function vsRenderGeral(per, lista, base, r, b, chave){
     cs.forEach(function(c){ if(vsTipoCupom(c) !== 'promo') return; var k = c.toUpperCase(), g = porCupom[k] = porCupom[k] || {cupom:k, hoje:0, ant:0}; if(p.data >= hoje) g.hoje += p.desconto / cs.length; else g.ant += p.desconto / cs.length; });
   });
   var cuponsDia = Object.keys(porCupom).map(function(k){ var g = porCupom[k]; g.media30 = g.ant / 30; return g; });
-  var mods = cat.skus.length ? vsModelos(lista, base, cat) : [];
+  var mods = cat.skus.length ? vsModelosPer(per, lista, base, cat) : [];
   var al = vsAlertas({modelos:mods, todos:vendas.pedidos, cat:cat, ref:ref, per:per, r:r, b:b, ind:chave.ind, med:chave.med, cuponsDia:cuponsDia, semCancDepois:vendas._vsSemCancDepois});
-  document.getElementById('v-alertas').innerHTML = al.length ? '<div class="vs-alertas" role="list">' + al.map(function(a){
-    return '<div class="vs-alerta vs-alerta-' + a.nivel + '" role="listitem"><strong>' + escapeHtml(a.titulo) + '</strong><span>' + escapeHtml(a.texto) + '</span></div>';
+  document.getElementById('v-alertas').innerHTML = al.length ? '<div class="vs-alertas" role="list" aria-label="Alertas de vendas, até ' + fmtDate(ref) + '">' + al.map(function(a){
+    return '<div class="vs-alerta vs-alerta-' + a.nivel + '" role="listitem"><strong>' + '<span class="vs-sem vs-sem-' + a.nivel + '">' + (a.nivel === 'vermelho' ? 'urgente' : 'atenção') + '</span>' + escapeHtml(a.titulo) + '</strong><span>' + escapeHtml(a.texto) + '</span></div>';
   }).join('') + '</div>' : '';
   // de onde vem o ticket: peças por pedido × preço médio por peça + frete médio (+ ajustes)
   var i = chave.ind, bi = base ? vsIndicadores(base) : null;
@@ -10808,7 +10894,7 @@ function vsRenderGeral(per, lista, base, r, b, chave){
   var dc = decomp(i, r), db = decomp(bi, b);
   var ctx = per.base ? per.base.label : '';
   function linhaD(rot, def, v, vb, fmt, menor){ return [rot, (v == null ? '—' : fmt(v)) + (vb != null && v != null ? ' <span class="txt-muted">(antes ' + fmt(vb) + ')</span> ' + vsDeltaHtml(v, vb, false, menor, ctx) : ''), def]; }
-  document.getElementById('v-decomp').innerHTML = !dc ? '<div class="empty-note">Nenhuma venda no período.</div>' : (!cat.skus.length ? '<p class="empty-note">As peças por pedido chegam com a base nova de vendas.</p>' : '') +
+  document.getElementById('v-decomp').innerHTML = !dc ? '<div class="empty-note">Nenhuma venda no período.</div>' : (!cat.skus.length ? '<p class="empty-note">As peças por pedido aparecem quando os produtos dos pedidos chegarem ao painel.</p>' : '') +
     '<ul class="indicator-list">' + indicatorItems([
       linhaD('Peças por pedido', 'vs_pecas_ped', dc.ppp, db && db.ppp, fmtDec1),
       linhaD('× Preço médio por peça (com desconto)', 'vs_preco_peca', dc.preco, db && db.preco, fmtValor),
@@ -10834,23 +10920,23 @@ function vsRenderHeat(){
   for(var d = 0; d < 7; d++){ m.push([0, 0, 0, 0, 0, 0, 0, 0]); }
   vEntre(ini, fim).forEach(function(p){ if(!vsEhVenda(p)) return; var w = (p.data.getDay() + 6) % 7, h = Math.floor(p.data.getHours() / 3); m[w][h]++; if(m[w][h] > max) max = m[w][h]; });
   var dias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'], horas = ['0–3h', '3–6h', '6–9h', '9–12h', '12–15h', '15–18h', '18–21h', '21–24h'];
-  el.innerHTML = '<table class="data-table vs-heat"><caption class="sr-only">Pedidos por dia da semana e faixa de horário</caption><thead><tr><th></th>' + horas.map(function(h){ return '<th class="num">' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
-    m.map(function(l, w){ return '<tr><th scope="row">' + dias[w] + '</th>' + l.map(function(v){ return '<td class="num" style="--h:' + (max ? (v / max).toFixed(2) : 0) + '">' + fmtQtd(v) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table>';
+  el.innerHTML = '<table class="data-table vs-heat"><caption class="sr-only">Pedidos por dia da semana e faixa de horário</caption><thead><tr><th scope="col"><span class="sr-only">Dia</span></th>' + horas.map(function(h){ return '<th class="num">' + h + '</th>'; }).join('') + '</tr></thead><tbody>' +
+    m.map(function(l, w){ return '<tr><th scope="row">' + dias[w] + '</th>' + l.map(function(v){ return '<td class="num" style="--h:' + (max ? (v / max).toFixed(2) : 0) + '">' + fmtQtd(v) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table><p class="vs-legenda">Quanto mais forte a cor, mais pedidos naquele dia e horário.</p>';
 }
 
 function vsRenderMetasPainel(){
   var el = document.getElementById('v-metas');
   if(!el) return;
   var m = vsMetas(), adm = IS_APPS_SCRIPT && acessoAdmin;
-  function campo(k, c, v){ return adm ? '<input class="text-input vs-meta-in" type="number" min="0" step="any" inputmode="decimal" data-vs-meta="' + k + '.' + c + '" value="' + escapeHtml(v) + '" aria-label="' + escapeHtml(k + ' ' + c) + '">' : escapeHtml(String(v)); }
+  function campo(k, c, v, rot){ return adm ? '<input class="text-input vs-meta-in" type="number" min="0" step="any" inputmode="decimal" data-vs-meta="' + k + '.' + c + '" value="' + escapeHtml(v) + '" aria-label="' + escapeHtml(rot) + '">' : escapeHtml(String(v)); }
   var linhas = [['faturamento', 'Faturamento do mês (R$)'], ['pedidos', 'Pedidos do mês'], ['ticket', 'Ticket médio (R$)'], ['recorrentes', '% de clientes recorrentes']];
   var prazos = [['pendente', 'Pagamento pendente (dias)'], ['boleto', 'Boleto pendente (dias)'], ['cancelPago', 'Cancelado pago sem estorno (dias úteis)'], ['topProblema', 'Cliente top 50 com problema (dias)'], ['recusadoRecorrente', 'Recusado de cliente recorrente (dias)'], ['emRisco', 'Campeãs e Fiéis sem comprar (dias)']];
   el.innerHTML = '<details class="table-toggle"><summary>Metas e prazos das filas' + (m.autor ? ' · alterados por ' + escapeHtml(m.autor) : '') + '</summary>' +
-    '<p class="empty-note">Verde a partir do primeiro valor; amarelo a partir do segundo; abaixo disso, vermelho. Semana e dia usam a meta do mês proporcional aos dias. Os outros indicadores comparam com a mediana dos últimos 6 meses.' + (adm ? '' : ' Só administradores alteram.') + '</p>' +
+    '<p class="empty-note">Verde a partir do primeiro valor; amarelo a partir do segundo; abaixo disso, vermelho. Faturamento e pedidos: na semana e no dia, a meta do mês proporcional aos dias; ticket e % de recorrentes valem como estão. Os outros indicadores comparam com a mediana dos últimos 6 meses. Pedidos e ticket são estimativas sobre o histórico da loja (março a outubro de 2026), não metas oficiais.' + (adm ? '' : ' Só administradores alteram.') + '</p>' +
     '<div class="table-wrap"><table class="data-table"><thead><tr><th>Meta mensal</th><th class="num">Verde a partir de</th><th class="num">Amarelo a partir de</th></tr></thead><tbody>' +
-    linhas.map(function(l){ return '<tr><td>' + l[1] + '</td><td class="num">' + campo(l[0], 'verde', m[l[0]].verde) + '</td><td class="num">' + campo(l[0], 'amarelo', m[l[0]].amarelo) + '</td></tr>'; }).join('') +
+    linhas.map(function(l){ return '<tr><td>' + l[1] + '</td><td class="num">' + campo(l[0], 'verde', m[l[0]].verde, l[1] + ' — verde a partir de') + '</td><td class="num">' + campo(l[0], 'amarelo', m[l[0]].amarelo, l[1] + ' — amarelo a partir de') + '</td></tr>'; }).join('') +
     '</tbody></table><table class="data-table"><thead><tr><th>Prazo das filas</th><th class="num">Dias</th></tr></thead><tbody>' +
-    prazos.map(function(l){ return '<tr><td>' + l[1] + '</td><td class="num">' + campo('prazos', l[0], m.prazos[l[0]]) + '</td></tr>'; }).join('') + '</tbody></table></div>' +
+    prazos.map(function(l){ return '<tr><td>' + l[1] + '</td><td class="num">' + campo('prazos', l[0], m.prazos[l[0]], l[1]) + '</td></tr>'; }).join('') + '</tbody></table></div>' +
     (adm ? '<div class="form-row"><button type="button" class="btn btn-primary btn-sm" data-vs-acao="metasSalvar">Salvar metas</button><button type="button" class="btn btn-sm" data-vs-acao="metasPadrao">Voltar ao padrão</button></div>' : '') + '</details>';
 }
 
@@ -10862,7 +10948,9 @@ function vsRender(per, lista, r, b){
   vsRenderMetaCartoes(per, r);
   var chave = vsRenderChave(per, lista, base);
   var f = vsCalcFilas(per), nf = vsContarFilas(f), cnt = document.getElementById('vsec-filas-count');
-  if(cnt){ cnt.hidden = !nf; cnt.textContent = nf > 99 ? '99+' : String(nf); }
+  if(cnt){ cnt.hidden = !nf; cnt.textContent = nf > 99 ? '99+' : String(nf); cnt.setAttribute('aria-hidden', 'true'); }
+  var cntSr = document.getElementById('vsec-filas-sr');
+  if(cntSr) cntSr.textContent = nf ? ', ' + fmtQtd(nf) + ' pendências' : '';
   vsSyncSecs();
   var sec = vendas.sec || 'geral';
   if(sec === 'geral'){ vsRenderGeral(per, lista, base, r, b, chave); if(vendas.aba === 'semana') vsRenderHeat(); }
@@ -10885,32 +10973,61 @@ function setupVendasAreas(){
     e.preventDefault(); vsSetSec(lista[n].dataset.vsec); lista[n].focus();
   });
   var raiz = document.getElementById('vendas-conteudo');
+  // a área é redesenhada inteira a cada clique: guarda qual controle tinha o foco e devolve o foco a ele depois
+  function seletorDe(el){
+    if(!el || !el.getAttribute) return null;
+    var esc = function(v){ return window.CSS && CSS.escape ? CSS.escape(v) : String(v).replace(/"/g, '\\"'); };
+    if(el.id) return '#' + esc(el.id);
+    if(el.dataset.vsSel) return '[data-vs-sel="' + esc(el.dataset.vsSel) + '"]';
+    if(el.dataset.vsCampo) return '[data-vs-campo="' + esc(el.dataset.vsCampo) + '"][data-vs-valor="' + esc(el.dataset.vsValor || '') + '"]';
+    if(el.dataset.vsAcao) return '[data-vs-acao="' + esc(el.dataset.vsAcao) + '"]';
+    if(el.dataset.vsCsv) return '[data-vs-csv="' + esc(el.dataset.vsCsv) + '"]';
+    return null;
+  }
+  function redesenhar(foco){
+    renderVendas();
+    var el = foco && document.querySelector('#vendas-conteudo ' + foco);
+    if(el && el.focus) el.focus({preventScroll:true});
+  }
   raiz.addEventListener('click', function(e){
-    var b;
+    var b, tr = e.target.closest('tr.vs-linha');
+    if(tr && !e.target.closest('button, a, input, select')){ var bt = tr.querySelector('[data-vs-sel]'); if(bt){ bt.click(); return; } }
     if((b = e.target.closest('[data-vs-sel]'))){
       var st = vsEstado(), k = b.dataset.vsSel, i = k.indexOf('|'), tipo = k.slice(0, i), chave = k.slice(i + 1);
       if(tipo === 'pedido'){ vAbrirPedido(chave); return; }
       st.sel = st.sel && st.sel.tipo === tipo && st.sel.chave === chave ? null : {tipo:tipo, chave:chave};
+      st.selOrigem = st.sel ? seletorDe(b) : null;
       renderVendas();
       var det = document.querySelector('#vsec-' + (vendas.sec || 'geral') + ' .vs-detalhe');
-      if(det && st.sel) det.scrollIntoView({block:'nearest', behavior:'smooth'});
+      if(det && st.sel){
+        det.scrollIntoView({block:'nearest', behavior:motionOK() ? 'smooth' : 'auto'});
+        var tit = det.querySelector('.panel-title');
+        if(tit){ tit.tabIndex = -1; tit.focus({preventScroll:true}); }
+      } else { var vb = document.querySelector('#vendas-conteudo ' + seletorDe(b)); if(vb) vb.focus({preventScroll:true}); }
       return;
     }
-    if((b = e.target.closest('button[data-vs-campo]'))){ var st2 = vsEstado(), c = b.dataset.vsCampo, v = b.dataset.vsValor; st2[c] = /^(topModelo|topCid|topCli)$/.test(c) ? Number(v) : v; renderVendas(); return; }
+    if((b = e.target.closest('button[data-vs-campo]'))){ var st2 = vsEstado(), c = b.dataset.vsCampo, v = b.dataset.vsValor; st2[c] = /^(topModelo|topCid|topCli)$/.test(c) ? Number(v) : v; redesenhar(seletorDe(b)); return; }
     if((b = e.target.closest('[data-vs-csv]'))){ var fn = vendas._vsCsv && vendas._vsCsv[b.dataset.vsCsv]; if(fn) fn(); return; }
-    if((b = e.target.closest('[data-vs-acao]'))){
-      var a = b.dataset.vsAcao;
-      if(a === 'fechar'){ vsEstado().sel = null; renderVendas(); }
-      else if(a === 'sem-1') vMoverSemana(-1); else if(a === 'sem1') vMoverSemana(1);
+    if((b = e.target.closest('button[data-vs-acao]'))){
+      var a = b.dataset.vsAcao, foco = seletorDe(b);
+      if(a === 'fechar'){ var orig = vsEstado().selOrigem; vsEstado().sel = null; redesenhar(orig); return; }
+      if(a === 'sem-1') vMoverSemana(-1); else if(a === 'sem1') vMoverSemana(1);
       else if(a === 'dia-1') vMoverDia(-1); else if(a === 'dia1') vMoverDia(1);
-      else if(a === 'metasSalvar') vsSalvarMetas(false); else if(a === 'metasPadrao') vsSalvarMetas(true);
+      else if(a === 'metasSalvar'){ vsSalvarMetas(false); return; } else if(a === 'metasPadrao'){ vsSalvarMetas(true); return; }
+      var el = document.querySelector('#vendas-conteudo ' + foco);
+      if(el && !el.disabled) el.focus({preventScroll:true});
     }
   });
   raiz.addEventListener('change', function(e){
+    if(e.target.id === 'vs-dia-input'){
+      var d = core.parseDateCell(e.target.value);
+      if(d){ vSetDia(d); redesenhar('#vs-dia-input'); }
+      return;
+    }
     var s = e.target.closest('select[data-vs-campo]');
     if(!s) return;
     vsEstado()[s.dataset.vsCampo] = s.value;
-    renderVendas();
+    redesenhar('#' + s.id);
   });
 }
 

@@ -551,12 +551,20 @@ function lerCsvVendas_(arquivo){
   return {linhas: ordem.map(function(n){ return porNum[n]; }), nomes: nomes};
 }
 
-// e-mail → chave do cliente: resumo de 12 caracteres do e-mail em minúsculas ('' sem e-mail). O e-mail nunca é guardado;
-// a chave só serve para juntar os pedidos da mesma pessoa (ranking de clientes, novos × recorrentes).
+// e-mail → chave do cliente: 12 caracteres do HMAC-SHA256 do e-mail em minúsculas, com o segredo da propriedade
+// CLIENTE_SEGREDO (criado na primeira vez; '' sem e-mail). O e-mail nunca é guardado, e sem o segredo a chave não volta
+// ao e-mail nem por tentativa com uma lista de e-mails. Só serve para juntar os pedidos da mesma pessoa.
+// Trocar ou apagar CLIENTE_SEGREDO muda todas as chaves: depois disso a base de vendas precisa ser refeita.
+var CLIENTE_SEGREDO_ = null; // vale só nesta execução
 function chaveCliente_(email){
   var e = String(email == null ? '' : email).trim().toLowerCase();
   if(!e || e.indexOf('@') < 0) return '';
-  return Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, 'talgui|' + e)).slice(0, 12);
+  if(!CLIENTE_SEGREDO_){
+    var p = props_();
+    CLIENTE_SEGREDO_ = p.getProperty('CLIENTE_SEGREDO');
+    if(!CLIENTE_SEGREDO_){ CLIENTE_SEGREDO_ = Utilities.getUuid() + Utilities.getUuid(); p.setProperty('CLIENTE_SEGREDO', CLIENTE_SEGREDO_); }
+  }
+  return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(e, CLIENTE_SEGREDO_)).slice(0, 12);
 }
 
 // item do pedido na base: "sku:qtd:preço unitário" (preço com ponto; desde o formato 3 — antes era só "sku:qtd").
@@ -633,6 +641,13 @@ function limparVendasBaseAntiga(){
   var pastaBase = pastaBaseVendas_(pasta);
   var nova = lerJsonBase_(pastaBase, VENDAS_ESTADO_ARQ);
   if(!nova || !Object.keys(nova.anos || {}).length) throw new Error('A base nova (' + VENDAS_ESTADO_ARQ + ') ainda não existe: não apaguei a antiga.');
+  // só depois de a base nova estar completa: todos os CSVs lidos e a carga da API terminada
+  var cv = consolidarVendas_(pasta);
+  if(cv.erro) throw new Error('A base nova ainda está lendo as exportações (' + cv.erro + '): não apaguei a antiga. Tente de novo mais tarde.');
+  if(apiNuvemshopLigada_()){
+    var s = estadoVendasApi_();
+    if(!s.ultimo || s.pendente || s.retomar) throw new Error('A carga da API na base nova ainda não terminou: não apaguei a antiga. Tente de novo mais tarde.');
+  }
   var it = pastaBase.getFiles(), lixo = 0, rx = /^vendas-(\d{4}|estado)\.json$/;
   while(it.hasNext()){ var f = it.next(); if(rx.test(f.getName())){ f.setTrashed(true); lixo++; } }
   [VENDAS_ANTIGA.api, VENDAS_ANTIGA.prop, VENDAS_ANTIGA.espelho].forEach(function(k){ p.deleteProperty(k); });
@@ -2384,7 +2399,7 @@ function salvarMetasVendas(token, metas){
       nova[k] = {};
       for(var c in VENDAS_METAS_PADRAO[k]){
         var v = metas[k] && metas[k][c] !== '' && metas[k][c] != null ? Number(metas[k][c]) : VENDAS_METAS_PADRAO[k][c];
-        if(!isFinite(v) || v < 0 || v > 1e9) return {erro:'valor_invalido', campo:k + '.' + c};
+        if(!isFinite(v) || v < 0 || v > (k === 'recorrentes' ? 100 : 1e9)) return {erro:'valor_invalido', campo:k + '.' + c};
         nova[k][c] = Math.round(v * 100) / 100;
       }
       if(k !== 'prazos' && nova[k].amarelo > nova[k].verde) return {erro:'faixa_invalida', campo:k};
