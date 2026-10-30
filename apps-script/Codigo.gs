@@ -26,7 +26,7 @@ var HASH_RODADAS = 1000;
 var DOMINIO = 'talgui.com.br';
 var PREFIXO_USUARIO = 'usuario:';
 
-function doGet(){
+function doGet(e){
   var conta = verificarConta_();
   if(conta.erro){
     var msg = 'Você não tem acesso a este painel' + (conta.email ? ' com a conta ' + conta.email : '') + '. Peça a liberação ao responsável.';
@@ -34,6 +34,12 @@ function doGet(){
       '<div style="font-family:system-ui,sans-serif;max-width:480px;margin:15vh auto;padding:0 16px;color:#1f2933;">' +
       '<h1 style="font-size:20px;">Painel de Reembolsos</h1><p style="line-height:1.5;">' + escaparHtml_(msg) + '</p></div>'
     ).setTitle('Painel Financeiro · Talgui').addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
+  }
+  // Protótipo visual (dados de exemplo), aberto com ?p=prototipo
+  if(e && e.parameter && e.parameter.p === 'prototipo'){
+    return HtmlService.createHtmlOutputFromFile('Prototipo')
+      .setTitle('Protótipo · Vendas · Talgui')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   }
   return HtmlService.createHtmlOutputFromFile('Index')
     .setTitle('Painel Financeiro · Talgui')
