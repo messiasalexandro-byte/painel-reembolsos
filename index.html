@@ -2933,13 +2933,6 @@ th[aria-sort="ascending"] .apx-ord, th[aria-sort="descending"] .apx-ord{ color:v
         <div class="in-dados-ate" id="in-dados-ate" aria-label="Dados até"></div>
         <p class="apx-janela" id="in-janela"></p>
         <div class="apx" id="in-apex"></div>
-        <h2 class="apx-mais" id="in-mais">Mais detalhes</h2>
-        <p class="in-info apx-mais-nota" id="in-mais-nota" hidden></p>
-        <section class="in-bloco" id="in-b1" aria-label="Resumo do período"></section>
-        <section class="in-bloco" id="in-b2" aria-label="Ponte do período"></section>
-        <section class="in-bloco" id="in-bmod" aria-label="Módulos"></section>
-        <section class="in-bloco" id="in-b5" aria-label="Pendências"></section>
-        <section class="in-bloco" id="in-bm" aria-label="Resumo mês a mês"></section>
       </section>
 
       <!-- Reembolsos · Resumo: o conteúdo que era o Início (rota #/reembolsos) -->
@@ -17834,23 +17827,9 @@ function renderInicio(){
   seguro('in-apex', apxBloco);
   try{ apxDesenhar(C); } catch(e){ if(window.console) console.error(e); }
   if(focoApx){ var fa = document.querySelector('#in-apex [data-apx-foco="' + focoApx + '"]'); if(fa) fa.focus({preventScroll:true}); }
-  var mn = document.getElementById('in-mais-nota');
-  mn.hidden = P.janela !== '24h';
-  mn.textContent = P.janela === '24h' ? 'Com 24 horas, os blocos abaixo mostram o dia ' + fmtDate(P.ini) + (vendas.pedidos ? ' (o dia do último pedido)' : ' (o dia do último lançamento)') + ', comparado com o mesmo dia da semana anterior (D-7): eles só funcionam por dia.' : '';
-  seguro('in-b1', inBlocoTopo);
-  seguro('in-b2', inBlocoPonte);
-  seguro('in-bmod', inBlocoModulos);
-  seguro('in-b5', inBlocoPendencias);
-  seguro('in-bm', inBlocoMeses);
-  try{ inGraficosMeses(C); } catch(e){ if(window.console) console.error(e); }
-  // pendências vencidas: aviso no topo e o bloco não recolhe
-  var crit = document.querySelectorAll('#in-b5 .alert-critical').length;
-  var chip = document.getElementById('in-pend-chip');
-  if(chip) chip.innerHTML = crit ? '<button type="button" class="in-pend-chip" data-in-ir="in-b5"><span aria-hidden="true">⚠</span> ' + fmtQtd(crit) + (crit === 1 ? ' pendência vencida' : ' pendências vencidas') + ' · ver</button>' : '';
-  IN_RECOLHIVEIS.forEach(function(id){ inPrepararRecolhivel(id, id === 'in-b5' && crit > 0); });
+  // 30/10: o usuário tirou do Início os blocos de "Mais detalhes" (Resumo, Ponte, Módulos, Pendências, Mês a mês);
+  // as pendências seguem no sino (sinoItens chama inBlocoPendencias por conta própria)
   countUpTextos(document.getElementById('in-raiz'), 'in');
-  if(focoMes){ var f = document.querySelector('#in-bm .in-mm-mes[data-in-mes="' + focoMes + '"]'); if(f) f.focus({preventScroll:true}); }
-  if(focoBloco){ var g = document.querySelector('.in-toggle[data-in-bloco="' + focoBloco + '"]'); if(g) g.focus({preventScroll:true}); }
   renderPageSub();
   syncUrl();
 }
