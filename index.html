@@ -2234,6 +2234,405 @@ body.sidebar-open .fab-cmdk{ display:none!important; }
   .panel, .kpi-card, .filter-bar{ background:var(--bg-surface)!important; }
   table.data-table thead th{ background:transparent!important; }
 }
+
+/* =====================================================================
+   Etapa 32: disposição do print "Apex" no Início, no menu e no topo.
+   Tokens próprios dos brilhos (luz branca no escuro, grafite no claro); o resto reaproveita os do tema.
+   ===================================================================== */
+:root{
+  --apx-glow:#eef3ff; --apx-prog-de:rgba(170,190,230,.25); --apx-prog-ate:#e9f0ff; --apx-tick-off:rgba(255,255,255,.09); --apx-tick-on:#f2f6ff;
+  --apx-bar-top:rgba(172,188,216,.30); --apx-bar-bottom:rgba(172,188,216,.03); --apx-bar-sheen:rgba(255,255,255,.10); --apx-spark-area:rgba(190,205,235,.16);
+  --apx-grid:rgba(255,255,255,.055);
+}
+:root[data-theme="light"]{
+  --apx-glow:#1e293b; --apx-prog-de:rgba(51,65,85,.35); --apx-prog-ate:#1e293b; --apx-tick-off:rgba(15,23,42,.10); --apx-tick-on:#1e293b;
+  --apx-bar-top:rgba(71,85,105,.30); --apx-bar-bottom:rgba(71,85,105,.04); --apx-bar-sheen:rgba(255,255,255,.55); --apx-spark-area:rgba(51,65,85,.12);
+  --apx-grid:rgba(15,23,42,.07);
+}
+
+/* ---------- Menu lateral: marca com troca de painel, busca, grupos em acordeão ---------- */
+.sidebar-brand{ padding:0 2px 2px 4px; }
+.sidebar .brand-mark{ width:34px; height:34px; flex-basis:34px; border-radius:9px; }
+.brand-switch{
+  margin-left:auto; flex:none; width:30px; height:30px; padding:0; display:grid; place-items:center; border:0; border-radius:8px;
+  background:transparent; color:var(--text-muted); cursor:pointer; transition:background-color .18s, color .18s;
+}
+.brand-switch svg{ width:16px; height:16px; }
+.brand-switch:hover, .brand-switch[aria-expanded="true"]{ background:var(--bg-hover); color:var(--text-primary); }
+#marca-menu{ position:absolute; top:58px; left:12px; right:12px; z-index:60; min-width:0; }
+.side-search{
+  appearance:none; flex:none; display:flex; align-items:center; gap:8px; width:100%; min-height:36px; padding:0 6px 0 10px;
+  border:1px solid var(--border); border-radius:var(--r-ctl); background:var(--bg-raised); color:var(--text-muted);
+  font:500 13px var(--font-body); text-align:left; cursor:pointer; transition:border-color .2s, background-color .2s, color .2s;
+}
+.side-search svg{ width:15px; height:15px; flex:none; }
+.side-search-label{ flex:1; min-width:0; }
+.side-search-kbd{ display:inline-flex; gap:3px; }
+.side-search-kbd .kbd{ padding:3px 5px; font-weight:500; background:var(--bg-page); border-color:var(--border-strong); }
+.side-search:hover{ border-color:var(--border-strong); background:var(--bg-hover); color:var(--text-secondary); }
+.nav-principal{ padding-top:4px; }
+.nav-grupo{ display:flex; flex-direction:column; }
+.nav-grupo-btn{
+  appearance:none; display:flex; align-items:center; gap:8px; width:100%; min-height:32px; margin-top:8px; padding:6px 8px;
+  border:0; border-radius:8px; background:transparent; color:var(--text-muted); cursor:pointer; text-align:left;
+  font:600 10.5px var(--font-body); letter-spacing:.09em; text-transform:uppercase; transition:background-color .18s, color .18s;
+}
+.nav-grupo-btn:hover{ background:var(--bg-hover); color:var(--text-primary); }
+.nav-grupo-btn:focus-visible{ outline:2px solid var(--focus); outline-offset:-2px; }
+.nav-grupo-nome{ flex:1; min-width:0; }
+.nav-grupo-n{ flex:none; font-size:10.5px; letter-spacing:0; text-transform:none; font-weight:700; padding:1px 6px; border-radius:6px; background:rgba(250,178,25,.16); color:var(--warn-text); font-variant-numeric:tabular-nums; }
+.nav-grupo-chev{ flex:none; width:7px; height:7px; margin:0 4px 3px 0; border-right:1.6px solid currentColor; border-bottom:1.6px solid currentColor; transform:rotate(45deg); transition:transform var(--dur-3) var(--ease-out); }
+.nav-grupo.is-fechado .nav-grupo-chev{ transform:rotate(-45deg); margin-bottom:0; }
+/* abre e fecha pela altura (0fr ↔ 1fr); fechado, os itens saem do Tab (visibility) */
+.nav-grupo-itens{ display:grid; grid-template-rows:1fr; transition:grid-template-rows var(--dur-3) var(--ease-out); }
+.nav-grupo-dentro{ min-height:0; overflow:hidden; display:flex; flex-direction:column; gap:2px; padding:2px; margin:-2px; }
+.nav-grupo.is-fechado .nav-grupo-itens{ grid-template-rows:0fr; }
+.nav-grupo.is-fechado .nav-grupo-dentro{ visibility:hidden; transition:visibility 0s var(--dur-3); }
+/* tema dentro do menu: só no celular (o topo guarda o sino e a conta) */
+.side-tema{ display:none; flex:none; align-items:center; justify-content:space-between; gap:8px; padding:10px 6px 0; border-top:1px solid var(--divider); }
+.side-tema-rot{ font-size:12px; color:var(--text-muted); }
+@media (min-width:961px){
+  body.sidebar-recolhido .brand-switch, body.sidebar-recolhido #marca-menu, body.sidebar-recolhido .side-search-label, body.sidebar-recolhido .side-search-kbd{ display:none!important; }
+  body.sidebar-recolhido .side-search{ justify-content:center; padding:0; }
+  body.sidebar-recolhido .nav-grupo-btn{ display:none; }
+  body.sidebar-recolhido .nav-grupo{ border-top:1px solid var(--border); margin-top:10px; padding-top:8px; }
+  body.sidebar-recolhido .nav-grupo.is-fechado .nav-grupo-itens{ grid-template-rows:1fr; }
+  body.sidebar-recolhido .nav-grupo.is-fechado .nav-grupo-dentro{ visibility:visible; }
+}
+
+/* ---------- Topo: tema, sino e conta ---------- */
+.header-actions{ gap:10px; }
+.top-icone{
+  position:relative; flex:none; width:38px; height:38px; padding:0; border-radius:50%; display:inline-grid; place-items:center; cursor:pointer;
+  border:1px solid var(--border); background:var(--bg-raised); color:var(--text-secondary); transition:background-color .18s, color .18s, border-color .18s, transform .12s;
+}
+.top-icone svg{ width:17px; height:17px; }
+.top-icone:hover, .top-icone[aria-expanded="true"]{ background:var(--bg-hover); color:var(--text-primary); border-color:var(--border-strong); }
+.top-icone:active{ transform:scale(.94); }
+.top-sino-n{
+  position:absolute; top:-4px; right:-4px; min-width:18px; height:18px; padding:0 4px; border-radius:99px; display:grid; place-items:center;
+  background:var(--status-critical); color:var(--on-accent); font-size:10.5px; font-weight:700; line-height:1; border:2px solid var(--bg-page); font-variant-numeric:tabular-nums;
+}
+.top-user{
+  appearance:none; display:flex; align-items:center; gap:10px; min-height:40px; padding:2px 2px 2px 12px; border:1px solid transparent; border-radius:99px;
+  background:transparent; color:var(--text-primary); cursor:pointer; font:500 13px var(--font-body); transition:background-color .18s, border-color .18s;
+}
+.top-user:hover, .top-user[aria-expanded="true"]{ background:var(--bg-hover); border-color:var(--border); }
+.top-avatar{ width:34px; height:34px; flex-basis:34px; font-size:12px; box-shadow:0 0 0 1px var(--border-strong); }
+.top-sino-wrap, .top-user-wrap{ position:relative; }
+
+/* camadas flutuantes do layout novo (menus, sino, calendário) */
+.apx-pop{
+  z-index:80; min-width:220px; padding:6px; background:var(--pop-bg); border:1px solid var(--border-strong); border-radius:14px;
+  box-shadow:var(--shadow-lg); animation:apx-pop-in .2s var(--ease) backwards;
+}
+@keyframes apx-pop-in{ from{ opacity:0; transform:translateY(-4px) scale(.97); } }
+.top-sino-wrap .apx-pop, .top-user-wrap .apx-pop{ position:absolute; right:0; top:calc(100% + 8px); }
+.apx-fixo{ position:fixed; top:0; left:0; }
+.menu-pop{ display:flex; flex-direction:column; gap:2px; }
+.apx-mi{ flex-direction:row!important; align-items:center!important; justify-content:space-between!important; gap:10px; min-height:36px; font-weight:500; color:var(--text-secondary); text-decoration:none; }
+.apx-mi:hover, .apx-mi:focus-visible{ color:var(--text-primary); }
+.apx-mi[aria-disabled="true"]{ opacity:.55; cursor:not-allowed; }
+.apx-mi .menu-item-sub{ font-size:11.5px; }
+.apx-mi-check{ width:16px; height:16px; flex:none; color:var(--text-primary); }
+.apx-mi-seta{ font-size:11px; color:var(--text-muted); transition:transform var(--dur-2) var(--ease-out); }
+#btn-export-menu[aria-expanded="true"] .apx-mi-seta{ transform:rotate(180deg); }
+.user-menu{ width:290px; max-width:calc(100vw - 24px); display:flex; flex-direction:column; gap:2px; }
+.user-menu-info{ padding:8px 10px 10px; margin-bottom:4px; border-bottom:1px solid var(--divider); }
+.user-menu .export-sub{
+  position:static; min-width:0; margin:0 0 4px 10px; padding:0 0 0 8px; border:0; border-left:2px solid var(--border-strong); border-radius:0;
+  background:transparent; box-shadow:none; display:flex; flex-direction:column; gap:2px; animation:none;
+}
+.user-menu .export-sub[hidden]{ display:none!important; }
+.sino-pop{ width:350px; max-width:calc(100vw - 24px); }
+.sino-titulo{ margin:4px 6px 8px; font-size:12px; font-weight:600; color:var(--text-muted); letter-spacing:.02em; }
+.sino-lista{ list-style:none; margin:0; padding:0; max-height:min(340px, 60vh); overflow:auto; }
+.sino-item{ display:flex; gap:10px; padding:8px; border-radius:8px; text-decoration:none; color:var(--text-primary); font-size:13px; line-height:1.4; }
+.sino-item:hover{ background:var(--bg-hover); }
+.sino-item:focus-visible{ outline:2px solid var(--focus); outline-offset:-2px; }
+.sino-item.is-nova{ background:var(--row-sel); }
+.sino-item strong{ font-weight:600; }
+.sino-item small{ display:block; margin-top:2px; font-size:12px; color:var(--text-muted); }
+.sino-ponto{ flex:none; width:8px; height:8px; margin-top:6px; border-radius:50%; background:var(--text-muted); }
+.sino-item.is-critical .sino-ponto{ background:var(--status-critical); }
+.sino-item.is-warning .sino-ponto{ background:var(--status-warning); }
+.sino-vazio{ padding:14px 8px; font-size:13px; color:var(--text-muted); }
+.sino-pe{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:6px; padding:8px 4px 2px; border-top:1px solid var(--divider); }
+.sino-info{ font-size:12px; color:var(--text-muted); }
+
+/* ---------- Início: filtro do print ---------- */
+.apx-filtros{ gap:10px; margin-bottom:8px; }
+.apx-per button{ min-height:32px; }
+.apx-filtros-dir{ margin-left:auto; display:flex; gap:8px; }
+.apx-datas{ display:inline-flex; align-items:center; gap:8px; min-height:36px; }
+.apx-datas svg{ width:16px; height:16px; flex:none; }
+.apx-datas.is-on{ background:var(--bg-active); border-color:color-mix(in srgb, var(--text-primary) 30%, transparent); }
+.apx-janela{ margin:2px 0 14px; font-size:12.5px; line-height:1.5; color:var(--text-muted); }
+.apx-janela strong{ color:var(--text-secondary); font-weight:600; }
+.apx-janela:empty{ display:none; }
+
+/* ---------- Início: grade dos cartões ---------- */
+.apx{ display:flex; flex-direction:column; gap:16px; }
+.apx[hidden]{ display:none; }
+.apx-estado .empty-note, .apx-estado .drive-status{ margin-top:0; }
+.apx-kpis{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:16px; }
+.apx-linha2{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:16px; align-items:stretch; }
+.apx-pilha{ display:grid; grid-template-rows:auto 1fr; gap:16px; min-width:0; }
+.apx-card{ position:relative; display:flex; flex-direction:column; min-width:0; padding:18px 20px; }
+.apx-cab{ display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:30px; }
+.apx-titulo{ margin:0; font-size:14px; font-weight:500; letter-spacing:-.005em; color:var(--text-primary); }
+.apx-eyebrow{ display:block; font-size:10.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--text-muted); }
+.apx-div{ border:0; border-top:1px solid var(--divider); margin:14px 0; }
+.apx-ico{ width:32px; height:32px; flex:none; display:inline-grid; place-items:center; border-radius:50%; border:1px solid var(--border); background:var(--bg-raised); color:var(--text-secondary); cursor:pointer; padding:0; }
+.apx-ico svg{ width:15px; height:15px; }
+.apx-ico:hover{ background:var(--bg-hover); color:var(--text-primary); border-color:var(--border-strong); }
+.apx-ico:disabled{ opacity:.4; cursor:default; }
+.apx-vazio{ display:flex; flex-direction:column; gap:4px; margin-top:12px; padding:14px; border-radius:10px; border:1px dashed var(--border-strong); font-size:12.5px; line-height:1.5; color:var(--text-muted); }
+.apx-vazio strong{ color:var(--text-secondary); font-weight:600; }
+.apx-aviso{ margin:6px 0 0; font-size:12px; line-height:1.45; color:var(--warn-text); }
+.apx-faltam{ margin:6px 0 0; padding-left:18px; }
+.apx-faltam li{ margin:2px 0; }
+.apx-nota-vendas{ margin:-6px 0 0; }
+
+/* Linha 1 */
+.apx-kpi{ min-height:0; padding:18px 20px 14px; }
+.apx-kpi-cab{ display:flex; align-items:center; gap:6px; min-height:24px; }
+.apx-kpi-t{ margin:0; font:400 13px var(--font-body); color:var(--text-muted); letter-spacing:0; }
+.apx-kpi-cab .apx-delta{ margin-left:auto; }
+.apx-kpi .kpi-value{ margin-top:10px; font-size:28px; line-height:1.15; }
+.apx-kpi-pe{ margin-top:12px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.apx-cmp{ min-width:0; font-size:12px; line-height:1.4; color:var(--text-muted); }
+.apx-kebab{ flex:none; width:30px; height:30px; padding:0; display:grid; place-items:center; border:0; border-radius:8px; background:transparent; color:var(--text-muted); cursor:pointer; }
+.apx-kebab svg{ width:16px; height:16px; }
+.apx-kebab:hover, .apx-kebab[aria-expanded="true"]{ background:var(--bg-hover); color:var(--text-primary); }
+
+/* Linha 2a: Faturamento total */
+.apx-big{ margin-top:12px; font-size:30px; font-weight:600; letter-spacing:-.03em; line-height:1.1; font-variant-numeric:tabular-nums; }
+.apx-texttabs{ display:flex; gap:16px; margin-top:10px; }
+.apx-texttabs button{ appearance:none; position:relative; border:0; background:none; padding:4px 0; min-height:28px; cursor:pointer; font:500 13px var(--font-body); color:var(--text-muted); transition:color .25s; }
+.apx-texttabs button::after{ content:''; position:absolute; left:0; right:0; bottom:-1px; height:1px; background:currentColor; transform:scaleX(0); transition:transform .3s var(--ease); }
+.apx-texttabs button[aria-pressed="true"]{ color:var(--text-primary); }
+.apx-texttabs button[aria-pressed="true"]::after{ transform:scaleX(1); }
+.apx-texttabs button:hover{ color:var(--text-primary); }
+.apx-trend{ display:flex; align-items:center; gap:8px; margin-top:14px; font-size:13px; color:var(--text-muted); }
+.apx-trend-ico{ flex:none; width:22px; height:22px; display:grid; place-items:center; border-radius:50%; background:var(--bg-active); border:1px solid var(--border); color:var(--text-primary); }
+.apx-trend-ico svg{ width:12px; height:12px; }
+.apx-trend b{ margin-left:auto; color:var(--text-primary); font-weight:500; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.apx-prog{ position:relative; height:4px; margin:14px 0 6px; border-radius:99px; background:var(--apx-tick-off); }
+.apx-prog-fill{
+  position:absolute; left:0; top:0; bottom:0; width:var(--w); border-radius:inherit; background:linear-gradient(90deg, var(--apx-prog-de), var(--apx-prog-ate));
+  box-shadow:0 0 10px var(--glow-soft), 0 0 22px var(--glow-faint); animation:apx-prog 1.1s cubic-bezier(.22, 1, .36, 1) backwards;
+}
+.apx-prog-fill::after{
+  content:''; position:absolute; right:-5px; top:50%; width:10px; height:10px; border-radius:50%; transform:translateY(-50%); background:var(--apx-glow);
+  box-shadow:0 0 0 3px var(--glow-faint), 0 0 14px 3px var(--glow-soft), 0 0 34px 8px var(--glow-faint); animation:apx-ponta 2.4s ease-in-out infinite;
+}
+@keyframes apx-prog{ from{ width:0; } }
+@keyframes apx-ponta{ 50%{ box-shadow:0 0 0 5px var(--glow-faint), 0 0 18px 5px var(--glow-soft), 0 0 44px 12px var(--glow-faint); } }
+.apx-meta-txt{ margin:0 0 10px; font-size:11.5px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+.apx-legenda{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-muted); }
+.apx-legenda i{ flex:none; width:6px; height:6px; border-radius:50%; background:var(--apx-glow); box-shadow:0 0 6px var(--glow-soft); }
+.apx-legenda b{ margin-left:auto; color:var(--text-secondary); font-weight:500; font-variant-numeric:tabular-nums; }
+.apx-fat .apx-div{ margin-top:auto; padding-top:0; }
+.apx-fat .apx-legenda{ margin-bottom:16px; }
+.apx-mini4{ display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px; margin:0; align-items:end; }
+.apx-mini4 dt{ line-height:1.3; }
+.apx-mini4 > div{ min-width:0; }
+.apx-mini4 dt{ font-size:12px; color:var(--text-muted); }
+.apx-mini4 dd{ margin:4px 0 0; font-size:14px; letter-spacing:-.01em; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.apx-fat{ container-type:inline-size; }
+@container (max-width:290px){ .apx-mini4{ grid-template-columns:repeat(2, minmax(0, 1fr)); row-gap:12px; } }
+.apx-mini-nota{ margin:10px 0 0; font-size:11.5px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+.apx-acoes{ padding-top:16px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.apx-acoes .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; text-align:center; }
+.apx-acoes .btn svg{ width:16px; height:16px; }
+
+/* Linha 2b: Clientes recorrentes */
+.apx-rec-corpo{ display:grid; grid-template-columns:minmax(0, .9fr) minmax(0, 1.1fr); gap:10px; align-items:end; margin-top:12px; }
+.apx-rec-num{ display:flex; align-items:baseline; gap:6px; margin-top:6px; white-space:nowrap; }
+.apx-rec-num .kpi-value{ margin:0; font-size:26px; font-weight:600; letter-spacing:-.02em; }
+.apx-rec-num small{ font-size:12.5px; color:var(--text-muted); }
+.apx-rec-sub{ display:inline-flex; align-items:center; gap:4px; margin-top:4px; font-size:12px; color:var(--text-muted); }
+.apx-rec .vs-sem{ flex:none; }
+.apx-spark{ width:100%; height:76px; display:block; overflow:visible; }
+.apx-spark .line{ fill:none; stroke:var(--spark); stroke-width:1.6; stroke-linejoin:round; stroke-linecap:round; }
+.apx-spark .area{ fill:url(#apxSparkArea); }
+.apx-spark .s-a{ stop-color:var(--apx-spark-area); }
+.apx-spark .s-b{ stop-color:var(--apx-spark-area); stop-opacity:0; }
+.apx-spark .beamv{ fill:url(#apxSparkBeam); }
+.apx-spark .b-a{ stop-color:var(--apx-glow); stop-opacity:.75; }
+.apx-spark .b-b{ stop-color:var(--apx-glow); stop-opacity:0; }
+.apx-spark .halo{ fill:var(--glow-soft); transform-box:fill-box; transform-origin:center; animation:apx-halo 2.2s ease-in-out infinite; }
+.apx-spark .dot{ fill:var(--apx-glow); }
+.apx-spark-vazio{ fill:var(--text-muted); font:400 11px var(--font-body); }
+@keyframes apx-halo{ 0%, 100%{ transform:scale(.8); opacity:.9; } 50%{ transform:scale(1.5); opacity:.35; } }
+.apx-nota-pill{ display:inline-flex; align-items:center; gap:7px; align-self:flex-start; margin:14px 0 0; padding:6px 10px; border-radius:8px; font-size:12px; line-height:1.4; color:var(--text-muted); background:var(--thead); border:1px solid var(--border); }
+.apx-nota-pill svg{ width:14px; height:14px; flex:none; }
+
+/* Linha 2c: Saúde do mês */
+.apx-saude-linha{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.apx-saude-linha p{ margin:0; font-size:15px; color:var(--text-secondary); }
+.apx-saude-linha strong{ font-size:17px; font-weight:600; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.apx-emoji{ font-size:22px; line-height:1; }
+.apx-sub{ margin:4px 0 0; font-size:12px; color:var(--text-muted); }
+.apx-sub strong{ color:var(--text-secondary); font-weight:600; }
+.apx-ticks{ display:flex; gap:2px; height:30px; margin-top:14px; }
+.apx-saude .apx-ticks{ margin-top:auto; padding-top:14px; box-sizing:content-box; }
+.apx-ticks i{ flex:1; min-width:1px; border-radius:2px; background:var(--apx-tick-off); transition:background-color .35s, box-shadow .35s; transition-delay:calc(var(--d) * 14ms); }
+.apx-ticks.lit i.on{ background:linear-gradient(180deg, var(--apx-tick-on), color-mix(in srgb, var(--apx-tick-on) 45%, transparent)); box-shadow:0 0 6px -1px var(--glow-soft); }
+.apx-ticks-leg{ display:flex; justify-content:space-between; margin-top:6px; font-size:11px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+.apx-saude-det{ margin-top:12px; }
+.apx-saude-tab{ font-size:12px; }
+.apx-saude-tab td, .apx-saude-tab th{ white-space:normal; vertical-align:top; }
+.apx-saude-como{ display:block; margin-top:2px; color:var(--text-muted); line-height:1.4; }
+.apx-saude-tab td.num{ white-space:nowrap; }
+
+/* Linha 2d: Visão de faturamento */
+.apx-canal{ display:flex; align-items:center; gap:12px; margin:14px 0; }
+.apx-moeda{ flex:none; width:34px; height:34px; display:grid; place-items:center; border-radius:50%; background:var(--bg-active); border:1px solid var(--border-strong); font-weight:600; font-size:14px; }
+.apx-canal strong{ display:block; font-size:20px; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.apx-vis-de{ display:block; font-size:11.5px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+.apx-vis-tabs{ display:flex; width:100%; }
+.apx-vis-tabs button{ flex:1; padding:5px 6px; min-height:32px; }
+.apx-chart-wrap{ position:relative; flex:1; min-height:220px; margin-top:10px; }
+.apx-chart{ position:absolute; inset:0; width:100%; height:100%; display:block; overflow:visible; cursor:crosshair; outline:none; }
+.apx-chart:focus-visible{ outline:2px solid var(--focus); outline-offset:4px; border-radius:6px; }
+.apx-chart text{ fill:var(--text-muted); font:400 11px var(--font-body); font-variant-numeric:tabular-nums; }
+.apx-chart .gl{ stroke:var(--apx-grid); stroke-width:1; }
+.apx-chart .body{ fill:url(#apxBarFill); }
+.apx-chart .g-a{ stop-color:var(--apx-bar-top); }
+.apx-chart .g-b{ stop-color:var(--apx-bar-bottom); }
+.apx-chart .sheen{ fill:var(--apx-bar-sheen); }
+.apx-chart .cap{ fill:var(--apx-glow); }
+.apx-chart .capglow{ fill:var(--glow-soft); filter:url(#apxCapBlur); animation:apx-cap 2.6s ease-in-out infinite; animation-delay:calc(var(--k) * .25s); }
+.apx-chart .bar.is-vazia .body, .apx-chart .bar.is-vazia .sheen, .apx-chart .bar.is-vazia .cap, .apx-chart .bar.is-vazia .capglow{ display:none; }
+@keyframes apx-cap{ 0%, 100%{ opacity:.95; } 50%{ opacity:.45; } }
+.apx-chart .bar{ transition:opacity .2s; }
+.apx-chart.hovering .bar{ opacity:.5; }
+.apx-chart.hovering .bar.active{ opacity:1; }
+.apx-chart .xl.active{ fill:var(--text-primary); font-weight:600; }
+.apx-chart .cross{ stroke:var(--crosshair); stroke-width:1; stroke-dasharray:3 3; pointer-events:none; }
+.apx-chart .cross-lab rect{ fill:var(--pop-bg); stroke:var(--border-strong); }
+.apx-chart .cross-lab text{ fill:var(--text-primary); font-weight:500; }
+.apx-tip{
+  position:absolute; z-index:5; pointer-events:none; min-width:160px; padding:10px 12px; border-radius:10px; font-size:12px; line-height:1.5;
+  background:var(--pop-bg); border:1px solid var(--border-strong); box-shadow:var(--shadow-lg);
+  opacity:0; transform:translate(0, -50%) scale(.96); transform-origin:left center; transition:opacity .15s, transform .15s var(--ease), left .12s var(--ease), top .08s linear;
+}
+.apx-tip.left{ transform:translate(-100%, -50%) scale(.96); transform-origin:right center; }
+.apx-tip.show{ opacity:1; transform:translate(0, -50%) scale(1); }
+.apx-tip.left.show{ transform:translate(-100%, -50%) scale(1); }
+.apx-tip b{ display:block; margin-bottom:2px; font-weight:600; color:var(--text-primary); }
+.apx-tip span{ display:flex; justify-content:space-between; gap:14px; color:var(--text-muted); }
+.apx-tip em{ font-style:normal; color:var(--text-primary); font-variant-numeric:tabular-nums; }
+.apx-vis-unid{ margin:8px 0 0; font-size:11.5px; line-height:1.45; color:var(--text-muted); }
+.apx-info-link{ display:inline-flex; align-items:center; gap:7px; align-self:flex-start; margin-top:10px; padding:4px 0; font-size:12px; color:var(--text-muted); text-decoration:none; }
+.apx-info-link svg{ width:14px; height:14px; }
+.apx-info-link:hover{ color:var(--text-primary); }
+
+/* Linha 3: Clientes */
+.apx-tab-cab{ display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; margin-bottom:12px; }
+.apx-tab-sub{ font-size:12px; color:var(--text-muted); margin-right:auto; }
+.apx-busca{
+  display:flex; align-items:center; gap:8px; width:280px; max-width:100%; min-height:36px; padding:0 10px; border-radius:var(--r-ctl);
+  border:1px solid var(--field-border); background:var(--bg-raised); color:var(--text-muted); transition:border-color .2s, box-shadow .2s;
+}
+.apx-busca svg{ width:15px; height:15px; flex:none; }
+.apx-busca:focus-within{ border-color:var(--focus); box-shadow:0 0 0 3px var(--ring); }
+.apx-busca input{ flex:1; min-width:0; border:0; background:transparent; outline:none; color:var(--text-primary); font:500 13px var(--font-body); }
+.apx-busca input::placeholder{ color:var(--text-muted); }
+.apx-tab-wrap{ margin-top:0; }
+.apx-tab{ min-width:680px; font-size:13px; }
+.apx-tab td{ padding:10px 12px; color:var(--text-secondary); }
+.apx-tab thead th{ padding:9px 12px; }
+.apx-tab tbody tr{ cursor:pointer; }
+.apx-ord{ display:inline-flex; align-items:center; gap:4px; border:0; background:none; padding:2px 0; min-height:26px; color:inherit; font:inherit; cursor:pointer; }
+.apx-ord-seta{ font-size:10px; opacity:.7; }
+th[aria-sort="ascending"] .apx-ord, th[aria-sort="descending"] .apx-ord{ color:var(--text-primary); }
+.apx-quem{ display:flex; align-items:center; gap:10px; }
+.apx-av{ width:32px; height:32px; flex-basis:32px; font-size:11.5px; }
+.apx-quem-nome{ display:block; color:var(--text-primary); font-weight:500; }
+.apx-quem small{ display:block; font-size:12px; color:var(--text-muted); }
+.apx-pill{ display:inline-flex; align-items:center; gap:5px; min-height:22px; padding:0 8px; border-radius:6px; font-size:12px; font-weight:500; color:var(--text-secondary); background:var(--accent-tint); }
+.apx-pill::before{ content:''; width:5px; height:5px; border-radius:50%; background:currentColor; }
+.apx-pill.is-bom{ color:var(--good-text); background:rgba(74,222,128,.11); }
+.apx-pill.is-ruim{ color:var(--crit-text); background:rgba(248,113,113,.11); }
+.apx-valor{ color:var(--text-primary)!important; font-weight:500; }
+.apx-acao-cel{ text-align:right; width:44px; }
+.apx-ver{ display:inline-grid; place-items:center; width:32px; height:32px; border-radius:8px; color:var(--text-muted); }
+.apx-ver svg{ width:16px; height:16px; }
+.apx-ver:hover{ background:var(--bg-hover); color:var(--text-primary); }
+.apx-tab-vazia td{ text-align:center; padding:28px 12px; white-space:normal; color:var(--text-muted); cursor:default; }
+.apx-tab-pe{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px 12px; margin-top:12px; font-size:12px; color:var(--text-muted); }
+
+/* "Mais detalhes": os blocos de antes, sem mudança */
+.apx-mais{ margin:36px 0 0; padding-top:22px; border-top:1px solid var(--border); font-size:18px; font-weight:600; letter-spacing:-.01em; color:var(--text-primary); }
+.apx-mais-nota{ margin-top:6px; }
+
+/* Calendário de intervalo */
+.apx-cal{ width:300px; max-width:calc(100vw - 16px); padding:12px; }
+.apx-cal-cab{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.apx-cal-cab strong{ font-size:13px; font-weight:600; }
+.apx-cal-grade{ display:grid; grid-template-columns:repeat(7, 1fr); gap:2px; }
+.apx-cal-grade .dow{ text-align:center; font-size:11px; color:var(--text-muted); padding:4px 0; }
+.apx-cal-grade button{ appearance:none; height:34px; padding:0; border:0; border-radius:8px; background:transparent; cursor:pointer; font:500 12.5px var(--font-body); font-variant-numeric:tabular-nums; color:var(--text-secondary); transition:background-color .12s; }
+.apx-cal-grade button:hover:not(:disabled){ background:var(--bg-hover); color:var(--text-primary); }
+.apx-cal-grade button:disabled{ opacity:.35; cursor:default; }
+.apx-cal-grade button.in{ background:var(--row-sel); border-radius:0; color:var(--text-primary); }
+.apx-cal-grade button.edge{ background:var(--text-primary); color:var(--bg-page); font-weight:700; }
+.apx-cal-grade button.today{ box-shadow:inset 0 0 0 1px var(--border-strong); }
+.apx-cal-grade button:focus-visible{ outline:2px solid var(--focus); outline-offset:-2px; }
+.apx-cal-mes{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; margin:10px 0 0; padding-top:10px; border-top:1px solid var(--divider); font-size:12px; color:var(--text-muted); }
+.apx-cal-resumo{ margin:10px 2px; font-size:12px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+.apx-cal-acoes{ display:flex; justify-content:flex-end; gap:8px; }
+
+/* ---------- Responsivo ---------- */
+@media (max-width:1280px){
+  .apx-linha2{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  .apx-vis{ grid-column:1 / -1; }
+  .apx-chart-wrap{ min-height:240px; }
+}
+@media (max-width:767px){
+  .apx-kpis, .apx-linha2{ grid-template-columns:minmax(0, 1fr); }
+  .apx-vis{ grid-column:auto; }
+  .apx-filtros > .apx-per{ width:100%; display:flex; }
+  .apx-per button{ flex:1 1 0; padding-inline:4px; }
+  .apx-filtros-dir{ margin-left:0; width:100%; }
+  .apx-datas{ flex:1; justify-content:center; }
+  .apx-busca{ width:100%; }
+  .apx-tab-sub{ margin-right:0; }
+}
+@media (max-width:700px){
+  .side-tema{ display:flex; }
+  .topbar .top-tema{ display:none!important; }
+  .top-user-nome{ display:none; }
+  /* o topo (com backdrop-filter) é o bloco de referência: a camada ocupa a largura da tela, abaixo dos ícones */
+  .top-sino-wrap .apx-pop, .top-user-wrap .apx-pop{ position:fixed; left:12px; right:12px; top:62px; width:auto; max-width:none; }
+  .top-user{ padding:2px; }
+  .apx-card, .apx-kpi{ padding:16px; }
+}
+@media (max-width:420px){
+  .apx-mini4{ grid-template-columns:repeat(2, minmax(0, 1fr)); row-gap:12px; }
+  .apx-rec-corpo{ grid-template-columns:minmax(0, 1fr); }
+  .apx-big{ font-size:26px; }
+}
+@media (pointer:coarse){
+  .top-icone{ width:44px; height:44px; }
+  .top-avatar{ width:40px; height:40px; flex-basis:40px; }
+  .brand-switch, .apx-kebab, .apx-ver, .apx-ico{ width:44px; height:44px; }
+  .nav-grupo-btn, .side-search, .apx-datas, .apx-per button, .apx-vis-tabs button, .apx-texttabs button{ min-height:44px; }
+  .apx-cal-grade button{ height:40px; }
+  .apx-mi{ min-height:44px; }
+}
+@media (prefers-reduced-motion:reduce){
+  .apx-pop, .apx-prog-fill{ animation:none; }
+  .apx-prog-fill::after, .apx-spark .halo, .apx-chart .capglow{ animation:none; }
+  .apx-ticks i, .nav-grupo-itens, .nav-grupo-chev, .apx-tip, .apx-texttabs button::after{ transition:none; }
+  .nav-grupo.is-fechado .nav-grupo-dentro{ transition:none; }
+}
+@media print{
+  .apx-pop, .apx-kebab, .apx-filtros, .apx-acoes, .apx-busca, .apx-ver, .side-search, .top-sino-wrap, .top-user-wrap{ display:none!important; }
+}
 </style>
 </head>
 <body>
@@ -2347,17 +2746,36 @@ body.sidebar-open .fab-cmdk{ display:none!important; }
   <aside class="sidebar" id="sidebar" aria-label="Menu principal">
     <div class="sidebar-brand">
       <svg class="brand-mark" viewBox="0 0 40 40" width="40" height="40" role="img" aria-label="Talgui"><title>Talgui</title><rect width="40" height="40" rx="10" fill="#0A0A0A"/><text x="20" y="20.6" fill="#FFFFFF" font-size="9.6" text-anchor="middle" dominant-baseline="central" textLength="32" lengthAdjust="spacingAndGlyphs">TALGUI</text></svg>
-      <div class="brand-text"><div class="brand-title">Painel Financeiro · Talgui</div><div class="brand-sub" id="dash-sub">Vendas, devoluções e reembolsos</div></div>
+      <div class="brand-text"><div class="brand-title">Talgui</div><div class="brand-sub" id="dash-sub">Painel Financeiro</div></div>
+      <!-- etapa 32: troca de painel (só o Financeiro existe; Atacado em breve) -->
+      <button class="brand-switch" id="btn-marca" type="button" aria-label="Trocar de painel" aria-haspopup="menu" aria-expanded="false" aria-controls="marca-menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9l4-4 4 4"/><path d="M8 15l4 4 4-4"/></svg></button>
     </div>
-    <!-- Menu por módulos: Início · Comercial e Operação · Financeiro (só perfil financeiro) · Configuração. data-route = id da rota (não renomear);
+    <div class="apx-pop menu-pop" id="marca-menu" role="menu" aria-label="Painéis" hidden>
+      <a class="menu-item apx-mi" role="menuitem" href="#/inicio" aria-current="true"><span>Painel Financeiro</span><svg class="apx-mi-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></a>
+      <button class="menu-item apx-mi" role="menuitem" type="button" aria-disabled="true"><span>Atacado</span><span class="menu-item-sub">em breve</span></button>
+    </div>
+    <!-- busca do painel (Ctrl K): abre a mesma paleta de comandos (openCmdk); antes ficava no topo -->
+    <button class="side-search" id="btn-search" type="button" aria-label="Buscar pedido, caso, valor ou data (Ctrl+K)" aria-haspopup="dialog" aria-controls="cmdk" aria-keyshortcuts="Control+K">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <span class="side-search-label">Buscar</span><span class="side-search-kbd" aria-hidden="true"><kbd class="kbd" id="side-search-mod">Ctrl</kbd><kbd class="kbd">K</kbd></span>
+    </button>
+    <!-- Menu por módulos em grupos recolhíveis (acordeão; só o grupo da tela aberta fica aberto): Principal · Comercial e Operação ·
+         Reembolsos e Devoluções · Financeiro (só perfil financeiro) · Central de ajuda. data-route = id da rota (não renomear);
          data-nav-aba = aba que o item abre e acende (syncNavAtivo); data-nav-fila = fila de Devoluções (NF). [data-financeiro] some para quem não tem acesso. -->
     <nav class="sidebar-nav" aria-label="Páginas">
+      <div class="nav-group-label nav-principal">Principal</div>
         <a class="side-link" href="#/inicio" data-route="inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg><span>Início</span></a>
-      <div class="nav-group-label">Comercial e Operação</div>
+      <div class="nav-grupo" data-grupo="comercial">
+        <button class="nav-grupo-btn" id="ngb-comercial" type="button" aria-expanded="true" aria-controls="ng-comercial"><span class="nav-grupo-nome">Comercial e Operação</span><span class="nav-grupo-n" hidden></span><span class="nav-grupo-chev" aria-hidden="true"></span></button>
+        <div class="nav-grupo-itens" id="ng-comercial" role="group" aria-labelledby="ngb-comercial"><div class="nav-grupo-dentro">
         <a class="side-link" href="#/vendas" data-route="vendas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span>Vendas</span></a>
         <a class="side-link" href="#/pedidos" data-route="pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span>Pedidos</span></a>
         <a class="side-link" href="#/pedidos?aba=pago" data-route="pedidos" data-nav-aba="pago"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M12 12.5v3M12 18.5h.01"/></svg><span>Pago e não faturado</span><span class="nav-count" id="nav-pago-count" hidden></span></a>
-      <div class="nav-sub-label">Reembolsos e Devoluções</div>
+        </div></div>
+      </div>
+      <div class="nav-grupo" data-grupo="reembolsos">
+        <button class="nav-grupo-btn" id="ngb-reembolsos" type="button" aria-expanded="true" aria-controls="ng-reembolsos"><span class="nav-grupo-nome">Reembolsos e Devoluções</span><span class="nav-grupo-n" hidden></span><span class="nav-grupo-chev" aria-hidden="true"></span></button>
+        <div class="nav-grupo-itens" id="ng-reembolsos" role="group" aria-labelledby="ngb-reembolsos"><div class="nav-grupo-dentro">
         <a class="side-link" href="#/devolucoes" data-route="devolucoes" data-nav-aba="fila"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span>Filas de trabalho</span><span class="nav-count" id="nav-filas-count" hidden></span></a>
         <a class="side-link" href="#/devolucoes?aba=casos" data-route="devolucoes" data-nav-aba="casos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h5l2 3h4l2-3h5"/><path d="M5.5 5h13L21 13v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"/></svg><span>Casos de devolução</span></a>
         <a class="side-link" href="#/devolucoes?f=nf" data-route="devolucoes" data-nav-aba="fila" data-nav-fila="nf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M9 14l2 2 4-4"/></svg><span>NF de devolução</span></a>
@@ -2370,18 +2788,30 @@ body.sidebar-open .fab-cmdk{ display:none!important; }
         <a class="side-link" href="#/devolucoes?aba=ritmo" data-route="devolucoes" data-nav-aba="ritmo" data-tip="Devoluções · Ritmo e taxas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg><span>Ritmo e taxas</span></a>
         <a class="side-link" href="#/devolucoes?aba=pecas" data-route="devolucoes" data-nav-aba="pecas" data-tip="Devoluções · Produtos devolvidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg><span>Produtos devolvidos</span></a>
         <a class="side-link" href="#/devolucoes?aba=regras" data-route="devolucoes" data-nav-aba="regras"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Regras e prazos</span></a>
-      <div class="nav-group-label" data-financeiro hidden>Financeiro</div>
+        </div></div>
+      </div>
+      <div class="nav-grupo" data-grupo="financeiro" data-financeiro hidden>
+        <button class="nav-grupo-btn" id="ngb-financeiro" type="button" aria-expanded="true" aria-controls="ng-financeiro"><span class="nav-grupo-nome">Financeiro</span><span class="nav-grupo-n" hidden></span><span class="nav-grupo-chev" aria-hidden="true"></span></button>
+        <div class="nav-grupo-itens" id="ng-financeiro" role="group" aria-labelledby="ngb-financeiro"><div class="nav-grupo-dentro">
         <a class="side-link" href="#/financeiro" data-route="financeiro" data-financeiro hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg><span>Visão financeira</span></a>
         <a class="side-link" href="#/dre" data-route="dre" data-financeiro hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>DRE de receitas</span></a>
         <a class="side-link" href="#/fluxo" data-route="fluxo" data-financeiro hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h13l-3-3M17 17H4l3 3"/></svg><span>Fluxo de caixa</span></a>
         <a class="side-link" href="#/nuvem-pago" data-route="nuvem-pago" data-financeiro hidden id="nav-nuvem-pago"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="13" rx="2"/><path d="M2.5 10h19"/><path d="M6.5 15h4"/></svg><span>Recebimentos Nuvem Pago</span></a>
         <a class="side-link" href="#/nuvem-pago?aba=conciliacao" data-route="nuvem-pago" data-financeiro hidden data-nav-aba="conciliacao"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg><span>Conciliação</span></a>
-      <div class="nav-group-label">Configuração</div>
+        </div></div>
+      </div>
+      <div class="nav-grupo" data-grupo="ajuda">
+        <button class="nav-grupo-btn" id="ngb-ajuda" type="button" aria-expanded="true" aria-controls="ng-ajuda"><span class="nav-grupo-nome">Central de ajuda</span><span class="nav-grupo-n" hidden></span><span class="nav-grupo-chev" aria-hidden="true"></span></button>
+        <div class="nav-grupo-itens" id="ng-ajuda" role="group" aria-labelledby="ngb-ajuda"><div class="nav-grupo-dentro">
         <a class="side-link" href="#/planilha" data-route="planilha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span>Fontes de dados</span><span class="nav-count" id="nav-diag-count" hidden></span></a>
         <a class="side-link" href="#/dia-a-dia?aba=metas" data-route="dia-a-dia" data-nav-aba="metas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12h.01"/></svg><span>Metas e projeções</span></a>
         <a class="side-link" href="#/acesso" data-route="acesso" id="nav-acesso" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Acesso</span></a>
         <a class="side-link" href="#/minha-conta" data-route="minha-conta" id="nav-conta" hidden><span class="avatar avatar-sm" id="nav-conta-avatar" aria-hidden="true"></span><span>Minha conta</span></a>
+        </div></div>
+      </div>
     </nav>
+    <!-- no celular o tema sai do topo e fica aqui (o topo guarda só o sino e a conta) -->
+    <div class="side-tema"><span class="side-tema-rot" id="side-tema-rot">Tema</span><div class="theme-pill" role="group" aria-labelledby="side-tema-rot"></div></div>
     <!-- Abrir no celular: QR do painel online (link fixo PAINEL_ONLINE_URL; o painel roda num iframe, a URL da janela não serve).
          Desenhado por renderQrCelular; some no celular (gaveta), no menu recolhido, na impressão e se a lib do QR não carregar. -->
     <section class="qr-card" id="qr-card" aria-labelledby="qr-card-titulo" hidden>
@@ -2394,10 +2824,6 @@ body.sidebar-open .fab-cmdk{ display:none!important; }
         <input class="text-input qr-manual-input" id="qr-manual-input" type="text" readonly>
       </div>
     </section>
-    <div class="sidebar-footer">
-      <div class="sidebar-file"><div class="sidebar-file-label">Arquivo carregado</div><div class="sidebar-file-name" id="sidebar-file-name"></div><div class="sidebar-drive-stamp" id="sidebar-drive-stamp" hidden></div></div>
-      <button class="btn btn-primary btn-sm" id="btn-drive-refresh" type="button" hidden>Atualizar agora</button>
-    </div>
   </aside>
   <!-- alça na borda direita do menu (só desktop): recolhe/expande sem mudar o menu aberto -->
   <button class="sidebar-toggle" id="btn-sidebar-toggle" type="button" aria-label="Recolher menu" title="Recolher menu" aria-controls="sidebar" aria-expanded="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg></button>
@@ -2410,24 +2836,41 @@ body.sidebar-open .fab-cmdk{ display:none!important; }
         <h1 class="page-title" id="page-title">Início</h1>
         <div class="page-sub" id="page-sub"></div>
       </div>
+      <!-- etapa 32: o topo guarda o tema, o sino (avisos e pendências) e a conta. Busca foi para o menu; Exportar, Copiar link,
+           Atualizar e Sair ficam no menu da conta (os ids e as funções de antes continuam: syncExportMenu, copyViewLink, loadFromDrive) -->
       <div class="header-actions">
-        <button class="search-trigger" id="btn-search" type="button" aria-label="Buscar pedido, caso, valor ou data (Ctrl+K)" aria-haspopup="dialog" aria-controls="cmdk">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-          <span class="search-trigger-label">Buscar pedido, caso, valor ou data</span><kbd class="kbd">Ctrl K</kbd>
-        </button>
-        <button class="badge" id="diag-badge" type="button"></button>
-        <div class="menu-wrap">
-          <button class="btn btn-sm" id="btn-export-menu" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="export-menu">Exportar <span aria-hidden="true">▾</span></button>
-          <div class="menu" id="export-menu" role="menu" aria-label="Exportar" hidden>
-            <!-- export da página aberta (Pedidos, Casos, Motivos): rótulo e ação definidos em syncExportMenu -->
-            <button class="menu-item" role="menuitem" id="btn-export-pagina" type="button" hidden><span id="export-pagina-label">CSV desta página</span><span class="menu-item-sub" id="export-pagina-sub"></span></button>
-            <button class="menu-item" role="menuitem" id="btn-export-xlsx" type="button"><span id="export-xlsx-label">Excel (.xlsx) · 4 abas</span><span class="menu-item-sub">lançamentos da visão, resumo mensal, diário do mês e ocorrências</span></button>
-            <button class="menu-item" role="menuitem" id="btn-export-csv" type="button"><span id="export-csv-label">CSV dos lançamentos</span><span class="menu-item-sub">com os filtros de Lançamentos</span></button>
-            <button class="menu-item" role="menuitem" id="btn-print" type="button">Imprimir / PDF<span class="menu-item-sub">página aberta, em tema claro</span></button>
+        <div class="theme-pill top-tema" role="group" aria-label="Tema"></div>
+        <div class="menu-wrap top-sino-wrap">
+          <button class="top-icone" id="btn-sino" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="sino-pop" aria-label="Avisos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="top-sino-n" id="sino-n" aria-hidden="true" hidden></span></button>
+          <!-- avisos da leitura da planilha: o selo antigo continua no DOM (renderHeader o atualiza), escondido; o sino mostra o aviso -->
+          <button class="badge" id="diag-badge" type="button" hidden></button>
+          <div class="apx-pop sino-pop" id="sino-pop" role="dialog" aria-labelledby="sino-titulo" hidden>
+            <h2 class="sino-titulo" id="sino-titulo">Avisos</h2>
+            <ul class="sino-lista" id="sino-lista"></ul>
+            <div class="sino-pe"><span class="sino-info" id="sino-info" aria-live="polite"></span><button class="btn btn-sm" id="sino-lidas" type="button">Marcar como lidas</button></div>
           </div>
         </div>
-        <button class="btn btn-sm icon-btn" id="btn-copy-link" type="button" aria-label="Copiar link desta visão" title="Copiar link desta visão (página e filtros)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg><span class="icon-btn-label">Copiar link</span></button>
-        <div class="theme-pill" role="group" aria-label="Tema"></div>
+        <div class="menu-wrap top-user-wrap">
+          <button class="top-user" id="btn-user" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="user-menu"><span class="top-user-nome" id="top-user-nome">Você</span><span class="avatar top-avatar" id="top-avatar" aria-hidden="true"></span></button>
+          <div class="apx-pop user-menu" id="user-menu" role="menu" aria-label="Conta e ações" hidden>
+            <div class="user-menu-info" role="none">
+              <div class="sidebar-file-label">Arquivo carregado</div><div class="sidebar-file-name" id="sidebar-file-name"></div><div class="sidebar-drive-stamp" id="sidebar-drive-stamp" hidden></div>
+            </div>
+            <a class="menu-item apx-mi" role="menuitem" href="#/minha-conta" id="um-conta" hidden>Minha conta</a>
+            <a class="menu-item apx-mi" role="menuitem" href="#/acesso" id="um-acesso" hidden>Acesso</a>
+            <button class="menu-item apx-mi" role="menuitem" id="btn-export-menu" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="export-menu"><span>Exportar</span><span class="apx-mi-seta" aria-hidden="true">▾</span></button>
+            <div class="menu export-sub" id="export-menu" role="menu" aria-label="Exportar" hidden>
+              <!-- export da página aberta (Pedidos, Casos, Motivos, Início): rótulo e ação definidos em syncExportMenu -->
+              <button class="menu-item" role="menuitem" id="btn-export-pagina" type="button" hidden><span id="export-pagina-label">CSV desta página</span><span class="menu-item-sub" id="export-pagina-sub"></span></button>
+              <button class="menu-item" role="menuitem" id="btn-export-xlsx" type="button"><span id="export-xlsx-label">Excel (.xlsx) · 4 abas</span><span class="menu-item-sub">lançamentos da visão, resumo mensal, diário do mês e ocorrências</span></button>
+              <button class="menu-item" role="menuitem" id="btn-export-csv" type="button"><span id="export-csv-label">CSV dos lançamentos</span><span class="menu-item-sub">com os filtros de Lançamentos</span></button>
+              <button class="menu-item" role="menuitem" id="btn-print" type="button">Imprimir / PDF<span class="menu-item-sub">página aberta, em tema claro</span></button>
+            </div>
+            <button class="menu-item apx-mi" role="menuitem" id="btn-copy-link" type="button" title="Copiar link desta visão (página e filtros)"><span>Copiar link da tela</span></button>
+            <button class="menu-item apx-mi" role="menuitem" id="btn-drive-refresh" type="button" hidden>Atualizar agora</button>
+            <button class="menu-item apx-mi" role="menuitem" id="um-sair" type="button" hidden><span>Sair</span></button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -2469,30 +2912,29 @@ body.sidebar-open .fab-cmdk{ display:none!important; }
 
       <!-- Início: resumo do processo do dinheiro (venda → recebimento → devolução) num só recorte; ver "Início" no script -->
       <section class="page" data-page="inicio" id="in-raiz">
-        <div class="in-toolbar">
-          <div class="segmented" id="in-per" role="group" aria-label="Recorte do período">
-            <button type="button" data-value="dia" aria-pressed="false">Dia</button>
-            <button type="button" data-value="semana" aria-pressed="false">Semana</button>
-            <button type="button" data-value="mes" class="active" aria-pressed="true">Mês</button>
-            <button type="button" data-value="pers" aria-pressed="false">Personalizado</button>
+        <!-- etapa 32: período no formato do print (12 meses | 30 dias | 7 dias | 24 horas + Selecionar datas). Vale para o Início inteiro;
+             os blocos de "Mais detalhes" seguem o mesmo recorte (inPeriodo). As outras telas não mudam. -->
+        <div class="in-toolbar apx-filtros">
+          <div class="segmented apx-per" id="in-per" role="group" aria-label="Período do Início">
+            <button type="button" data-value="12m" aria-pressed="false">12 meses</button>
+            <button type="button" data-value="30d" aria-pressed="false">30 dias</button>
+            <button type="button" data-value="7d" aria-pressed="false">7 dias</button>
+            <button type="button" data-value="24h" aria-pressed="false">24 horas</button>
           </div>
-          <div class="day-nav in-nav">
+          <div class="day-nav in-nav" id="in-nav" hidden>
             <button class="btn btn-sm icon-btn" id="in-prev" type="button" aria-label="Mês anterior">‹</button>
             <span class="v-nav-label" id="in-label" aria-live="polite"></span>
             <button class="btn btn-sm icon-btn" id="in-next" type="button" aria-label="Mês seguinte">›</button>
           </div>
-          <div class="in-datas" id="in-wrap-dia" hidden>
-            <label class="sr-only" for="in-dia">Dia</label>
-            <input type="date" class="date-input" id="in-dia">
-          </div>
-          <div class="in-datas" id="in-wrap-pers" hidden>
-            <label class="filter-label" for="in-ini">De</label>
-            <input type="date" class="date-input" id="in-ini">
-            <label class="filter-label" for="in-fim">até</label>
-            <input type="date" class="date-input" id="in-fim">
+          <div class="apx-filtros-dir">
+            <button class="btn apx-datas" id="in-datas" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="in-cal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M8 2v4M16 2v4"/></svg><span id="in-datas-label">Selecionar datas</span></button>
           </div>
         </div>
         <div class="in-dados-ate" id="in-dados-ate" aria-label="Dados até"></div>
+        <p class="apx-janela" id="in-janela"></p>
+        <div class="apx" id="in-apex"></div>
+        <h2 class="apx-mais" id="in-mais">Mais detalhes</h2>
+        <p class="in-info apx-mais-nota" id="in-mais-nota" hidden></p>
         <section class="in-bloco" id="in-b1" aria-label="Resumo do período"></section>
         <section class="in-bloco" id="in-b2" aria-label="Ponte do período"></section>
         <section class="in-bloco" id="in-bmod" aria-label="Módulos"></section>
@@ -3409,6 +3851,23 @@ body.sidebar-open .fab-cmdk{ display:none!important; }
   </div>
 </div>
 <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="false"></div>
+
+<!-- Início (etapa 32): camadas flutuantes fora dos cartões (posição fixa calculada por apxPosicionar) -->
+<div class="apx-pop menu-pop apx-fixo" id="apx-menu" role="menu" aria-label="Opções do cartão" hidden></div>
+<div class="apx-pop apx-fixo apx-cal" id="in-cal" role="dialog" aria-label="Selecionar intervalo de datas" hidden>
+  <div class="apx-cal-cab">
+    <button type="button" class="apx-ico" id="in-cal-prev" aria-label="Mês anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+    <strong id="in-cal-titulo" aria-live="polite"></strong>
+    <button type="button" class="apx-ico" id="in-cal-next" aria-label="Próximo mês"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+  </div>
+  <div class="apx-cal-grade" id="in-cal-grade"></div>
+  <div class="apx-cal-mes"><span>Mês fechado</span><button type="button" class="btn btn-sm" id="in-cal-mes"></button></div>
+  <p class="apx-cal-resumo" id="in-cal-resumo" aria-live="polite">Escolha a data inicial.</p>
+  <div class="apx-cal-acoes">
+    <button type="button" class="btn btn-sm" id="in-cal-limpar">Limpar</button>
+    <button type="button" class="btn btn-sm btn-primary" id="in-cal-aplicar" disabled>Aplicar</button>
+  </div>
+</div>
 
 <!-- Detalhe do lançamento (painel lateral; tela cheia no celular) -->
 <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
@@ -4557,7 +5016,8 @@ function syncNavThumb(animate){
     sb.classList.add('has-nav-thumb');
   }
   var a = sb.querySelector('.side-link.active');
-  if(!a || !a.offsetHeight){ th.style.opacity = '0'; return; }
+  // item ativo dentro de um grupo fechado (acordeão): sem indicador; com o menu recolhido todos os itens aparecem
+  if(!a || !a.offsetHeight || (a.closest('.nav-grupo.is-fechado') && !menuRecolhido())){ th.style.opacity = '0'; return; }
   var snap = !animate || !motionOK() || th.style.opacity !== '1';
   if(snap) th.style.transition = 'opacity var(--dur-2) ease';
   th.style.height = a.offsetHeight + 'px';
@@ -5129,6 +5589,8 @@ function applyRoute(){
   if(alvoAba) state.diaAba = alvoAba.dataset.aba;
   Array.prototype.forEach.call(document.querySelectorAll('.page'), function(p){ p.hidden = p.dataset.page !== route.id; });
   syncNavAtivo();
+  navGruposAbrirAtual();   // acordeão do menu: abre o grupo da tela aberta
+  apxFecharPop(false);     // menus do topo e do Início fecham na troca de tela
   syncDiaTabs(false);
   syncFilterBar();
   renderPageSub();
@@ -5163,6 +5625,7 @@ function applyRoute(){
   syncNavThumb(true);
   closeSidebar();
   closeExportMenu();
+  sinoAtualizar();
   syncUrl();
   var target = pendingScroll ? document.getElementById(pendingScroll) : null;
   pendingScroll = null;
@@ -5943,6 +6406,7 @@ function syncConta(){
   document.getElementById('conta-perfil').textContent = acessoAdmin ? 'Administrador' : 'Usuário';
   document.getElementById('conta-usuario').value = acessoEmail;
   document.getElementById('btn-foto-remover').hidden = !acessoFoto;
+  topoUsuarioSync();
 }
 
 function setContaStatus(id, kind, msg){
@@ -6897,7 +7361,7 @@ function renderAll(){
 
 function renderHeader(){
   // marca fixa; o exercício da planilha aparece no subtítulo da página (renderPageSub) e em Planilha
-  document.getElementById('dash-sub').textContent = 'Vendas, devoluções e reembolsos';
+  document.getElementById('dash-sub').textContent = 'Painel Financeiro';
   renderPageSub();
   document.getElementById('sidebar-file-name').textContent = (state.data.fileName || '—') +
     (state.data.source === 'drive' && state.data.importedAt ? ' · Google Drive, modificado em ' + fmtDateTime(state.data.importedAt) : '');
@@ -6911,6 +7375,7 @@ function renderHeader(){
   count.hidden = w === 0;
   count.textContent = w;
   count.setAttribute('aria-label', w+' aviso'+(w>1?'s':''));
+  sinoAtualizar();
 }
 
 function renderFilterWidgets(){
@@ -8239,6 +8704,8 @@ function exportDaPagina(){
   if(id === 'dre' && vendas.pedidos && np.linhas) return {label:'DRE de receitas (CSV)', sub:'mês a mês, a mesma tabela da tela', run:dreExportarCsv};
   if(id === 'fluxo' && np.linhas) return {label:'Fluxo de caixa de recebimentos (CSV)', sub:'colunas da granularidade aberta (dia, semana ou mês)', run:fxExportarCsv};
   if(id === 'motivos' && state.data) return {label:'Motivos dos reembolsos (CSV)', sub:'tabelas do dia e do mês até a data', run:exportMotivosCsv};
+  // Início (etapa 32): o "Baixar" do cartão Faturamento total usa esta mesma entrada
+  if(id === 'inicio' && vendas.pedidos) return {label:'Faturamento do Início (CSV)', sub:'mês ou ano do cartão Faturamento total, com meta e formas de pagamento', run:apxExportarCsv};
   return null;
 }
 function syncExportMenu(){
@@ -10794,6 +11261,7 @@ function vsRenderGeral(per, lista, base, r, b, chave){
   var cuponsDia = Object.keys(porCupom).map(function(k){ var g = porCupom[k]; g.media30 = g.ant / 30; return g; });
   var mods = cat.skus.length ? vsModelosPer(per, lista, base, cat) : [];
   var al = vsAlertas({modelos:mods, todos:vendas.pedidos, cat:cat, ref:ref, per:per, r:r, b:b, ind:chave.ind, med:chave.med, cuponsDia:cuponsDia, semCancDepois:vendas._vsSemCancDepois});
+  vendas._vsAlertas = {lista:al, ref:ref, de:vendas.pedidos};   // o sino do topo lista os mesmos alertas (etapa 32)
   document.getElementById('v-alertas').innerHTML = al.length ? '<div class="vs-alertas" role="list" aria-label="Alertas de vendas, até ' + fmtDate(ref) + '">' + al.map(function(a){
     return '<div class="vs-alerta vs-alerta-' + a.nivel + '" role="listitem"><strong>' + '<span class="vs-sem vs-sem-' + a.nivel + '">' + (a.nivel === 'vermelho' ? 'urgente' : 'atenção') + '</span>' + escapeHtml(a.titulo) + '</strong><span>' + escapeHtml(a.texto) + '</span></div>';
   }).join('') + '</div>' : '';
@@ -14670,8 +15138,8 @@ function dvSecaoPedido(num){
   }).join('');
 }
 // linha "Pedidos com devolução" das listas de indicadores de Vendas: mesma regra da taxa (casos válidos, trocas à parte)
-function dvIndicadorVendas(lista){
-  if(!devol.sols) return null;
+// a contagem separada da frase (etapa 32): a Saúde do mês do Início usa os mesmos números (dvTaxa(com, vendas))
+function dvPedidosComDevolucao(lista){
   var vendasN = 0, com = 0, pecas = 0, trocas = 0;
   lista.forEach(function(p){
     if(p.situacao !== 'venda') return;
@@ -14681,6 +15149,11 @@ function dvIndicadorVendas(lista){
     if(dev.length){ com++; dev.forEach(function(o){ pecas += o.pecas; }); }
     if(sols.length > dev.length) trocas++;
   });
+  return {vendas:vendasN, com:com, pecas:pecas, trocas:trocas};
+}
+function dvIndicadorVendas(lista){
+  if(!devol.sols) return null;
+  var c = dvPedidosComDevolucao(lista), vendasN = c.vendas, com = c.com, pecas = c.pecas, trocas = c.trocas;
   return ['Pedidos com devolução (AfterClick)', vPedidosTxt(com) + ' · ' + fmtPctOrDash(vPct(com, vendasN)) + ' · ' + dvPecasTxt(pecas) + (trocas ? ' · + ' + vPedidosTxt(trocas) + ' com troca' : ''), 'dv_taxa'];
 }
 
@@ -15503,12 +15976,19 @@ function fxExportarCsv(){
 
 /* ===================== Início: resumo do processo do dinheiro =====================
    Venda (pelo pedido) → recebimento no Nuvem Pago (pelo recebimento) → devolução à cliente (pelo lançamento na planilha).
-   Um único recorte {ini, fim} (Dia | Semana | Mês | Personalizado) vale para a tela inteira; cada bloco filtra a PRÓPRIA data-base
+   Um único recorte {ini, fim} vale para a tela inteira (etapa 32: 12 meses | 30 dias | 7 dias | 24 horas + Selecionar datas; padrão 30 dias); cada bloco filtra a PRÓPRIA data-base
    e carrega a própria fonte (vendas, extratos, planilha, devoluções). O endereço leva o recorte:
-   #/inicio?per=dia&dia=AAAA-MM-DD | per=semana&sem=AAAA-MM-DD (segunda) | per=mes&mes=AAAA-MM | per=pers&ini=AAAA-MM-DD&fim=AAAA-MM-DD (fim inclusive).
+   #/inicio?per=12m | per=30d | per=7d | per=24h (janelas relativas ao último pedido; 24h = dia do último pedido nos blocos de detalhe) |
+   per=dia&dia=AAAA-MM-DD | per=semana&sem=AAAA-MM-DD (segunda) | per=mes&mes=AAAA-MM | per=pers&ini=AAAA-MM-DD&fim=AAAA-MM-DD (fim inclusive).
+   Sem nenhum desses parâmetros reconhecidos (ex.: #/inicio?foo=1), volta para per=30d.
    O conteúdo antigo do Início (só reembolsos) está em #/reembolsos. Nada aqui altera as contas das outras telas. */
 
-var inicio = {per:'mes', dia:null, sem:null, ano:null, mes:null, ini:null, fim:null, sig:null, auto:true, escrito:''};
+var inicio = {per:'pers', janela:'30d', dia:null, sem:null, ano:null, mes:null, ini:null, fim:null, sig:null, auto:true, escrito:''};
+// etapa 32: janelas do print. 12m, 30d e 7d são um "Personalizado" que acompanha o hoje (ini = hoje − N + 1, fim = hoje);
+// 24h é rolante pelo horário do último pedido nos cartões novos, e o dia do último pedido (base D-7) nos blocos de "Mais detalhes".
+var IN_JANELAS = {'12m':{rot:'12 meses', nome:'Últimos 12 meses'}, '30d':{rot:'30 dias', nome:'Últimos 30 dias', dias:30},
+  '7d':{rot:'7 dias', nome:'Últimos 7 dias', dias:7}, '24h':{rot:'24 horas', nome:'Últimas 24 horas'}};
+var IN_JANELA_PADRAO = '30d';
 // null = "o atual" (dia, semana ou mês de hoje); vira data certa assim que a pessoa escolhe.
 // auto: ninguém escolheu nada ainda (o recorte acompanha o "hoje", que muda quando as vendas chegam); escrito: o último endereço que o próprio Início gravou
 
@@ -15526,9 +16006,16 @@ function inDiaSemana(d){ return V_DOW[d.getDay()]; }
 // o recorte resolvido: ini/fim (fim exclusivo), fimEf (até onde há dia decorrido), base de comparação e títulos
 function inPeriodo(){
   var hoje = inHoje(), h0 = vInicioDia(hoje), amanha = vAddDias(h0, 1);
-  var P = {tipo:inicio.per, hoje:hoje, h0:h0, andamento:false, parcial:false, decorridos:0, base:null};
+  var jan = inicio.per === 'pers' && inEhJanela(inicio.janela) ? inicio.janela : null;
+  var P = {tipo:jan === '24h' ? 'dia' : inicio.per, janela:jan, hoje:hoje, h0:h0, andamento:false, parcial:false, decorridos:0, base:null};
   var ini, fim;
-  if(P.tipo === 'dia'){
+  if(jan === '24h'){
+    // blocos de detalhe: o dia do último pedido (eles só funcionam por dia); os cartões novos usam as 24 horas rolantes
+    ini = h0; fim = amanha; P.parcial = true;
+  } else if(jan){
+    ini = jan === '12m' ? new Date(h0.getFullYear() - 1, h0.getMonth(), h0.getDate() + 1) : vAddDias(h0, -(IN_JANELAS[jan].dias - 1));
+    fim = amanha;
+  } else if(P.tipo === 'dia'){
     ini = inicio.dia ? vInicioDia(inicio.dia) : h0; fim = vAddDias(ini, 1);
     P.parcial = ini.getTime() === h0.getTime();
   } else if(P.tipo === 'semana'){
@@ -15557,7 +16044,9 @@ function inPeriodo(){
   P.ultimoDia = vAddDias(P.fimEf, -1);   // último dia que entra no recorte
   P.emCurso = P.andamento || P.parcial;
   // títulos
-  if(P.tipo === 'dia') P.titulo = inDiaSemana(ini) + ', ' + fmtDate(ini) + (P.parcial ? ' · em curso' : '');
+  if(jan === '24h') P.titulo = vendas.pedidos ? '24 horas até o último pedido, ' + vDiaCurto(hoje) + ' ' + vHora(hoje) : 'Dia ' + fmtDate(ini);
+  else if(jan) P.titulo = IN_JANELAS[jan].nome + ' (' + (jan === '12m' ? fmtDate(ini) + ' a ' + fmtDate(vAddDias(fim, -1)) : vDiaCurto(ini) + ' a ' + vDiaCurto(vAddDias(fim, -1))) + ')';
+  else if(P.tipo === 'dia') P.titulo = inDiaSemana(ini) + ', ' + fmtDate(ini) + (P.parcial ? ' · em curso' : '');
   else if(P.tipo === 'semana') P.titulo = 'Semana de ' + vSemanaLabel(ini) + (P.andamento ? ' · em curso' : '');
   else if(P.tipo === 'mes') P.titulo = vMesNome(P.mes) + ' ' + P.ano + (P.andamento ? ' · em curso' : '');
   else P.titulo = fmtDate(ini) + ' a ' + fmtDate(vAddDias(fim, -1)) + (P.andamento ? ' · em curso' : '');
@@ -15582,6 +16071,12 @@ function inPeriodo(){
   } else {
     var p1 = ini, p0 = vAddDias(ini, -P.nDiasEf);
     b = {ini:p0, fim:p1, fimV:p1, label:rotulo(p0, p1) + ' (período anterior)'};
+    // janelas 12m/30d/7d terminam no dia do último pedido, ainda em andamento: o último dia da base (para as vendas) vai só até o
+    // mesmo horário, como nos ramos de dia, semana e mês. Sem horário (sem vendas), a base fica inteira.
+    if(jan && vendas.pedidos && hoje - h0 > 0){
+      b.fimV = new Date(vAddDias(p1, -1).getTime() + (hoje - h0) + 1000);
+      b.label = rotulo(p0, p1) + ' até ' + vHora(hoje) + ' (período anterior)';
+    }
   }
   P.base = b;
   return P;
@@ -15589,8 +16084,9 @@ function inPeriodo(){
 
 /* ---- Endereço ---- */
 function inBuildHash(){
-  var P = inPeriodo(), q = ['per=' + P.tipo];
-  if(P.tipo === 'dia') q.push('dia=' + isoDate(P.ini));
+  var P = inPeriodo(), q = ['per=' + (P.janela || P.tipo)];
+  if(P.janela){ /* janela relativa ao hoje: o endereço leva só per=12m|30d|7d|24h */ }
+  else if(P.tipo === 'dia') q.push('dia=' + isoDate(P.ini));
   else if(P.tipo === 'semana') q.push('sem=' + isoDate(P.ini));
   else if(P.tipo === 'mes') q.push('mes=' + P.ano + '-' + pad2(P.mes + 1));
   else { q.push('ini=' + isoDate(P.ini)); q.push('fim=' + isoDate(vAddDias(P.fim, -1))); }
@@ -15603,6 +16099,19 @@ function inApplyParams(p){
   // o endereço que o próprio Início gravou (só reaplicado por navegação interna): o recorte "atual" continua acompanhando o hoje
   if(inicio.auto && location.hash === inicio.escrito) return;
   inicio.auto = false;
+  if(inEhJanela(p.per)){
+    inicio.per = 'pers'; inicio.janela = p.per;
+    inicio.dia = inicio.sem = inicio.ano = inicio.mes = inicio.ini = inicio.fim = null;
+    return;
+  }
+  // nenhum parâmetro de recorte reconhecido (ex.: #/inicio?foo=1): volta para a janela padrão
+  var perOk = ['dia', 'semana', 'mes', 'pers'].indexOf(p.per) >= 0;   // indexOf: "constructor" e afins não passam
+  if(!perOk && !p.ini && !p.fim && !inData(p.dia) && !inData(p.sem) && !/^\d{4}-\d{2}$/.test(p.mes || '')){
+    inicio.per = 'pers'; inicio.janela = IN_JANELA_PADRAO;
+    inicio.dia = inicio.sem = inicio.ano = inicio.mes = inicio.ini = inicio.fim = null;
+    return;
+  }
+  inicio.janela = null;
   var per = ['dia', 'semana', 'mes', 'pers'].indexOf(p.per) >= 0 ? p.per
     : (p.ini || p.fim) ? 'pers' : p.dia ? 'dia' : p.sem ? 'semana' : /^\d{4}-\d{2}$/.test(p.mes || '') ? 'mes' : inicio.per;
   inicio.per = per;
@@ -15620,6 +16129,7 @@ function inSubtitulo(){
 
 /* ---- Controles (Dia | Semana | Mês | Personalizado, ‹ ›) ---- */
 function inFixar(P){   // congela o recorte atual em datas certas (sai do "o atual")
+  inicio.janela = null;
   inicio.per = P.tipo;
   if(P.tipo === 'dia') inicio.dia = P.ini;
   else if(P.tipo === 'semana') inicio.sem = P.ini;
@@ -15628,7 +16138,16 @@ function inFixar(P){   // congela o recorte atual em datas certas (sai do "o atu
 }
 function inSetPer(novo){
   var P = inPeriodo();
-  if(novo === P.tipo) return;
+  // janelas do print (12m, 30d, 7d, 24h): acompanham o hoje
+  if(inEhJanela(novo)){
+    if(P.janela === novo) return;
+    inicio.auto = false; inicio.per = 'pers'; inicio.janela = novo;
+    inicio.dia = inicio.sem = inicio.ano = inicio.mes = inicio.ini = inicio.fim = null;
+    inMudou();
+    return;
+  }
+  if(novo === P.tipo && !P.janela) return;
+  inicio.janela = null;
   var ancora = P.h0 >= P.ini && P.h0 < P.fim ? P.h0 : P.ini;
   inicio.auto = false;
   inicio.per = novo;
@@ -15669,12 +16188,16 @@ function inLimites(P){
   var menor = inMenorInicio();
   return {proximo: proxIni <= P.h0, anterior: !menor || antFim > menor};
 }
+// etapa 32: segmento 12m | 30d | 7d | 24h; fora das janelas (mês, intervalo escolhido, dia ou semana de um link antigo)
+// nenhum segmento fica marcado, o botão de datas mostra o recorte e as setas ‹ › andam por ele
 function inSyncControles(P){
   Array.prototype.forEach.call(document.querySelectorAll('#in-per button'), function(b){
-    var on = b.dataset.value === P.tipo;
+    var on = b.dataset.value === P.janela;
     b.classList.toggle('active', on);
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
+  var nav = document.getElementById('in-nav');
+  nav.hidden = !!P.janela;
   var lim = inLimites(P);
   document.getElementById('in-prev').disabled = !lim.anterior;
   document.getElementById('in-next').disabled = !lim.proximo;
@@ -15684,14 +16207,10 @@ function inSyncControles(P){
   lab.textContent = rot; lab.hidden = P.tipo === 'pers';
   var rotAbs = {dia:'Dia anterior|Dia seguinte', semana:'Semana anterior|Semana seguinte', mes:'Mês anterior|Mês seguinte', pers:'Período anterior|Período seguinte'}[P.tipo].split('|');
   document.getElementById('in-prev').setAttribute('aria-label', rotAbs[0]); document.getElementById('in-next').setAttribute('aria-label', rotAbs[1]);
-  var di = document.getElementById('in-dia'), ii = document.getElementById('in-ini'), ff = document.getElementById('in-fim');
-  document.getElementById('in-wrap-dia').hidden = P.tipo !== 'dia';
-  document.getElementById('in-wrap-pers').hidden = P.tipo !== 'pers';
-  var hojeIso = isoDate(P.h0);
-  di.max = hojeIso; ii.max = hojeIso; ff.max = hojeIso;
-  if(document.activeElement !== di) di.value = isoDate(P.ini);
-  if(document.activeElement !== ii) ii.value = isoDate(P.ini);
-  if(document.activeElement !== ff) ff.value = isoDate(vAddDias(P.fim, -1));
+  var dl = document.getElementById('in-datas-label');
+  dl.textContent = P.janela ? 'Selecionar datas' : P.tipo === 'mes' ? vMesNome(P.mes) + ' ' + P.ano
+    : P.tipo === 'pers' ? vDiaCurto(P.ini) + ' – ' + vDiaCurto(vAddDias(P.fim, -1)) : P.tipo === 'dia' ? fmtDate(P.ini) : 'Semana ' + vSemanaLabel(P.ini);
+  document.getElementById('in-datas').classList.toggle('is-on', !P.janela);
   syncSegThumb();
 }
 
@@ -15844,7 +16363,8 @@ function inBlocoTopo(C){
     reemb = inKpiRel('kpi-ticket', 'Total reembolsado', 'valor', '—', '<span class="in-sub-linha">' + (RE.foraAno ? 'fora do ano da planilha (' + RE.ano + ')' : 'sem lançamentos · planilha até ' + RE.refTxt) + '</span>', 'pelo lançamento');
   } else {
     reemb = inKpiRel('kpi-ticket', 'Total reembolsado', 'valor', fmtValor(RE.r.valor),
-      '<span class="in-sub-linha">' + (RE.r.n ? fmtQtd(RE.r.n) + (RE.r.n === 1 ? ' ocorrência' : ' ocorrências') : 'nenhum reembolso lançado') + (RE.atrasado ? ' · <span class="warn-flag">parcial: planilha até ' + RE.refTxt + '</span>' : '') + '</span>' +
+      '<span class="in-sub-linha">' + (RE.r.n ? fmtQtd(RE.r.n) + (RE.r.n === 1 ? ' ocorrência' : ' ocorrências') : 'nenhum reembolso lançado') + (RE.atrasado ? ' · <span class="warn-flag">parcial: planilha até ' + RE.refTxt + '</span>' : '') +
+      (RE.foraAno && RE.r.n > 0 ? ' · <span class="warn-flag">parcial: a planilha só cobre ' + RE.ano + '</span>' : '') + '</span>' +
       (RE.b ? inDelta(RE.r.valor, RE.b.valor, RE.ctx, true) : inSemBase(RE.motivo)), 'pelo lançamento', '', [inLinkReembolsos(P), 'Reembolsos']);
   }
   // Nuvem Pago (pelo recebimento): só para o financeiro
@@ -15990,7 +16510,7 @@ function inGraficosMeses(C){
 function inIrMes(chave){
   var m = /^(\d{4})-(\d{2})$/.exec(chave || '');
   if(!m) return;
-  inicio.auto = false; inicio.per = 'mes'; inicio.ano = +m[1]; inicio.mes = +m[2] - 1;
+  inicio.auto = false; inicio.per = 'mes'; inicio.janela = null; inicio.ano = +m[1]; inicio.mes = +m[2] - 1;
   inicio.dia = null; inicio.sem = null; inicio.ini = null; inicio.fim = null;
   inMudou();
 }
@@ -16047,6 +16567,12 @@ function inBlocoModulos(C){
     nums = [['Faturamento', fmtValor(r.faturamento), 'pelo pedido'], ['Pedidos', fmtQtd(r.pedidos), r.ticket == null ? '' : 'ticket ' + fmtValor(r.ticket)]];
     if(P.tipo === 'mes' && P.andamento && P.decorridos) nums.push(['Projeção de fechamento', fmtValor(r.faturamento / P.decorridos * P.nDias), 'run-rate até ' + vDiaCurto(P.ultimoDia)]);
     else if(P.tipo === 'mes') nums.push(['Ritmo do mês', 'mês fechado', 'veja em Vendas']);
+    else if(P.janela){
+      // janelas do print (etapa 32): a projeção do mês corrente (o do último pedido), a mesma conta do ramo "mes"
+      var mi = vMesInfo(P.h0.getFullYear(), P.h0.getMonth());
+      if(mi.status === 'andamento' && mi.decorridos) nums.push(['Projeção de fechamento de ' + vMesNome(P.h0.getMonth()).toLowerCase(), fmtValor(vResumo(vEntre(mi.ini, mi.fim)).faturamento / mi.decorridos * mi.nDias), 'run-rate até ' + vDiaCurto(vAddDias(mi.ini, mi.decorridos - 1))]);
+      else nums.push(['Ritmo do mês', 'mês fechado', 'veja em Vendas']);
+    }
   }
   // pagos sem NF (AJD): aparece depois que a página Pedidos carregou a base da AJD (o Início não a busca sozinho)
   var linksCom = [['Vendas', inLinkVendas(P)], ['Pedidos', '#/pedidos'], ['Ritmo do mês', inLinkVendas(P)]];
@@ -16237,11 +16763,18 @@ function ritmoMesHtml(ano, mes){
 }
 
 /* ---- Bloco 7: faixa compacta (mix de pagamento e cupom) ---- */
+// nas janelas (12m, 30d, 7d) Vendas não tem o mesmo recorte: abre o mês do último dia da janela (inLinkVendasAviso diz isso)
 function inLinkVendas(P){
-  var d = P.ini;
+  var d = P.janela && P.tipo !== 'dia' ? P.ultimoDia : P.ini;
   if(P.tipo === 'dia') return '#/vendas?aba=dia&dia=' + isoDate(d);
   if(P.tipo === 'semana') return '#/vendas?aba=semana&sem=' + isoDate(d);
   return '#/vendas?mes=' + MONTH_DEFS[d.getMonth()].key + '&ano=' + d.getFullYear();
+}
+// texto curto quando o destino em Vendas não é o mesmo recorte do Início ('' quando é)
+function inLinkVendasAviso(P){
+  if(!P.janela) return '';
+  if(P.tipo === 'dia') return 'abre o dia ' + fmtDate(P.ini) + ' em Vendas';
+  return 'abre o mês de ' + vMesNome(P.ultimoDia.getMonth()).toLowerCase() + ' de ' + P.ultimoDia.getFullYear() + ' em Vendas';
 }
 // mix de pagamento (3 maiores formas) e cupom de desconto do período: painel da aba Semana de Vendas (Mês e Dia já têm tabela de formas e indicadores de cupom)
 function pagCupomHtml(lista, r){
@@ -16265,10 +16798,955 @@ function inDadosAte(){
   return '<span class="in-dados-tit">Dados até</span>' + it.join('');
 }
 
+/* ===================== Início no layout do print "Apex" (etapa 32) =====================
+   Linha 1: Faturamento, Pedidos e Ticket médio do recorte (vResumo sobre vEntre, a mesma conta do Resumo do período),
+   com a variação contra a base do período. Linha 2: Faturamento total (mês ou ano, meta de vsMetas/vsMetaPeriodo),
+   Clientes recorrentes (vsClientesCache), Saúde do mês e Visão de faturamento (barras do menor ao maior faturamento diário).
+   Linha 3: Clientes do período (ranking de vsClientesCache). Nenhuma regra de negócio nova: tudo sai das funções de Vendas,
+   Devoluções e das filas. Fonte sem dado = estado vazio ("aguardando as vendas"), nunca número inventado. */
+
+// meta da taxa de devolução usada na Saúde do mês (pedidos com devolução ÷ pedidos de venda, a regra de dvPedidosComDevolucao).
+// Aprovada pelo usuário em 30/10/2026 (o painel não tinha meta para a taxa de devolução).
+var IN_SAUDE_META_TAXA_DEV = 0.10;
+var IN_SAUDE_PESOS = {fat:400, dev:300, filas:300};
+// escolhas feitas nos cartões (não vão para o endereço)
+var apx = {fat:'mes', vis:'1m', cliQ:'', cliOrd:'valor', cliDir:'desc', cli:null, cliLink:'#/vendas?sec=clientes', saudeAberta:false};
+var APX_ICO = {
+  kebab:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>',
+  alvo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="M12 12h.01"/></svg>',
+  baixar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>',
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>',
+  metas:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>',
+  ver:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  busca:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
+  pessoa:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:58%;height:58%"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>'
+};
+var APX_NB = ' ';
+var apxNf = {};
+function apxNum(min, max){ var k = min + '-' + max; return apxNf[k] || (apxNf[k] = new Intl.NumberFormat('pt-BR', {minimumFractionDigits:min, maximumFractionDigits:max})); }
+// moeda curta para os números pequenos dos cartões (o valor exato vai no title e para o leitor de tela)
+function apxMoedaCurta(v){
+  var a = Math.abs(v || 0);
+  if(a >= 1e6) return 'R$' + APX_NB + apxNum(0, 2).format(v / 1e6) + APX_NB + 'mi';
+  if(a >= 1e3) return 'R$' + APX_NB + apxNum(0, 1).format(v / 1e3) + APX_NB + 'mil';
+  return 'R$' + APX_NB + apxNum(0, 0).format(v);
+}
+function apxEixo(v){ if(!v) return '0'; if(v >= 1e6) return apxNum(0, 1).format(v / 1e6) + ' mi'; if(v >= 1e3) return apxNum(0, 1).format(v / 1e3) + ' mil'; return apxNum(0, 0).format(v); }
+function inEhJanela(x){ return typeof x === 'string' && Object.prototype.hasOwnProperty.call(IN_JANELAS, x); }
+function apxMesCurto(m){ return vMesNome(m).slice(0, 3).toLowerCase(); }
+function apxIniciais(nome){
+  var p = String(nome || '').trim().split(/\s+/).filter(Boolean);
+  return ((p[0] || '?').charAt(0) + (p.length > 1 ? p[p.length - 1].charAt(0) : '')).toUpperCase();
+}
+
+// linha abaixo do filtro: o recorte por extenso e a base da comparação
+function apxJanelaTxt(P, C){
+  if(P.futuro) return '<strong>' + escapeHtml(P.titulo) + '</strong> · o período ainda não começou';
+  var A24 = P.janela === '24h' && vendas.pedidos && C ? apxJanela(C) : null;
+  var cmp = A24 ? (A24.b ? 'comparado com as 24 horas anteriores' : 'sem comparação' + (A24.motivo ? ': ' + A24.motivo : '')) : P.base ? 'comparado ' + P.base.label.replace(/^vs /, 'com ') : '';
+  return '<strong>' + escapeHtml(P.titulo) + '</strong>' + (cmp ? ' · ' + escapeHtml(cmp) : '');
+}
+// o recorte dos cartões novos: o do Início (inCalcVendas, igual ao Resumo do período) ou, em 24 horas, a janela rolante
+// até o último pedido sincronizado, comparada com as 24 horas anteriores
+function apxJanela(C){
+  if(C.apx) return C.apx;
+  var P = C.P, x;
+  if(P.janela === '24h'){
+    var ref = vendas.ref, ini = new Date(ref.getTime() - 864e5), fim = new Date(ref.getTime() + 1), bIni = new Date(ini.getTime() - 864e5);
+    var lista = vEntre(ini, fim), cob = vCoberto(bIni);
+    x = {lista:lista, r:vResumo(lista), b:cob ? vResumo(vEntre(bIni, ini)) : null, motivo:cob ? null : 'vendas desde ' + vDiaCurto(vendas.inicio),
+      ini:ini, fim:fim, ctx:'vs 24 horas anteriores', nota:''};
+  } else {
+    var V = inCalcVendas(C);
+    x = {lista:V.lista, r:V.r, b:V.b, motivo:V.motivo, ini:P.ini, fim:P.fimEf, ctx:V.ctx, nota:inNotaVendas(P, V)};
+  }
+  C.apx = x;
+  return x;
+}
+// variação no canto do cartão (a mesma regra de inDelta: abaixo de 0,05% conta como estável)
+function apxDelta(cur, base){
+  var pct = (cur != null && base != null && base !== 0) ? cur / base - 1 : null;
+  if(pct == null) return '';
+  if(Math.abs(pct) < 0.0005) pct = 0;
+  var cls = pct === 0 ? 'delta-flat' : pct > 0 ? 'delta-good' : 'delta-bad', txt = fmtPctSigned(pct);
+  return '<span class="delta apx-delta ' + cls + '"><span aria-hidden="true">' + (pct > 0 ? '▲' : pct < 0 ? '▼' : '=') + '</span><span class="sr-only">' + (pct > 0 ? 'alta de ' : pct < 0 ? 'queda de ' : 'estável, ') + '</span>' + txt + '</span>';
+}
+function apxVazio(titulo, texto){ return '<div class="apx-vazio" role="status"><strong>' + escapeHtml(titulo) + '</strong>' + (texto ? '<div>' + texto + '</div>' : '') + '</div>'; }
+
+/* ---- Linha 1: três cartões ---- */
+function apxKpi(id, titulo, def, valor, cur, base, A, copia){
+  var cmp = A.b ? A.ctx : 'sem comparação' + (A.motivo ? ': ' + A.motivo : '');
+  return '<article class="kpi-card apx-kpi" aria-labelledby="apx-' + id + '-t">' +
+    '<div class="apx-kpi-cab"><h3 class="apx-kpi-t" id="apx-' + id + '-t">' + escapeHtml(titulo) + '</h3>' + (def ? infoTip(def) : '') + (A.b ? apxDelta(cur, base) : '') + '</div>' +
+    '<div class="kpi-value">' + valor + '</div>' +
+    '<div class="apx-kpi-pe"><span class="apx-cmp">' + escapeHtml(cmp) + '</span>' +
+    '<button type="button" class="apx-kebab" data-apx-kebab="' + id + '" data-apx-foco="keb-' + id + '" data-apx-copia="' + escapeHtml(copia) + '" aria-label="Mais opções: ' + escapeHtml(titulo) + '" aria-haspopup="menu" aria-expanded="false" aria-controls="apx-menu">' + APX_ICO.kebab + '</button></div></article>';
+}
+function apxKpis(C, est){
+  if(est) return ['Faturamento', 'Pedidos', 'Ticket médio'].map(function(t){
+    return '<article class="kpi-card apx-kpi"><div class="apx-kpi-cab"><h3 class="apx-kpi-t">' + t + '</h3></div><div class="kpi-value">—</div><div class="apx-kpi-pe"><span class="apx-cmp">aguardando as vendas</span></div></article>';
+  }).join('');
+  var A = apxJanela(C), r = A.r, b = A.b;
+  return apxKpi('fat', 'Faturamento', 'v_fat', fmtValor(r.faturamento), r.faturamento, b && b.faturamento, A, fmtValor(r.faturamento)) +
+    apxKpi('ped', 'Pedidos', 'v_ped', fmtQtd(r.pedidos), r.pedidos, b && b.pedidos, A, fmtQtd(r.pedidos)) +
+    apxKpi('tkt', 'Ticket médio', 'v_ticket', r.ticket == null ? '—' : fmtValor(r.ticket), r.ticket, b && b.ticket, A, r.ticket == null ? '—' : fmtValor(r.ticket));
+}
+
+/* ---- Linha 2a: Faturamento total (mês ou ano do último dia do recorte) ---- */
+// dia de referência dos cartões "do mês": o último dia do recorte, sem passar do último pedido
+function apxFocoDia(C){
+  var d = C.P.ultimoDia;
+  if(vendas.pedidos && vendas.ref){ var r0 = vInicioDia(vendas.ref); if(d > r0) d = r0; }
+  return d;
+}
+function apxFatDados(C){
+  if(C.fatT) return C.fatT;
+  var d = apxFocoDia(C), ano = d.getFullYear(), mes = d.getMonth(), modo = apx.fat;
+  var ini = modo === 'ano' ? new Date(ano, 0, 1) : new Date(ano, mes, 1), fim = vAddDias(d, 1);
+  var lista = vEntre(ini, fim), r = vResumo(lista);
+  var mm = vsMetaPeriodo(vsMetas().faturamento, 'mes', vDiasNoMes(ano, mes));
+  // meta anual = 12 × a meta mensal aprovada (não há meta anual própria)
+  var meta = mm ? (modo === 'ano' ? mm.verde * 12 : mm.verde) : null;
+  var maior = null;
+  lista.forEach(function(p){ if(vsEhVenda(p) && (!maior || p.total > maior.total)) maior = p; });
+  var pix = 0, cartao = 0, demais = 0;
+  vMeiosLinhas(lista).forEach(function(x){
+    if(x.meio === 'Pix') pix += x.r.faturamento; else if(x.meio.indexOf('Cartão') === 0) cartao += x.r.faturamento; else demais += x.r.faturamento;
+  });
+  // projeção de fechamento do mês em andamento: a mesma conta de vsRenderMetaCartoes (realizado ÷ dias decorridos × dias do mês)
+  var info = vMesInfo(ano, mes), proj = modo === 'mes' && info.status === 'andamento' && info.decorridos ? r.faturamento / info.decorridos * info.nDias : null;
+  C.fatT = {proj:proj, modo:modo, d:d, ano:ano, mes:mes, ini:ini, fim:fim, r:r, meta:meta, pct:meta ? r.faturamento / meta : null, maior:maior, pix:pix, cartao:cartao, demais:demais, cobre:vCoberto(ini)};
+  return C.fatT;
+}
+function apxMini(rot, curto, exato){ return '<div><dt>' + rot + '</dt><dd title="' + escapeHtml(exato) + '"><span aria-hidden="true">' + curto + '</span><span class="sr-only">' + escapeHtml(exato) + '</span></dd></div>'; }
+function apxFatTotal(C, est){
+  var cab = '<div class="apx-cab"><h3 class="apx-titulo" id="apx-fat-t">Faturamento total</h3><a class="apx-ico" href="#/vendas?sec=geral" aria-label="Ver as metas de Vendas" title="Metas de Vendas">' + APX_ICO.metas + '</a></div>';
+  if(est) return '<article class="panel apx-card apx-fat" aria-labelledby="apx-fat-t">' + cab + apxVazio('Aguardando as vendas', 'O faturamento, a meta e as formas de pagamento aparecem quando as vendas carregarem.') + '</article>';
+  var F = apxFatDados(C), r = F.r, pctTxt = F.pct == null ? 'sem meta' : apxNum(0, 0).format(F.pct * 100) + '% da meta';
+  var ate = (F.modo === 'ano' ? 'Faturamento de ' + F.ano + ' até ' : 'Faturamento até ') + F.d.getDate() + ' de ' + apxMesCurto(F.mes);
+  var w = F.pct == null ? 0 : Math.min(100, F.pct * 100);
+  var cupTit = fmtValor(r.desconto) + ' de desconto em ' + vPedidosTxt(r.comCupom) + ' com cupom';
+  return '<article class="panel apx-card apx-fat" aria-labelledby="apx-fat-t">' + cab +
+    '<div class="apx-big kpi-value" title="' + escapeHtml(fmtValor(r.faturamento)) + '">' + fmtValor(r.faturamento) + '</div>' +
+    '<div class="apx-texttabs" role="group" aria-label="Recorte do cartão">' +
+      '<button type="button" data-apx-fat="mes" data-apx-foco="fat-mes" aria-pressed="' + (F.modo === 'mes') + '">Mensal</button>' +
+      '<button type="button" data-apx-fat="ano" data-apx-foco="fat-ano" aria-pressed="' + (F.modo === 'ano') + '">Anual</button></div>' +
+    '<div class="apx-trend"><span class="apx-trend-ico" aria-hidden="true">' + APX_ICO.alvo + '</span><span>' + escapeHtml(ate) + '</span><b>' + pctTxt + '</b></div>' +
+    (F.meta != null ? '<div class="apx-prog" role="progressbar" aria-label="Faturamento em relação à meta" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round(w) + '" aria-valuetext="' + escapeHtml(apxNum(0, 1).format(F.pct * 100) + '% da meta de ' + fmtValor(F.meta)) + '"><div class="apx-prog-fill" style="--w:' + w.toFixed(1) + '%"></div></div>' +
+      '<p class="apx-meta-txt">realizado ÷ meta cheia ' + (F.modo === 'ano' ? 'do ano (12 × a mensal), ' : 'do mês, ') + fmtValor(F.meta) + '</p>' +
+      (F.proj != null ? '<p class="apx-meta-txt">Projeção de fechamento: ' + fmtValor(F.proj) + (F.meta > 0 ? ' (' + apxNum(0, 0).format(F.proj / F.meta * 100) + '% da meta)' : '') + '</p>' : '') : '<p class="apx-meta-txt">Sem meta de faturamento cadastrada.</p>') +
+    '<div class="apx-legenda"><i aria-hidden="true"></i><span>Maior venda do ' + (F.modo === 'ano' ? 'ano' : 'mês') + '</span><b>' + (F.maior ? fmtValor(F.maior.total) : '—') + '</b></div>' +
+    (!F.cobre ? '<p class="apx-aviso">Vendas só desde ' + fmtDate(vendas.inicio) + ': o ' + (F.modo === 'ano' ? 'ano' : 'mês') + ' está incompleto.</p>' : '') +
+    '<hr class="apx-div"><dl class="apx-mini4">' +
+      apxMini(F.modo === 'ano' ? 'Pedidos do ano' : 'Pedidos do mês', fmtQtd(r.pedidos), vPedidosTxt(r.pedidos) + ' de venda') +
+      apxMini('Cupons', apxMoedaCurta(r.desconto), cupTit) +
+      apxMini('Pix', apxMoedaCurta(F.pix), 'Pix: ' + fmtValor(F.pix)) +
+      apxMini('Cartão', apxMoedaCurta(F.cartao), 'Cartão (à vista e parcelado): ' + fmtValor(F.cartao)) + '</dl>' +
+    '<p class="apx-mini-nota">Demais formas (boleto e outras): ' + fmtValor(F.demais) + '</p>' +
+    '<div class="apx-acoes"><button type="button" class="btn" data-apx-acao="baixar" data-apx-foco="baixar">' + APX_ICO.baixar + 'Baixar</button>' +
+    '<a class="btn btn-primary" href="' + escapeHtml(inLinkVendas(C.P)) + '"' + (inLinkVendasAviso(C.P) ? ' title="' + escapeHtml(inLinkVendasAviso(C.P)) + '"' : '') + '>Acompanhar vendas</a></div>' +
+    (inLinkVendasAviso(C.P) ? '<p class="apx-mini-nota">Acompanhar vendas ' + escapeHtml(inLinkVendasAviso(C.P)) + '.</p>' : '') + '</article>';
+}
+function apxExportarCsv(){
+  if(!vendas.pedidos){ toast('Sem vendas carregadas para baixar.'); return; }
+  var C = {P:inPeriodo(), v:null}, F = apxFatDados(C), r = F.r;
+  var esc = function(s){ s = String(s == null ? '' : s); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  var L = [['Indicador', 'Valor'],
+    ['Recorte', (F.modo === 'ano' ? 'Ano de ' + F.ano : vMesNome(F.mes) + ' de ' + F.ano) + ' até ' + fmtDate(F.d)],
+    ['Faturamento', csvNum(r.faturamento, 2)], ['Pedidos de venda', r.pedidos], ['Ticket médio', csvNum(r.ticket, 2)],
+    ['Meta de faturamento' + (F.modo === 'ano' ? ' (12 × a mensal)' : ''), F.meta == null ? '' : csvNum(F.meta, 2)], ['Projeção de fechamento do mês', F.proj == null ? '' : csvNum(F.proj, 2)], ['% da meta', F.pct == null ? '' : csvNum(F.pct * 100, 1)],
+    ['Maior venda', F.maior ? csvNum(F.maior.total, 2) : ''], ['Maior venda (pedido)', F.maior ? F.maior.num : ''],
+    ['Cupons (desconto)', csvNum(r.desconto, 2)], ['Pedidos com cupom', r.comCupom],
+    ['Pix', csvNum(F.pix, 2)], ['Cartão (à vista e parcelado)', csvNum(F.cartao, 2)], ['Demais formas (boleto e outras)', csvNum(F.demais, 2)]];
+  downloadBlob(new Blob(['﻿' + L.map(function(l){ return l.map(esc).join(';'); }).join('\r\n')], {type:'text/csv;charset=utf-8'}),
+    'inicio_faturamento_' + (F.modo === 'ano' ? F.ano : F.ano + '-' + pad2(F.mes + 1)) + '.csv');
+  toast('CSV do faturamento baixado.', 'good');
+}
+
+/* ---- Linha 2b: Clientes recorrentes (% do período e os últimos 12 meses) ---- */
+function apxRecorrentes(C, est){
+  var cab = '<div class="apx-cab"><h3 class="apx-titulo" id="apx-rec-t">Clientes recorrentes</h3>';
+  if(est) return '<article class="panel apx-card apx-rec" aria-labelledby="apx-rec-t">' + cab + '</div>' + apxVazio('Aguardando as vendas', '') + '</article>';
+  if(!Object.keys(vsHist()).length) return '<article class="panel apx-card apx-rec" aria-labelledby="apx-rec-t">' + cab + '</div>' +
+    apxVazio('Sem a identificação das clientes', IS_APPS_SCRIPT ? 'Ela ainda está chegando ao painel. Se continuar assim amanhã, veja em <a class="text-link" href="#/planilha">Fontes de dados</a>.' : 'O CSV da Nuvemshop importado aqui não traz a cliente; ela vem da base do painel online.') + '</article>';
+  var A = apxJanela(C), cli = vsClientesCache(A.lista, A.ini, A.fim), metas = vsMetas(), meta = metas.recorrentes;
+  var pct = cli.pctRecorrentes, sem = vsSemaforoMeta(pct == null ? null : pct * 100, meta);
+  // os últimos 12 meses (até o mês do último dia do recorte); mês sem base completa fica de fora
+  var d = apxFocoDia(C), fimRef = vAddDias(vInicioDia(vendas.ref), 1), serie = [];
+  for(var k = 11; k >= 0; k--){
+    var mi = new Date(d.getFullYear(), d.getMonth() - k, 1), mf = new Date(d.getFullYear(), d.getMonth() - k + 1, 1);
+    if(mf > fimRef) mf = fimRef;
+    var v = vCoberto(mi) && mf > mi ? vsClientesCache(vEntre(mi, mf), mi, mf).pctRecorrentes : null;
+    serie.push({m:mi, v:v});
+  }
+  C.spark = serie;
+  return '<article class="panel apx-card apx-rec" aria-labelledby="apx-rec-t">' + cab + vsSemHtml(sem) + '</div>' +
+    '<div class="apx-rec-corpo"><div><span class="apx-eyebrow">No período</span>' +
+      '<div class="apx-rec-num"><span class="kpi-value">' + (pct == null ? '—' : fmtPct(pct)) + '</span>' + (meta ? '<small>meta ' + apxNum(0, 0).format(meta.verde) + '%</small>' : '') + '</div>' +
+      '<span class="apx-rec-sub">' + fmtQtd(cli.recorrentes.n) + ' de ' + fmtQtd(cli.clientes) + (cli.clientes === 1 ? ' cliente' : ' clientes') + infoTip('vs_recorr') + '</span></div>' +
+      '<svg class="apx-spark" id="apx-spark" role="img"></svg></div>' +
+    '<p class="apx-nota-pill">' + APX_ICO.info + 'Clientes que já tinham comprado antes do período.</p></article>';
+}
+
+/* ---- Linha 2c: Saúde do mês (0 a 1.000) ---- */
+// 400 × min(1, faturamento ÷ meta proporcional) + 300 pela taxa de devolução + 300 × (1 − filas em atraso ÷ abertas).
+// Fonte sem dado sai da conta e a nota é reescalada para 1.000 sobre os pesos que sobram.
+// Mínimo de peso com dado para mostrar a nota (de 1.000): abaixo disso a nota diria pouco sobre o mês.
+var IN_SAUDE_PESO_MINIMO = 600;
+function apxSaudeCalc(C){
+  if(C.saude) return C.saude;
+  var d = apxFocoDia(C), ano = d.getFullYear(), mes = d.getMonth();
+  var cf = {id:'fat', rot:'Faturamento × meta proporcional', peso:IN_SAUDE_PESOS.fat};
+  var cd = {id:'dev', rot:'Taxa de devolução', peso:IN_SAUDE_PESOS.dev};
+  var cq = {id:'filas', rot:'Filas de devolução em dia', peso:IN_SAUDE_PESOS.filas};
+  var mIni = new Date(ano, mes, 1), mFim = new Date(ano, mes + 1, 1), nDias = vDiasNoMes(ano, mes);
+  // 1. faturamento: só dias completos. O dia do último pedido ainda está em andamento e fica de fora (do faturamento e da meta)
+  if(!vendas.pedidos) cf.falta = 'sem dados de vendas';
+  else {
+    var meta = vsMetas().faturamento, porDia = vsMetaPeriodo(meta, 'dia', nDias), r0 = vInicioDia(vendas.ref);
+    var completos = r0 < mIni ? 0 : r0 >= mFim ? nDias : r0.getDate() - 1;
+    if(!porDia || !(porDia.verde > 0)) cf.falta = 'sem meta de faturamento';
+    else if(!vCoberto(mIni)) cf.falta = 'vendas do mês incompletas (desde ' + vDiaCurto(vendas.inicio) + ')';
+    else if(r0 < mIni) cf.falta = 'o mês ainda não começou';
+    else if(!completos) cf.falta = 'primeiro dia do mês (ainda sem dia completo)';
+    else {
+      var fat = vResumo(vEntre(mIni, vAddDias(mIni, completos))).faturamento, mp = porDia.verde * completos;
+      if(!(mp > 0)) cf.falta = 'sem meta de faturamento';
+      else {
+        cf.pts = cf.peso * Math.min(1, fat / mp);
+        cf.txt = fmtValor(fat) + ' de ' + fmtValor(mp) + ' (meta de ' + fmtValor(meta.verde) + ' proporcional a ' + completos + ' de ' + nDias + ' dias completos, até ' + vDiaCurto(vAddDias(mIni, completos - 1)) + '): ' + fmtPct(fat / mp);
+      }
+    }
+  }
+  // 2. devolução: pedidos do MÊS ANTERIOR ao focado, que já passaram do prazo de devolução (o mês atual ainda pode subir)
+  var aIni = new Date(ano, mes - 1, 1), aNome = vMesNome(aIni.getMonth()).toLowerCase();
+  if(!devol.sols || !vendas.pedidos) cd.falta = 'sem dados de devolução';
+  else if(!vCoberto(aIni)) cd.falta = 'vendas de ' + aNome + ' incompletas';
+  else {
+    var c = dvPedidosComDevolucao(vEntre(aIni, mIni)), tx = dvTaxa(c.com, c.vendas), m = IN_SAUDE_META_TAXA_DEV;
+    if(tx == null || !(m > 0)) cd.falta = tx == null ? 'sem pedidos de venda em ' + aNome : 'sem meta da taxa de devolução';
+    else {
+      cd.pts = tx <= m ? cd.peso : cd.peso * Math.max(0, 1 - (tx - m) / m);
+      cd.txt = fmtPct(tx) + ' dos pedidos de ' + aNome + ', já fora do prazo de devolução (' + fmtQtd(c.com) + ' de ' + fmtQtd(c.vendas) + ') · meta ' + fmtPct(m) + '; zera no dobro da meta.';
+    }
+  }
+  // 3. filas de devolução (posição de hoje)
+  if(!devol.sols) cq.falta = 'sem dados das filas';
+  else {
+    dvDerivar();
+    var atraso = dvCasosCriticos(dvMontarFilas(dvHoje())), abertas = devol.sols.filter(function(o){ return o.ativo; }).length;
+    cq.pts = abertas ? cq.peso * (1 - Math.min(1, atraso / abertas)) : cq.peso;
+    cq.txt = fmtQtd(atraso) + ' em fila crítica de ' + fmtQtd(abertas) + (abertas === 1 ? ' caso' : ' casos') + ' em andamento (posição de hoje)';
+    var indisp = DV_FILAS.filter(function(f){ return f.critica && dvFilaIndisp(f); });
+    if(indisp.length) cq.aviso = 'fila sem dado: ' + indisp.map(function(f){ return f.label; }).join(', ') + ' (fora da contagem)';
+  }
+  var comp = [cf, cd, cq], disp = comp.filter(function(x){ return x.pts != null; });
+  var pesos = disp.reduce(function(a, x){ return a + x.peso; }, 0), soma = disp.reduce(function(a, x){ return a + x.pts; }, 0);
+  C.saude = {comp:comp, pesos:pesos, soma:soma, suficiente:pesos >= IN_SAUDE_PESO_MINIMO, nota:pesos ? Math.round(soma / pesos * 1000) : null,
+    faltam:comp.filter(function(x){ return x.pts == null; }), avisos:comp.filter(function(x){ return x.aviso; }).map(function(x){ return x.aviso; }), ano:ano, mes:mes};
+  return C.saude;
+}
+function apxSaudeDet(S){
+  return '<div class="apx-saude-det" id="apx-saude-det"' + (apx.saudeAberta ? '' : ' hidden') + '><table class="data-table apx-saude-tab"><caption class="sr-only">Composição da nota</caption><thead><tr><th scope="col">Parte</th><th scope="col" class="num">Pontos</th></tr></thead><tbody>' +
+    S.comp.map(function(x){
+      return '<tr><td><strong>' + escapeHtml(x.rot) + '</strong><span class="apx-saude-como">' + escapeHtml(x.pts == null ? x.falta + ': fora da conta' : x.txt) + '</span></td>' +
+        '<td class="num">' + (x.pts == null ? '—' : apxNum(0, 0).format(x.pts)) + ' / ' + x.peso + '</td></tr>';
+    }).join('') + '</tbody><tfoot><tr><th scope="row">Nota</th><td class="num">' + apxNum(0, 0).format(S.soma) + ' ÷ ' + S.pesos + ' × 1.000 = ' + apxNum(0, 0).format(S.nota) + '</td></tr></tfoot></table></div>';
+}
+function apxSaude(C, est){
+  var S = apxSaudeCalc(C), mesNome = vMesNome(S.mes).toLowerCase();
+  var cab = '<div class="apx-cab"><h3 class="apx-titulo" id="apx-saude-t">Saúde do mês</h3>' +
+    (S.nota != null ? '<button type="button" class="btn btn-sm" data-apx-acao="saude" data-apx-foco="saude" aria-expanded="' + apx.saudeAberta + '" aria-controls="apx-saude-det">Detalhes</button>' : '') + '</div>';
+  if(S.nota == null || !S.suficiente){
+    // menos de 600 dos 1.000 pontos com dado: sem nota nem emoji, só o que falta
+    var lista = S.comp.map(function(x){ return '<li>' + escapeHtml(x.rot) + ' (' + x.peso + ' pts): ' + escapeHtml(x.pts == null ? x.falta : 'com dado') + '</li>'; }).join('');
+    return '<article class="panel apx-card apx-saude" aria-labelledby="apx-saude-t">' + cab + '<hr class="apx-div">' +
+      apxVazio(est ? 'Aguardando as vendas' : 'Sem dados suficientes para a nota', 'A nota precisa de pelo menos ' + IN_SAUDE_PESO_MINIMO + ' dos 1.000 pontos com dado (hoje: ' + S.pesos + ').<ul class="apx-faltam">' + lista + '</ul>') +
+      (S.nota != null ? apxSaudeDet(S) : '') + '</article>';
+  }
+  var faixa = S.nota >= 800 ? ['Excelente', '😎', '800 a 1.000'] : S.nota >= 600 ? ['Bom', '🙂', '600 a 799'] : ['Atenção', '😐', '0 a 599'];
+  var on = Math.round(60 * S.nota / 1000), ticks = '';
+  for(var i = 0; i < 60; i++) ticks += '<i style="--d:' + i + '"' + (i < on ? ' class="on"' : '') + '></i>';
+  var aviso = S.faltam.length ? '<p class="apx-aviso">' + escapeHtml(S.faltam.map(function(x){ return x.falta; }).join(' · ')) + ': ' + (S.faltam.length === 1 ? 'esse peso saiu' : 'esses pesos saíram') + ' da conta, e a nota foi reescalada para 1.000.</p>' : '';
+  if(S.avisos.length) aviso += '<p class="apx-aviso">' + escapeHtml(S.avisos.join(' · ')) + '.</p>';
+  var det = apxSaudeDet(S);
+  return '<article class="panel apx-card apx-saude" aria-labelledby="apx-saude-t">' + cab + '<hr class="apx-div">' +
+    '<div class="apx-saude-linha"><p>A nota de ' + mesNome + ' é <strong>' + apxNum(0, 0).format(S.nota) + '</strong></p><span class="apx-emoji" aria-hidden="true">' + faixa[1] + '</span></div>' +
+    '<p class="apx-sub">Faixa <strong>' + faixa[0] + '</strong> (' + faixa[2] + ').</p>' + aviso +
+    '<div class="apx-ticks" id="apx-ticks" role="img" aria-label="Nota ' + apxNum(0, 0).format(S.nota) + ' numa escala de 0 a 1.000, faixa ' + faixa[0] + '">' + ticks + '</div>' +
+    '<div class="apx-ticks-leg" aria-hidden="true"><span>0</span><span>1.000</span></div>' + det + '</article>';
+}
+
+/* ---- Linha 2d: Visão de faturamento (barras do menor ao maior faturamento diário em cada faixa) ---- */
+var APX_VIS = [{id:'5d', rot:'5D', nome:'5 dias'}, {id:'2s', rot:'2S', nome:'2 semanas'}, {id:'1m', rot:'1M', nome:'1 mês'}, {id:'6m', rot:'6M', nome:'6 meses'}, {id:'1a', rot:'1A', nome:'1 ano'}];
+// pedidos de venda (vsEhVenda) somados por dia e, em 5D, por turno de 4 horas. Dia "completo" = antes do dia do último pedido
+// (ele ainda está em andamento); o total da janela inclui o dia em andamento.
+function apxVisDados(rng){
+  var ref = vendas.ref, h0 = vInicioDia(ref), amanha = vAddDias(h0, 1), d0 = vInicioDia(vendas.inicio);
+  var ini = rng === '5d' ? vAddDias(h0, -4) : rng === '2s' ? vAddDias(h0, -13) : rng === '1m' ? vAddDias(h0, -29)
+    : rng === '6m' ? new Date(h0.getFullYear(), h0.getMonth() - 5, 1) : new Date(h0.getFullYear(), h0.getMonth() - 11, 1);
+  var ini0 = ini < d0 ? d0 : ini, porDia = {}, porTurno = {}, total = 0;
+  vEntre(ini0, amanha).forEach(function(p){
+    if(!vsEhVenda(p)) return;
+    total += p.total;
+    porDia[p.dia] = (porDia[p.dia] || 0) + p.total;
+    if(rng === '5d'){ var k = p.dia + '|' + Math.floor(p.data.getHours() / 4); porTurno[k] = (porTurno[k] || 0) + p.total; }
+  });
+  function completo(d){ return d >= d0 && d < h0; }
+  function diasEntre(a, b, filtro){ var v = []; for(var d = a; d < b; d = vAddDias(d, 1)) if(completo(d) && (!filtro || filtro(d))) v.push(porDia[isoDate(d)] || 0); return v; }
+  function faixa(v){ return v.length ? [Math.min.apply(null, v), Math.max.apply(null, v), v.length] : null; }
+  var lab = [], tit = [], dd = [], unid;
+  if(rng === '5d'){
+    unid = 'turno de 4 horas, nos últimos 5 dias';
+    for(var s = 0; s < 6; s++){
+      var vals = [];
+      for(var i = 0; i < 5; i++){
+        var dia = vAddDias(ini, i);
+        if(dia < d0) continue;
+        if(dia.getTime() === h0.getTime() && ref.getHours() < (s + 1) * 4) continue;   // turno ainda não terminou
+        vals.push(porTurno[isoDate(dia) + '|' + s] || 0);
+      }
+      lab.push(pad2(4 * s) + '–' + pad2(4 * s + 4) + 'h'); tit.push('Das ' + pad2(4 * s) + 'h às ' + pad2(4 * s + 4) + 'h'); dd.push(faixa(vals));
+    }
+  } else if(rng === '2s'){
+    unid = 'dia da semana, nas últimas 2 semanas';
+    [[1, 'Seg', 'Segundas'], [2, 'Ter', 'Terças'], [3, 'Qua', 'Quartas'], [4, 'Qui', 'Quintas'], [5, 'Sex', 'Sextas'], [6, 'Sáb/Dom', 'Sábados e domingos']].forEach(function(w){
+      lab.push(w[1]); tit.push(w[2]);
+      dd.push(faixa(diasEntre(ini, amanha, function(d){ return w[0] === 6 ? (d.getDay() === 6 || d.getDay() === 0) : d.getDay() === w[0]; })));
+    });
+  } else if(rng === '1m'){
+    unid = 'bloco de 5 dias, nos últimos 30 dias';
+    for(var b = 0; b < 6; b++){
+      var a = vAddDias(ini, 5 * b), z = vAddDias(a, 5);
+      lab.push(pad2(a.getDate()) + '–' + pad2(vAddDias(z, -1).getDate())); tit.push(vDiaCurto(a) + ' a ' + vDiaCurto(vAddDias(z, -1))); dd.push(faixa(diasEntre(a, z)));
+    }
+  } else {
+    var bi = rng === '1a';
+    unid = bi ? 'bimestre, nos últimos 12 meses' : 'mês, nos últimos 6 meses';
+    for(var q = 0; q < 6; q++){
+      var m0 = new Date(ini.getFullYear(), ini.getMonth() + (bi ? 2 * q : q), 1), m1 = new Date(m0.getFullYear(), m0.getMonth() + (bi ? 2 : 1), 1);
+      lab.push(bi ? apxMesCurto(m0.getMonth()) + '–' + apxMesCurto(vAddDias(m1, -1).getMonth()) : apxMesCurto(m0.getMonth()));
+      tit.push(bi ? vMesNome(m0.getMonth()) + ' e ' + vMesNome(vAddDias(m1, -1).getMonth()).toLowerCase() + ' de ' + vAddDias(m1, -1).getFullYear() : vMesNome(m0.getMonth()) + ' de ' + m0.getFullYear());
+      dd.push(faixa(diasEntre(m0, m1)));
+    }
+  }
+  return {total:total, lab:lab, tit:tit, d:dd, unid:unid, ini:ini0, parcialIni:ini < d0};
+}
+function apxVisao(C, est){
+  var cab = '<div class="apx-cab"><h3 class="apx-titulo" id="apx-vis-t">Visão de faturamento</h3><a class="btn btn-sm" href="#/vendas">Ver tudo</a></div>';
+  if(est) return '<article class="panel apx-card apx-vis" aria-labelledby="apx-vis-t">' + cab + apxVazio('Aguardando as vendas', 'O gráfico usa a data e a hora de cada pedido.') + '</article>';
+  var tabs = APX_VIS.map(function(t){
+    var on = t.id === apx.vis;
+    return '<button type="button" class="' + (on ? 'active' : '') + '" role="tab" id="apx-vt-' + t.id + '" data-apx-vis="' + t.id + '" aria-selected="' + on + '" tabindex="' + (on ? 0 : -1) + '" aria-controls="apx-vis-painel" aria-label="' + t.nome + '">' + t.rot + '</button>';
+  }).join('');
+  return '<article class="panel apx-card apx-vis" aria-labelledby="apx-vis-t">' + cab +
+    '<div class="apx-canal"><span class="apx-moeda" aria-hidden="true">$</span><div><span class="apx-eyebrow">Loja Talgui · todos os canais</span><strong id="apx-vis-total">—</strong><span class="apx-vis-de" id="apx-vis-de"></span></div></div>' +
+    '<div class="segmented apx-vis-tabs" role="tablist" aria-label="Janela do gráfico">' + tabs + '</div>' +
+    '<div class="apx-chart-wrap" id="apx-vis-painel" role="tabpanel" aria-labelledby="apx-vt-' + apx.vis + '">' +
+      '<svg class="apx-chart" id="apx-chart" tabindex="0" role="img" aria-describedby="apx-chart-ajuda" data-apx-foco="chart"></svg>' +
+      '<div class="apx-tip" id="apx-tip" aria-hidden="true"></div>' +
+      '<p class="sr-only" id="apx-chart-ajuda">Use as setas esquerda e direita para percorrer as barras. Os valores também estão na tabela a seguir.</p>' +
+      '<div class="sr-only"><table id="apx-chart-tab"></table></div></div>' +
+    '<p class="apx-vis-unid" id="apx-vis-unid"></p>' +
+    '<a class="apx-info-link" href="#/vendas">' + APX_ICO.info + 'Descubra o faturamento por canal em Vendas.</a></article>';
+}
+
+/* ---- Linha 3: Clientes do período ---- */
+function apxClientesDados(C){
+  var A = apxJanela(C), hist = vsHist(), cli = vsClientesCache(A.lista, A.ini, A.fim);
+  return cli.rows.map(function(r){
+    // status do último pedido até o fim do recorte (o mesmo pedido da "Última compra")
+    var h = hist[r.chave], p = null;
+    if(h && r.ultima){ for(var i = h.datas.length - 1; i >= 0; i--){ if(h.datas[i] <= r.ultima){ p = vendas.porNum[h.nums[i]]; break; } } }
+    var st = p ? (p.statusEnvio || vSituacaoLabel(p.situacao)) : '';
+    return {chave:r.chave, nome:r.nome || 'Sem nome', cidade:r.cidade || '', uf:r.uf || '', ultima:r.ultima, status:st,
+      stCls:/entreg/i.test(st) ? 'is-bom' : /cancel|devol|recus/i.test(st) ? 'is-ruim' : '', valor:r.fat, pedidos:r.pedidos, novo:r.novo};
+  });
+}
+function apxClientesCorpo(){
+  var L = apx.cli || [], q = vsNorm(apx.cliQ);
+  if(q) L = L.filter(function(x){ return vsNorm(x.nome + ' ' + x.cidade + ' ' + x.uf).indexOf(q) >= 0; });
+  var dir = apx.cliDir === 'asc' ? 1 : -1;
+  L = L.slice().sort(function(a, b){
+    if(apx.cliOrd === 'nome') return dir * a.nome.localeCompare(b.nome, 'pt-BR');
+    if(apx.cliOrd === 'data') return dir * ((a.ultima || 0) - (b.ultima || 0));
+    return dir * (a.valor - b.valor);
+  });
+  var mostra = L.slice(0, 10);
+  var n = document.getElementById('apx-cli-n');
+  if(n) n.textContent = mostra.length ? 'Mostrando ' + fmtQtd(mostra.length) + ' de ' + fmtQtd(L.length) + (L.length === 1 ? ' cliente' : ' clientes') : '';
+  if(!mostra.length) return '<tr class="apx-tab-vazia"><td colspan="6">' + (q ? 'Nenhuma cliente encontrada para “' + escapeHtml(apx.cliQ) + '”.' : 'Nenhuma cliente identificada no período.') + '</td></tr>';
+  return mostra.map(function(x){
+    var local = x.cidade + (x.uf ? (x.cidade ? '/' : '') + x.uf : '');
+    return '<tr data-apx-href="' + escapeHtml(apx.cliLink) + '">' +
+      '<td><div class="apx-quem"><span class="avatar apx-av" aria-hidden="true">' + escapeHtml(apxIniciais(x.nome)) + '</span><span><span class="apx-quem-nome">' + escapeHtml(x.nome) + '</span><small>' + fmtQtd(x.pedidos) + (x.pedidos === 1 ? ' pedido' : ' pedidos') + ' · ' + (x.novo ? 'nova' : 'recorrente') + '</small></span></div></td>' +
+      '<td>' + (local ? escapeHtml(local) : '—') + '</td>' +
+      '<td>' + (x.ultima ? fmtDate(x.ultima) : '—') + '</td>' +
+      '<td>' + (x.status ? '<span class="apx-pill ' + x.stCls + '">' + escapeHtml(x.status) + '</span>' : '—') + '</td>' +
+      '<td class="num apx-valor">' + fmtValor(x.valor) + '</td>' +
+      '<td class="apx-acao-cel"><a class="apx-ver" href="' + escapeHtml(apx.cliLink) + '" aria-label="Ver ' + escapeHtml(x.nome) + ' em Vendas, Clientes" title="Ver em Vendas · Clientes">' + APX_ICO.ver + '</a></td></tr>';
+  }).join('');
+}
+function apxThOrd(id, rot, num){
+  var on = apx.cliOrd === id, sort = on ? (apx.cliDir === 'asc' ? 'ascending' : 'descending') : 'none';
+  return '<th scope="col"' + (num ? ' class="num"' : '') + ' aria-sort="' + sort + '"><button type="button" class="th-sort apx-ord" data-apx-ord="' + id + '" data-apx-foco="ord-' + id + '">' + rot + '<span class="apx-ord-seta" aria-hidden="true">' + (on ? (apx.cliDir === 'asc' ? '▲' : '▼') : '↕') + '</span></button></th>';
+}
+function apxClientes(C, est){
+  var cab = '<div class="apx-tab-cab"><h3 class="apx-titulo" id="apx-cli-t">Clientes</h3><span class="apx-tab-sub">que mais compraram no período</span>';
+  if(est){ apx.cli = null; return '<section class="panel apx-card apx-tab-card" aria-labelledby="apx-cli-t">' + cab + '</div>' + apxVazio('Aguardando as vendas', '') + '</section>'; }
+  if(!Object.keys(vsHist()).length){ apx.cli = null; return '<section class="panel apx-card apx-tab-card" aria-labelledby="apx-cli-t">' + cab + '</div>' +
+    apxVazio('Sem a identificação das clientes', IS_APPS_SCRIPT ? 'Ela ainda está chegando ao painel.' : 'O CSV da Nuvemshop importado aqui não traz a cliente; ela vem da base do painel online.') + '</section>'; }
+  apx.cli = apxClientesDados(C);
+  apx.cliLink = inLinkVendas(C.P).replace('#/vendas?', '#/vendas?sec=clientes&');
+  if(apx.cliLink.indexOf('sec=clientes') < 0) apx.cliLink = '#/vendas?sec=clientes';
+  return '<section class="panel apx-card apx-tab-card" aria-labelledby="apx-cli-t">' + cab +
+    '<label class="apx-busca">' + APX_ICO.busca + '<span class="sr-only">Buscar cliente ou cidade</span><input id="apx-cli-q" data-apx-foco="cli-q" type="search" placeholder="Buscar cliente ou cidade" autocomplete="off" value="' + escapeHtml(apx.cliQ) + '"></label></div>' +
+    '<div class="table-wrap apx-tab-wrap" tabindex="0" role="region" aria-labelledby="apx-cli-t"><table class="data-table apx-tab"><caption class="sr-only">Clientes que mais compraram no período, com a última compra e o status do último pedido. Os botões do cabeçalho ordenam a tabela.</caption>' +
+    '<thead><tr>' + apxThOrd('nome', 'Cliente') + '<th scope="col">Cidade/UF</th>' + apxThOrd('data', 'Última compra') + '<th scope="col">Status do último pedido</th>' + apxThOrd('valor', 'Valor', true) + '<th scope="col"><span class="sr-only">Ver</span></th></tr></thead>' +
+    '<tbody id="apx-cli-corpo">' + apxClientesCorpo() + '</tbody></table></div>' +
+    '<div class="apx-tab-pe"><span id="apx-cli-n"></span><a class="text-link" href="' + escapeHtml(apx.cliLink) + '">Ver todas em Vendas · Clientes <span aria-hidden="true">›</span></a>' + (inLinkVendasAviso(C.P) ? '<span>(' + escapeHtml(inLinkVendasAviso(C.P)) + ')</span>' : '') + '</div></section>';
+}
+
+/* ---- Montagem ---- */
+function apxBloco(C){
+  var P = C.P;
+  if(P.futuro) return apxVazio('Este período ainda não começou', 'Escolha outro período acima.');
+  var est = inEstadoVendas();
+  if(!est) carregarMetasVendas();
+  function seguro(fn){ try{ return fn(C, est); } catch(e){ if(window.console) console.error(e); return '<article class="panel apx-card">' + inEstadoHtml('erro', 'Não foi possível montar este cartão: ' + (e && e.message ? e.message : e)) + '</article>'; } }
+  var A = est ? null : apxJanela(C);
+  return (est ? '<div class="apx-estado">' + est + '</div>' : '') +
+    '<p class="sr-only" id="apx-vivo" aria-live="polite"></p>' +
+    '<section class="apx-kpis" aria-label="Indicadores do período">' + seguro(apxKpis) + '</section>' +
+    (A && A.nota ? '<p class="in-info apx-nota-vendas">' + A.nota + '</p>' : '') +
+    '<section class="apx-linha2" aria-label="Desempenho">' + seguro(apxFatTotal) + '<div class="apx-pilha">' + seguro(apxRecorrentes) + seguro(apxSaude) + '</div>' + seguro(apxVisao) + '</section>' +
+    seguro(apxClientes);
+}
+// redesenha só o painel do print (troca Mensal/Anual, Detalhes): não refaz os blocos de "Mais detalhes"
+function apxRedesenhar(){
+  var C = {P:inPeriodo(), v:null}, ativo = document.activeElement;
+  var foco = ativo && ativo.dataset ? ativo.dataset.apxFoco : null;
+  inPreencher('in-apex', apxBloco(C));
+  apxDesenhar(C);
+  countUpTextos(document.getElementById('in-apex'), 'in');
+  if(foco){ var f = document.querySelector('#in-apex [data-apx-foco="' + foco + '"]'); if(f) f.focus({preventScroll:true}); }
+}
+function apxDizer(t){ var el = document.getElementById('apx-vivo'); if(!el) return; el.textContent = ''; setTimeout(function(){ el.textContent = t; }, 40); }
+
+/* ---- Desenhos (SVG): sparkline com pico, tracinhos, barras flutuantes ---- */
+function apxTween(dur, fn){
+  if(!motionOK() || dur <= 0){ fn(1); return function(){}; }
+  var t0 = performance.now(), raf = 0;
+  function step(now){ var t = Math.min(1, (now - t0) / dur); fn(1 - Math.pow(1 - t, 3)); if(t < 1) raf = requestAnimationFrame(step); }
+  raf = requestAnimationFrame(step);
+  return function(){ cancelAnimationFrame(raf); };
+}
+function apxDesenhar(C){
+  var tk = document.getElementById('apx-ticks');
+  if(tk){ if(motionOK()) requestAnimationFrame(function(){ requestAnimationFrame(function(){ tk.classList.add('lit'); }); }); else tk.classList.add('lit'); }
+  if(C.spark) apxSpark(C.spark, true);
+  apx._spark = C.spark || null;
+  if(document.getElementById('apx-chart') && vendas.pedidos){ apxChart.px = null; apxVisMostrar(apx.vis, true); }
+}
+function apxSpark(serie, animar){
+  var svg = document.getElementById('apx-spark');
+  if(!svg) return;
+  var r = svg.getBoundingClientRect(), W = Math.max(120, Math.round(r.width)), H = Math.max(60, Math.round(r.height)), pad = 6;
+  var vals = serie.filter(function(x){ return x.v != null; }).map(function(x){ return x.v; });
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  if(vals.length < 2){ svg.setAttribute('aria-label', 'Sem meses suficientes para a linha dos últimos 12 meses'); svg.innerHTML = '<text x="' + (W / 2) + '" y="' + (H / 2) + '" text-anchor="middle" class="apx-spark-vazio">sem meses suficientes</text>'; return; }
+  var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals), amp = mx - mn || 0.01;
+  mn -= amp * 0.15; mx += amp * 0.15;
+  var pts = serie.map(function(x, i){ return x.v == null ? null : [pad + i * (W - 2 * pad) / (serie.length - 1), H - 4 - (x.v - mn) / (mx - mn) * (H - 14)]; });
+  // curva suave por trechos contínuos (mês sem base completa interrompe a linha)
+  var d = '', area = '', trecho = [];
+  function fecha(){
+    if(trecho.length >= 2){
+      var s = 'M' + trecho[0][0].toFixed(1) + ' ' + trecho[0][1].toFixed(1);
+      for(var i = 0; i < trecho.length - 1; i++){
+        var p0 = trecho[i - 1] || trecho[i], p1 = trecho[i], p2 = trecho[i + 1], p3 = trecho[i + 2] || p2;
+        s += ' C' + (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1) + ' ' + (p1[1] + (p2[1] - p0[1]) / 6).toFixed(1) + ' ' + (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1) + ' ' + (p2[1] - (p3[1] - p1[1]) / 6).toFixed(1) + ' ' + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1);
+      }
+      d += s + ' ';
+      area += s + ' L' + trecho[trecho.length - 1][0].toFixed(1) + ' ' + H + ' L' + trecho[0][0].toFixed(1) + ' ' + H + ' Z ';
+    }
+    trecho = [];
+  }
+  pts.forEach(function(p){ if(p) trecho.push(p); else fecha(); });
+  fecha();
+  var pk = -1;
+  serie.forEach(function(x, i){ if(x.v != null && (pk < 0 || x.v > serie[pk].v)) pk = i; });
+  var P = pts[pk], pico = serie[pk], prim = serie.find(function(x){ return x.v != null; }), ult = serie[serie.length - 1];
+  svg.setAttribute('aria-label', 'Clientes recorrentes por mês, de ' + apxMesCurto(prim.m.getMonth()) + '/' + String(prim.m.getFullYear()).slice(2) + ' a ' + apxMesCurto(ult.m.getMonth()) + '/' + String(ult.m.getFullYear()).slice(2) +
+    ': entre ' + fmtPct(Math.min.apply(null, vals)) + ' e ' + fmtPct(Math.max.apply(null, vals)) + '; pico de ' + fmtPct(pico.v) + ' em ' + vMesNome(pico.m.getMonth()).toLowerCase() + ' de ' + pico.m.getFullYear());
+  svg.innerHTML = '<defs><linearGradient id="apxSparkArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="s-a"/><stop offset="1" class="s-b"/></linearGradient>' +
+    '<linearGradient id="apxSparkBeam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="b-a"/><stop offset="1" class="b-b"/></linearGradient>' +
+    '<filter id="apxSparkBlur" x="-200%" y="-200%" width="500%" height="500%"><feGaussianBlur stdDeviation="3"/></filter></defs>' +
+    '<path class="area" d="' + area + '" opacity="0"/>' +
+    '<rect class="beamv" x="' + (P[0] - 1) + '" y="' + P[1] + '" width="2" height="' + (H - P[1]) + '" opacity="0"/>' +
+    '<rect class="beamv" x="' + (P[0] - 6) + '" y="' + P[1] + '" width="12" height="' + (H - P[1]) + '" opacity="0" filter="url(#apxSparkBlur)"/>' +
+    '<path class="line" d="' + d + '"/>' +
+    '<circle class="halo" cx="' + P[0] + '" cy="' + P[1] + '" r="7" filter="url(#apxSparkBlur)" opacity="0"/>' +
+    '<circle class="dot" cx="' + P[0] + '" cy="' + P[1] + '" r="3.2" opacity="0"><title>Pico: ' + fmtPct(pico.v) + ' em ' + vMesNome(pico.m.getMonth()).toLowerCase() + '</title></circle>';
+  var line = svg.querySelector('.line'), extras = svg.querySelectorAll('.area, .beamv, .halo, .dot');
+  if(animar && motionOK() && line.animate){
+    var len = line.getTotalLength();
+    line.style.strokeDasharray = len; line.style.strokeDashoffset = len;
+    line.animate([{strokeDashoffset:len}, {strokeDashoffset:0}], {duration:1400, easing:'cubic-bezier(.4,0,.2,1)', fill:'forwards'});
+    Array.prototype.forEach.call(extras, function(el, i){ el.animate([{opacity:0}, {opacity:1}], {duration:500, delay:1000 + i * 80, fill:'forwards'}); });
+  } else Array.prototype.forEach.call(extras, function(el){ el.setAttribute('opacity', '1'); });
+}
+
+var apxChart = {px:null, geom:null, top:0, active:-1, stop:null, dados:null};
+function apxNiceStep(raw){ var p = Math.pow(10, Math.floor(Math.log10(raw))), m = [1, 2, 2.5, 5, 10]; for(var i = 0; i < m.length; i++) if(m[i] * p >= raw) return m[i] * p; return 10 * p; }
+function apxChartMontar(svg){
+  var s = '<defs><linearGradient id="apxBarFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="g-a"/><stop offset="1" class="g-b"/></linearGradient>' +
+    '<filter id="apxCapBlur" x="-50%" y="-400%" width="200%" height="900%"><feGaussianBlur stdDeviation="4"/></filter></defs><g class="apx-grade"></g><g>';
+  for(var i = 0; i < 6; i++) s += '<g class="bar" data-i="' + i + '" style="--k:' + i + '"><rect class="body" rx="7"/><rect class="sheen" rx="1.5"/><rect class="capglow" rx="3"/><rect class="cap" rx="1.5"/><text class="xl" text-anchor="middle"></text></g>';
+  s += '</g><line class="cross apx-cx" opacity="0"/><line class="cross apx-cy" opacity="0"/><g class="cross-lab" opacity="0"><rect rx="5" height="20"/><text dy="14"></text></g>';
+  svg.innerHTML = s;
+}
+function apxGeom(svg){
+  var r = svg.getBoundingClientRect(), W = Math.max(240, Math.round(r.width)), H = Math.max(180, Math.round(r.height));
+  var L = 46, R = 4, T = 12, B = 24, colW = (W - L - R) / 6;
+  return {W:W, H:H, L:L, R:R, T:T, B:B, colW:colW, bw:Math.min(58, colW * 0.66), ph:H - T - B};
+}
+function apxVisMostrar(rng, animar){
+  var svg = document.getElementById('apx-chart');
+  if(!svg || !vendas.pedidos) return;
+  var D = apxChart.dados = apxVisDados(rng);
+  if(!svg.querySelector('.bar')) apxChartMontar(svg);
+  var g = apxChart.geom = apxGeom(svg);
+  svg.setAttribute('viewBox', '0 0 ' + g.W + ' ' + g.H);
+  var tot = document.getElementById('apx-vis-total'), de = document.getElementById('apx-vis-de');
+  if(tot){ tot.textContent = fmtValor(D.total); }
+  if(de) de.textContent = 'de ' + fmtDate(D.ini) + ' a ' + fmtDate(vendas.ref) + ' ' + vHora(vendas.ref) + (D.parcialIni ? ' (vendas só desde ' + fmtDate(vendas.inicio) + ')' : '');
+  var max = 0; D.d.forEach(function(x){ if(x && x[1] > max) max = x[1]; });
+  if(!max) max = 1;
+  var step = apxNiceStep(max * 1.04 / 5), top = Math.ceil(max * 1.04 / step) * step;
+  apxChart.top = top;
+  var y = function(v){ return g.T + (1 - v / top) * g.ph; }, grid = '';
+  for(var v = 0; v <= top + 1e-6; v += step){ var gy = y(v).toFixed(1); grid += '<line class="gl" x1="' + g.L + '" x2="' + (g.W - g.R) + '" y1="' + gy + '" y2="' + gy + '"/><text class="ylab" x="' + (g.L - 10) + '" y="' + (+gy + 4) + '" text-anchor="end">' + apxEixo(v) + '</text>'; }
+  svg.querySelector('.apx-grade').innerHTML = grid;
+  var bars = svg.querySelectorAll('.bar');
+  Array.prototype.forEach.call(bars, function(b, i){
+    var cx = g.L + g.colW * i + g.colW / 2, x = cx - g.bw / 2;
+    b.querySelector('.body').setAttribute('x', x); b.querySelector('.body').setAttribute('width', g.bw);
+    b.querySelector('.sheen').setAttribute('x', x + 4); b.querySelector('.sheen').setAttribute('width', 3);
+    b.querySelector('.cap').setAttribute('x', x + 2); b.querySelector('.cap').setAttribute('width', g.bw - 4);
+    b.querySelector('.capglow').setAttribute('x', x + 2); b.querySelector('.capglow').setAttribute('width', g.bw - 4);
+    var xl = b.querySelector('.xl'); xl.setAttribute('x', cx); xl.setAttribute('y', g.H - 6); xl.textContent = D.lab[i];
+    b.classList.toggle('is-vazia', !D.d[i]);
+  });
+  var to = D.d.map(function(x){ return x ? [y(x[1]), y(x[0])] : [g.T + g.ph, g.T + g.ph]; });
+  var from = apxChart.px || to.map(function(){ return [g.T + g.ph, g.T + g.ph]; });
+  if(apxChart.stop) apxChart.stop();
+  var cur = from.map(function(p){ return p.slice(); });
+  apxChart.stop = apxTween(animar ? 900 : 0, function(k){
+    Array.prototype.forEach.call(bars, function(b, i){
+      var e = animar ? Math.min(1, Math.max(0, k * 1.35 - i * 0.07)) : 1;
+      var t = from[i][0] + (to[i][0] - from[i][0]) * e, bt = from[i][1] + (to[i][1] - from[i][1]) * e;
+      if(bt - t < 4) t = bt - 4;
+      cur[i] = [t, bt];
+      var h = Math.max(4, bt - t);
+      var body = b.querySelector('.body'); body.setAttribute('y', t); body.setAttribute('height', h);
+      var sh = b.querySelector('.sheen'); sh.setAttribute('y', t + 6); sh.setAttribute('height', Math.max(0, h * 0.55 - 6));
+      b.querySelector('.cap').setAttribute('y', t); b.querySelector('.cap').setAttribute('height', 3);
+      b.querySelector('.capglow').setAttribute('y', t - 3); b.querySelector('.capglow').setAttribute('height', 9);
+    });
+    apxChart.px = cur;
+  });
+  document.getElementById('apx-chart-tab').innerHTML = '<caption>Menor e maior faturamento por ' + D.unid + (apx.vis === '5d' ? ' (de hoje, só os turnos já fechados)' : ' (dias completos)') + '</caption><tr><th scope="col">Faixa</th><th scope="col">Menor</th><th scope="col">Maior</th></tr>' +
+    D.d.map(function(x, i){ return '<tr><th scope="row">' + escapeHtml(D.tit[i]) + '</th><td>' + (x ? fmtValor(x[0]) : 'sem dados') + '</td><td>' + (x ? fmtValor(x[1]) : 'sem dados') + '</td></tr>'; }).join('');
+  svg.setAttribute('aria-label', 'Barras flutuantes: menor e maior faturamento diário por ' + D.unid + '.');
+  var un = document.getElementById('apx-vis-unid');
+  if(un) un.textContent = apx.vis === '5d' ? 'Cada barra vai do menor ao maior faturamento de um turno de 4 horas nos últimos 5 dias. De hoje entram só os turnos já fechados (até ' + vHora(vendas.ref) + ').' : 'Cada barra vai do menor ao maior faturamento diário por ' + D.unid + '. Só dias completos: o dia do último pedido entra só no total.';
+  if(apxChart.active >= 0) apxVisBarra(apxChart.active, null);
+}
+function apxVisBarra(i, py){
+  var svg = document.getElementById('apx-chart'), tip = document.getElementById('apx-tip'), g = apxChart.geom, D = apxChart.dados;
+  if(!svg || !g || !D || !apxChart.px) return;
+  var x = D.d[i];
+  apxChart.active = i;
+  svg.classList.add('hovering');
+  Array.prototype.forEach.call(svg.querySelectorAll('.bar'), function(b, j){ b.classList.toggle('active', j === i); b.querySelector('.xl').classList.toggle('active', j === i); });
+  var cx = g.L + g.colW * i + g.colW / 2;
+  var yy = py == null ? apxChart.px[i][0] : Math.max(g.T, Math.min(g.T + g.ph, py));
+  var lx = svg.querySelector('.apx-cx'); lx.setAttribute('x1', cx); lx.setAttribute('x2', cx); lx.setAttribute('y1', g.T); lx.setAttribute('y2', g.T + g.ph); lx.setAttribute('opacity', 1);
+  var ly = svg.querySelector('.apx-cy'); ly.setAttribute('x1', g.L); ly.setAttribute('x2', g.W - g.R); ly.setAttribute('y1', yy); ly.setAttribute('y2', yy); ly.setAttribute('opacity', 1);
+  var cl = svg.querySelector('.cross-lab'), txt = cl.querySelector('text');
+  txt.textContent = apxEixo(Math.max(0, apxChart.top * (1 - (yy - g.T) / g.ph)));
+  var tw = txt.getComputedTextLength() + 12;
+  cl.querySelector('rect').setAttribute('width', tw); cl.querySelector('rect').setAttribute('x', g.L - tw - 4); cl.querySelector('rect').setAttribute('y', yy - 10);
+  txt.setAttribute('x', g.L - tw + 2); txt.setAttribute('y', yy - 10); cl.setAttribute('opacity', 1);
+  tip.innerHTML = '<b>' + escapeHtml(D.tit[i]) + '</b>' + (x ? '<span>Maior <em>' + fmtValor(x[1]) + '</em></span><span>Menor <em>' + fmtValor(x[0]) + '</em></span><span>Amplitude <em>' + fmtValor(x[1] - x[0]) + '</em></span><span>Dias <em>' + fmtQtd(x[2]) + '</em></span>' : '<span>sem dias completos com dado</span>');
+  var wrap = svg.parentNode.getBoundingClientRect(), sx = svg.getBoundingClientRect().width / g.W, tx = cx * sx, ty = yy * sx, esq = tx > wrap.width / 2;
+  tip.classList.toggle('left', esq);
+  tip.style.left = (esq ? tx - g.bw * sx / 2 - 10 : tx + g.bw * sx / 2 + 10) + 'px';
+  tip.style.top = Math.max(40, Math.min(wrap.height - 40, ty)) + 'px';
+  tip.classList.add('show');
+}
+function apxVisEsconder(){
+  var svg = document.getElementById('apx-chart'), tip = document.getElementById('apx-tip');
+  apxChart.active = -1;
+  if(!svg) return;
+  svg.classList.remove('hovering'); if(tip) tip.classList.remove('show');
+  Array.prototype.forEach.call(svg.querySelectorAll('.xl.active, .bar.active'), function(t){ t.classList.remove('active'); });
+  Array.prototype.forEach.call(svg.querySelectorAll('.apx-cx, .apx-cy, .cross-lab'), function(s){ s.setAttribute('opacity', 0); });
+}
+function apxVisSelecionar(id, focar){
+  apx.vis = id;
+  Array.prototype.forEach.call(document.querySelectorAll('#in-apex [data-apx-vis]'), function(b){
+    var on = b.dataset.apxVis === id;
+    b.setAttribute('aria-selected', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1; b.classList.toggle('active', on);
+    if(on && focar) b.focus();
+  });
+  var painel = document.getElementById('apx-vis-painel');
+  if(painel) painel.setAttribute('aria-labelledby', 'apx-vt-' + id);
+  syncSegThumb();
+  apxVisEsconder();
+  apxVisMostrar(id, true);
+}
+
+/* ---- Camadas flutuantes (menus do topo, do cartão e calendário) ---- */
+var apxPop = {el:null, btn:null};
+// posição fixa abaixo do botão (alinhada à direita), virando para cima se não couber
+function apxPosicionar(pop, btn){
+  var r = btn.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
+  var left = pop.dataset.alinhar === 'inicio' ? r.left : r.right - pw;
+  left = Math.max(8, Math.min(vw - pw - 8, left));
+  var top = r.bottom + 8;
+  if(top + ph > vh - 8 && r.top - ph - 8 > 8) top = r.top - ph - 8;
+  top = Math.max(8, Math.min(top, vh - ph - 8));
+  pop.style.left = left + 'px'; pop.style.top = top + 'px';
+}
+function apxAbrirPop(pop, btn, focoSel){
+  if(apxPop.el === pop && apxPop.btn === btn){ apxFecharPop(true); return; }
+  apxFecharPop(false);
+  pop.hidden = false;
+  if(pop.classList.contains('apx-fixo')) apxPosicionar(pop, btn);
+  btn.setAttribute('aria-expanded', 'true');
+  apxPop.el = pop; apxPop.btn = btn;
+  var f = focoSel ? pop.querySelector(focoSel) : null;
+  if(!f) f = Array.prototype.find.call(pop.querySelectorAll('[role=menuitem], button, a[href], input'), function(x){ return !x.hidden && !x.disabled && x.getAttribute('aria-disabled') !== 'true' && x.offsetParent !== null; });
+  if(f) setTimeout(function(){ f.focus({preventScroll:true}); }, 10);
+}
+function apxFecharPop(devolver){
+  if(!apxPop.el) return;
+  var p = apxPop.el, b = apxPop.btn;
+  p.hidden = true;
+  if(b) b.setAttribute('aria-expanded', 'false');
+  if(p.id === 'user-menu') closeExportMenu();
+  apxPop.el = apxPop.btn = null;
+  if(devolver && b && b.isConnected) b.focus({preventScroll:true});
+}
+// menus (role=menu): setas, Home/End, Esc e Tab
+function apxMenuTeclas(e){
+  var pop = e.currentTarget;
+  if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); apxFecharPop(true); return; }
+  if(pop.getAttribute('role') !== 'menu' || e.target.closest('#export-menu')) { if(e.key === 'Tab' && pop.getAttribute('role') === 'menu') apxFecharPop(false); return; }
+  var itens = Array.prototype.filter.call(pop.querySelectorAll('[role=menuitem]'), function(x){ return !x.hidden && x.offsetParent !== null && !x.closest('#export-menu'); });
+  var i = itens.indexOf(document.activeElement), n = -1;
+  if(e.key === 'ArrowDown') n = (i + 1) % itens.length; else if(e.key === 'ArrowUp') n = (i - 1 + itens.length) % itens.length;
+  else if(e.key === 'Home') n = 0; else if(e.key === 'End') n = itens.length - 1;
+  else if(e.key === 'Tab'){ apxFecharPop(false); return; }
+  if(n < 0 || !itens.length) return;
+  e.preventDefault(); itens[n].focus();
+}
+function apxAbrirMenuCartao(btn){
+  var m = document.getElementById('apx-menu'), copia = btn.dataset.apxCopia || '', P = inPeriodo();
+  m.innerHTML = '<button type="button" class="menu-item apx-mi" role="menuitem" data-apx-mi="copiar"><span>Copiar valor</span><span class="menu-item-sub">' + escapeHtml(copia) + '</span></button>' +
+    '<a class="menu-item apx-mi" role="menuitem" href="' + escapeHtml(inLinkVendas(P)) + '"><span>Ver em Vendas</span>' + (inLinkVendasAviso(P) ? '<span class="menu-item-sub">' + escapeHtml(inLinkVendasAviso(P)) + '</span>' : '') + '</a>';
+  m.dataset.copia = copia;
+  apxAbrirPop(m, btn, '[role=menuitem]');
+}
+function apxCopiar(txt){
+  function ok(){ toast('Valor copiado: ' + txt, 'good'); }
+  function falhou(){ window.prompt('Copie o valor:', txt); }
+  try{ if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, falhou); else falhou(); } catch(e){ falhou(); }
+}
+
+/* ---- Calendário de intervalo ("Selecionar datas"), com o atalho do mês fechado ---- */
+var apxCal = {view:null, a:null, b:null, hover:null};
+var APX_DOW = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+function apxCalLimites(){ var P = inPeriodo(), menor = inMenorInicio(); return {max:isoDate(P.h0), min:menor ? isoDate(menor) : null, h0:P.h0}; }
+function apxCalAbrir(btn){
+  var P = inPeriodo();
+  apxCal.a = P.janela ? null : isoDate(P.ini); apxCal.b = P.janela ? null : isoDate(vAddDias(P.fim, -1)); apxCal.hover = null;
+  var ref = P.janela ? P.h0 : vAddDias(P.fim, -1);
+  apxCal.view = new Date(ref.getFullYear(), ref.getMonth(), 1);
+  apxCalRender();
+  apxAbrirPop(document.getElementById('in-cal'), btn, '#in-cal-grade button.edge, #in-cal-grade button.today, #in-cal-grade button:not(:disabled)');
+}
+function apxCalRender(foco){
+  var y = apxCal.view.getFullYear(), m = apxCal.view.getMonth(), lim = apxCalLimites();
+  document.getElementById('in-cal-titulo').textContent = vMesNome(m) + ' de ' + y;
+  var h = APX_DOW.map(function(d){ return '<span class="dow" aria-hidden="true">' + d + '</span>'; }).join('');
+  var off = new Date(y, m, 1).getDay(), dias = vDiasNoMes(y, m);
+  for(var i = 0; i < off; i++) h += '<span></span>';
+  for(var d = 1; d <= dias; d++){
+    var s = y + '-' + pad2(m + 1) + '-' + pad2(d), fora = s > lim.max || (lim.min && s < lim.min);
+    h += '<button type="button" data-d="' + s + '"' + (fora ? ' disabled' : '') + (s === lim.max ? ' class="today"' : '') + ' aria-label="' + d + ' de ' + vMesNome(m).toLowerCase() + ' de ' + y + (s === lim.max ? ', dia do último dado' : '') + '">' + d + '</button>';
+  }
+  document.getElementById('in-cal-grade').innerHTML = h;
+  document.getElementById('in-cal-next').disabled = new Date(y, m + 1, 1) > lim.h0;
+  document.getElementById('in-cal-prev').disabled = !!lim.min && isoDate(new Date(y, m, 1)) <= lim.min;
+  var mesFut = new Date(y, m, 1) > lim.h0;
+  var bm = document.getElementById('in-cal-mes');
+  bm.textContent = 'Ver ' + vMesNome(m).toLowerCase() + ' de ' + y + ' inteiro';
+  bm.disabled = mesFut;
+  apxCalPintar();
+  if(foco){ var f = document.querySelector('#in-cal-grade [data-d="' + foco + '"]'); if(f) f.focus(); }
+}
+function apxCalPintar(){
+  var a = apxCal.a, b = apxCal.b || apxCal.hover;
+  var lo = a && b ? (a < b ? a : b) : a, hi = a && b ? (a < b ? b : a) : a;
+  Array.prototype.forEach.call(document.querySelectorAll('#in-cal-grade button'), function(btn){
+    var s = btn.dataset.d, borda = !!lo && (s === lo || s === hi);
+    btn.classList.toggle('edge', borda);
+    btn.classList.toggle('in', !!(lo && hi && s > lo && s < hi));
+    btn.setAttribute('aria-pressed', String(!!(lo && (borda || (hi && s > lo && s < hi)))));
+  });
+  var sum = document.getElementById('in-cal-resumo'), fd = function(s){ return fmtDate(inData(s)); };
+  if(!apxCal.a) sum.textContent = 'Escolha a data inicial.';
+  else if(!apxCal.b) sum.textContent = 'Início em ' + fd(apxCal.a) + '. Agora escolha a data final.';
+  else sum.textContent = fd(lo) + ' a ' + fd(hi) + ' (' + (inDiasEntre(inData(lo), inData(hi)) + 1) + ' dias)';
+  document.getElementById('in-cal-aplicar').disabled = !apxCal.a;
+}
+function apxCalAplicar(){
+  var a = apxCal.a, b = apxCal.b || apxCal.a;
+  if(!a) return;
+  if(a > b){ var t = a; a = b; b = t; }
+  inicio.auto = false; inicio.janela = null; inicio.per = 'pers';
+  inicio.dia = inicio.sem = inicio.ano = inicio.mes = null;
+  inicio.ini = vInicioDia(inData(a)); inicio.fim = vInicioDia(inData(b));
+  apxFecharPop(true);
+  inMudou();
+  apxDizer('Período de ' + fmtDate(inicio.ini) + ' a ' + fmtDate(inicio.fim) + '.');
+}
+function apxCalMes(){
+  var y = apxCal.view.getFullYear(), m = apxCal.view.getMonth();
+  inicio.auto = false; inicio.janela = null; inicio.per = 'mes'; inicio.ano = y; inicio.mes = m;
+  inicio.dia = inicio.sem = inicio.ini = inicio.fim = null;
+  apxFecharPop(true);
+  inMudou();
+}
+function setupApxCal(){
+  var grade = document.getElementById('in-cal-grade');
+  grade.addEventListener('click', function(e){
+    var b = e.target.closest('button[data-d]');
+    if(!b || b.disabled) return;
+    var s = b.dataset.d;
+    if(!apxCal.a || apxCal.b){ apxCal.a = s; apxCal.b = null; } else if(s < apxCal.a){ apxCal.b = apxCal.a; apxCal.a = s; } else apxCal.b = s;
+    apxCal.hover = null; apxCalPintar();
+  });
+  grade.addEventListener('pointerover', function(e){ var b = e.target.closest('button[data-d]'); if(b && apxCal.a && !apxCal.b){ apxCal.hover = b.dataset.d; apxCalPintar(); } });
+  grade.addEventListener('keydown', function(e){
+    var b = e.target.closest('button[data-d]');
+    if(!b) return;
+    var mapa = {ArrowLeft:-1, ArrowRight:1, ArrowUp:-7, ArrowDown:7};
+    if(!(e.key in mapa)) return;
+    e.preventDefault();
+    var nd = vAddDias(inData(b.dataset.d), mapa[e.key]), lim = apxCalLimites(), s = isoDate(nd);
+    if(s > lim.max || (lim.min && s < lim.min)) return;
+    if(nd.getMonth() !== apxCal.view.getMonth()){ apxCal.view = new Date(nd.getFullYear(), nd.getMonth(), 1); apxCalRender(s); }
+    else { var f = grade.querySelector('[data-d="' + s + '"]'); if(f) f.focus(); }
+    if(apxCal.a && !apxCal.b){ apxCal.hover = s; apxCalPintar(); }
+  });
+  document.getElementById('in-cal-prev').addEventListener('click', function(){ apxCal.view = new Date(apxCal.view.getFullYear(), apxCal.view.getMonth() - 1, 1); apxCalRender(); });
+  document.getElementById('in-cal-next').addEventListener('click', function(){ apxCal.view = new Date(apxCal.view.getFullYear(), apxCal.view.getMonth() + 1, 1); apxCalRender(); });
+  document.getElementById('in-cal-mes').addEventListener('click', apxCalMes);
+  document.getElementById('in-cal-aplicar').addEventListener('click', apxCalAplicar);
+  document.getElementById('in-cal-limpar').addEventListener('click', function(){
+    apxCal.a = apxCal.b = apxCal.hover = null; apxCalPintar();
+    // com um intervalo escolhido, Limpar volta para a janela padrão do Início
+    if(!inPeriodo().janela){ apxFecharPop(true); inSetPer(IN_JANELA_PADRAO); }
+  });
+  document.getElementById('in-cal').addEventListener('keydown', apxMenuTeclas);
+}
+
+/* ---- Sino: avisos da planilha, contadores do menu, pendências do Início e alertas de Vendas ---- */
+var SINO_LIDAS_KEY = 'painel_sino_lidas_v1';
+function sinoLidas(){ try{ var v = JSON.parse(localStorage.getItem(SINO_LIDAS_KEY) || '[]'); return Array.isArray(v) ? v : []; } catch(e){ return []; } }
+function sinoItens(){
+  var it = [], vistos = {};
+  function add(nivel, tit, sub, hash){ if(vistos[tit]) return; vistos[tit] = true; it.push({id:tit, nivel:nivel, tit:tit, sub:sub, hash:hash}); }
+  if(state.data){
+    var w = state.data.totals.totalWarnings;
+    if(w) add('warning', fmtQtd(w) + (w === 1 ? ' aviso' : ' avisos') + ' na leitura da planilha', 'Fontes de dados', '#/planilha');
+  }
+  var pago = document.getElementById('nav-pago-count');
+  if(pago && !pago.hidden && pago.textContent) add('warning', pago.textContent + ' em Pago e não faturado', 'Pedidos da AJD', '#/pedidos?aba=pago');
+  var filas = document.getElementById('nav-filas-count');
+  if(filas && !filas.hidden && filas.textContent) add('critical', filas.title || (filas.textContent + ' casos em filas críticas'), 'Devoluções · Filas de trabalho', '#/devolucoes?aba=fila');
+  // pendências do Início (a mesma função do bloco): só as vencidas e as de atenção
+  try{
+    var tmp = document.createElement('div');
+    tmp.innerHTML = inBlocoPendencias({P:inPeriodo(), v:null});
+    Array.prototype.forEach.call(tmp.querySelectorAll('.alert-critical, .alert-warning'), function(a){
+      var sp = a.querySelector('span'), txt = sp ? sp.textContent.trim() : '', go = a.querySelector('[data-go]');
+      if(!txt || /em filas críticas/.test(txt)) return;
+      add(a.classList.contains('alert-critical') ? 'critical' : 'warning', txt, 'Pendências', go ? (go.dataset.goHash || '#/' + go.dataset.go) : '#/inicio');
+    });
+  } catch(e){}
+  var va = vendas._vsAlertas;
+  if(va && va.de === vendas.pedidos) va.lista.forEach(function(a){ add(a.nivel === 'vermelho' ? 'critical' : 'warning', a.titulo, 'Vendas, até ' + fmtDate(va.ref) + ' · ' + a.texto, '#/vendas'); });
+  var ord = {critical:0, warning:1};
+  return it.sort(function(a, b){ return ord[a.nivel] - ord[b.nivel]; });
+}
+var sinoCache = null;
+function sinoAtualizar(){
+  var btn = document.getElementById('btn-sino');
+  if(!btn || !isDashboardVisible()) return;
+  var itens = sinoCache = sinoItens(), lidas = sinoLidas();
+  var novos = itens.filter(function(x){ return lidas.indexOf(x.id) < 0; }).length, n = document.getElementById('sino-n');
+  n.hidden = !novos; n.textContent = novos > 99 ? '99+' : String(novos);
+  btn.setAttribute('aria-label', 'Avisos' + (itens.length ? ': ' + fmtQtd(itens.length) + (novos ? ', ' + fmtQtd(novos) + (novos === 1 ? ' novo' : ' novos') : '') : ', nenhum'));
+  if(!document.getElementById('sino-pop').hidden) sinoRender();
+}
+function sinoRender(){
+  var itens = sinoCache || sinoItens(), lidas = sinoLidas(), nivelTxt = {critical:'Urgente', warning:'Atenção'};
+  document.getElementById('sino-lista').innerHTML = itens.length ? itens.map(function(x){
+    var nova = lidas.indexOf(x.id) < 0;
+    return '<li><a class="sino-item is-' + x.nivel + (nova ? ' is-nova' : '') + '" href="' + escapeHtml(x.hash) + '"><span class="sino-ponto" aria-hidden="true"></span><span><strong>' + escapeHtml(x.tit) + '</strong>' +
+      '<small>' + nivelTxt[x.nivel] + (nova ? ' · novo' : '') + ' · ' + escapeHtml(x.sub) + '</small></span></a></li>';
+  }).join('') : '<li class="sino-vazio">Nada pendente por aqui.</li>';
+  var novos = itens.filter(function(x){ return lidas.indexOf(x.id) < 0; }).length;
+  document.getElementById('sino-info').textContent = !itens.length ? '' : novos ? fmtQtd(novos) + (novos === 1 ? ' não lido' : ' não lidos') : 'Tudo lido';
+  document.getElementById('sino-lidas').disabled = !novos;
+}
+
+/* ---- Menu lateral: grupos em acordeão (só o da tela aberta fica aberto; lembra o último aberto) ---- */
+var NAV_GRUPO_KEY = 'painel_menu_grupo_v1';
+var navGruposIniciado = false;
+function navGrupoAbrir(g, salvar){
+  Array.prototype.forEach.call(document.querySelectorAll('#sidebar .nav-grupo'), function(x){
+    var on = x === g;
+    x.classList.toggle('is-fechado', !on);
+    x.querySelector('.nav-grupo-btn').setAttribute('aria-expanded', on ? 'true' : 'false');
+  });
+  if(salvar){ try{ localStorage.setItem(NAV_GRUPO_KEY, g ? g.dataset.grupo : ''); } catch(e){} }
+  syncNavGrupos();
+  syncNavThumb(false);
+}
+function navGruposAbrirAtual(){
+  var a = document.querySelector('#sidebar .side-link.active'), g = a ? a.closest('.nav-grupo') : null;
+  if(g){ if(g.classList.contains('is-fechado') || !navGruposIniciado) navGrupoAbrir(g, true); }
+  else if(!navGruposIniciado){
+    var k = ''; try{ k = localStorage.getItem(NAV_GRUPO_KEY) || ''; } catch(e){}
+    navGrupoAbrir(k ? document.querySelector('#sidebar .nav-grupo[data-grupo="' + k + '"]') : null, false);
+  }
+  navGruposIniciado = true;
+}
+// contadores dos itens somados no título do grupo fechado
+function syncNavGrupos(){
+  Array.prototype.forEach.call(document.querySelectorAll('#sidebar .nav-grupo'), function(g){
+    var soma = 0;
+    Array.prototype.forEach.call(g.querySelectorAll('.nav-count'), function(c){ if(!c.hidden && c.textContent) soma += parseInt(c.textContent.replace(/\D/g, ''), 10) || 0; });
+    var n = g.querySelector('.nav-grupo-n'), mostra = soma > 0 && g.classList.contains('is-fechado');
+    var html = mostra ? fmtQtd(soma) + '<span class="sr-only"> pendências no grupo</span>' : '';
+    // só escreve quando muda (evita reescrever o DOM do menu à toa)
+    if(n.hidden !== !mostra) n.hidden = !mostra;
+    if(n.dataset.v !== html){ n.dataset.v = html; n.innerHTML = html; }
+  });
+}
+// assinatura dos contadores do menu: o observador só age quando um deles muda de verdade
+function navContadoresAssinatura(){
+  return Array.prototype.map.call(document.querySelectorAll('#sidebar .nav-count'), function(c){ return c.id + ':' + (c.hidden ? '-' : c.textContent) + ':' + (c.title || ''); }).join('|');
+}
+function setupNavGrupos(){
+  var nav = document.querySelector('#sidebar .sidebar-nav');
+  nav.addEventListener('click', function(e){
+    var b = e.target.closest('.nav-grupo-btn');
+    if(!b) return;
+    var g = b.closest('.nav-grupo');
+    navGrupoAbrir(g.classList.contains('is-fechado') ? g : null, true);
+  });
+  // o indicador do item ativo volta ao lugar quando o acordeão termina de abrir ou fechar
+  nav.addEventListener('transitionend', function(e){ if(e.target.classList && e.target.classList.contains('nav-grupo-itens')) syncNavThumb(false); });
+  if(window.MutationObserver){
+    // observa só os contadores (.nav-count); a escrita em .nav-grupo-n fica fora da árvore observada
+    var t = 0, ultima = navContadoresAssinatura();
+    var obs = new MutationObserver(function(){
+      clearTimeout(t);
+      t = setTimeout(function(){
+        var sig = navContadoresAssinatura();
+        if(sig === ultima) return;
+        ultima = sig;
+        syncNavGrupos();
+        sinoAtualizar();
+      }, 60);
+    });
+    Array.prototype.forEach.call(nav.querySelectorAll('.nav-count'), function(c){
+      obs.observe(c, {childList:true, characterData:true, subtree:true, attributes:true, attributeFilter:['hidden', 'title']});
+    });
+  }
+  var mod = document.getElementById('side-search-mod');
+  if(mod && /Mac|iPhone|iPad/.test(navigator.platform || '')) mod.textContent = '⌘';
+}
+
+/* ---- Topo: nome e foto da conta, menu da conta, sino ---- */
+// "messias.alexandro@…" → "Messias A."
+function topoNomeEmail(email){
+  var local = String(email || '').split('@')[0], p = local.split(/[._\-+]+/).filter(Boolean);
+  if(!p.length) return '';
+  var cap = function(s){ return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); };
+  return cap(p[0]) + (p[1] ? ' ' + p[1].charAt(0).toUpperCase() + '.' : '');
+}
+function topoUsuarioSync(){
+  var nome = topoNomeEmail(acessoEmail), av = document.getElementById('top-avatar');
+  document.getElementById('top-user-nome').textContent = nome || 'Você';
+  renderAvatar(av);
+  if(!acessoEmail && !fotoValida(acessoFoto)) av.innerHTML = APX_ICO.pessoa;
+  document.getElementById('btn-user').setAttribute('aria-label', (nome ? 'Conta de ' + nome : 'Conta') + ': exportar, copiar link' + (IS_APPS_SCRIPT ? ', atualizar e sair' : ''));
+  document.getElementById('um-conta').hidden = !contaLiberada();
+  document.getElementById('um-acesso').hidden = !(IS_APPS_SCRIPT && acessoAdmin);
+  document.getElementById('um-sair').hidden = !IS_APPS_SCRIPT;
+}
+function setupTopo(){
+  var user = document.getElementById('user-menu'), sino = document.getElementById('sino-pop'), marca = document.getElementById('marca-menu');
+  document.getElementById('btn-user').addEventListener('click', function(){ syncExportMenu(); apxAbrirPop(user, this); });
+  document.getElementById('btn-sino').addEventListener('click', function(){ sinoAtualizar(); sinoRender(); apxAbrirPop(sino, this, '.sino-item, #sino-lidas'); });
+  document.getElementById('btn-marca').addEventListener('click', function(){ apxAbrirPop(marca, this, '[role=menuitem]'); });
+  document.getElementById('sino-lidas').addEventListener('click', function(){
+    try{ localStorage.setItem(SINO_LIDAS_KEY, JSON.stringify((sinoCache || sinoItens()).map(function(x){ return x.id; }))); } catch(e){}
+    sinoAtualizar(); sinoRender();
+  });
+  document.getElementById('um-sair').addEventListener('click', function(){ document.getElementById('btn-sair').click(); });
+  // escolher um item do menu fecha o menu (Exportar abre a lista de formatos no próprio menu)
+  user.addEventListener('click', function(e){
+    var it = e.target.closest('[role=menuitem]');
+    if(!it || it.id === 'btn-export-menu') return;
+    apxFecharPop(!it.matches('a'));
+  });
+  sino.addEventListener('click', function(e){ if(e.target.closest('.sino-item')) apxFecharPop(false); });
+  marca.addEventListener('click', function(e){ var it = e.target.closest('[role=menuitem]'); if(it && it.getAttribute('aria-disabled') !== 'true') apxFecharPop(false); });
+  var cartao = document.getElementById('apx-menu');
+  cartao.addEventListener('click', function(e){
+    var it = e.target.closest('[role=menuitem]');
+    if(!it) return;
+    if(it.dataset.apxMi === 'copiar') apxCopiar(cartao.dataset.copia || '');
+    apxFecharPop(!it.matches('a'));
+  });
+  [user, sino, marca, cartao].forEach(function(p){ p.addEventListener('keydown', apxMenuTeclas); });
+  document.addEventListener('pointerdown', function(e){
+    if(apxPop.el && !apxPop.el.contains(e.target) && !apxPop.btn.contains(e.target)) apxFecharPop(false);
+  });
+  document.addEventListener('focusin', function(e){
+    if(apxPop.el && !apxPop.el.contains(e.target) && !apxPop.btn.contains(e.target) && !e.target.closest('#cmdk')) apxFecharPop(false);
+  });
+  window.addEventListener('resize', function(){ if(apxPop.el && apxPop.el.classList.contains('apx-fixo')) apxPosicionar(apxPop.el, apxPop.btn); });
+  window.addEventListener('scroll', function(){ if(apxPop.el && apxPop.el.classList.contains('apx-fixo')) apxPosicionar(apxPop.el, apxPop.btn); }, true);
+  setupApxCal();
+  topoUsuarioSync();
+}
+
 /* ---- Desenho e carga ---- */
 function inAssinatura(){
   var P = inPeriodo();
-  return [P.tipo, P.ini.getTime(), P.fim.getTime(), P.fimEf.getTime(), acessoFinanceiro ? 1 : 0, IS_APPS_SCRIPT ? 1 : 0,
+  var mt = vsMetas();
+  return [P.tipo, P.janela || '', P.ini.getTime(), P.fim.getTime(), P.fimEf.getTime(), acessoFinanceiro ? 1 : 0, IS_APPS_SCRIPT ? 1 : 0,
+    mt.faturamento ? mt.faturamento.verde : '', mt.recorrentes ? mt.recorrentes.verde : '',
     state.data ? [state.data.fileName, state.data.importedAt ? state.data.importedAt.getTime() : 0, state.data.totals.totalRowsValid, state.referenceDate ? state.referenceDate.getTime() : 0].join(',') : '-',
     vendas.pedidos ? [vendas.pedidos.length, vendas.versao, vendas.ref ? vendas.ref.getTime() : 0].join(',') : '-', vendas.carregando ? 1 : 0, vendas.consolidando ? 1 : 0, vendas.erro || '',
     np.linhas ? [np.linhas.length, np.versao].join(',') : '-', np.carregando ? 1 : 0, np.consolidando ? 1 : 0, np.erro || '',
@@ -16350,6 +17828,15 @@ function renderInicio(){
   var focoBloco = ativo && ativo.matches && ativo.matches('.in-toggle') ? ativo.dataset.inBloco : null;
   // um bloco com defeito não derruba os outros
   function seguro(id, fn){ try{ inPreencher(id, fn(C)); } catch(e){ inPreencher(id, inEstadoHtml('erro', 'Não foi possível montar este bloco: ' + (e && e.message ? e.message : e))); if(window.console) console.error(e); } }
+  // etapa 32: o painel do print em cima; os blocos de antes descem para "Mais detalhes", sem mudança
+  var focoApx = ativo && ativo.closest && ativo.closest('#in-apex') && ativo.dataset && ativo.dataset.apxFoco ? ativo.dataset.apxFoco : null;
+  document.getElementById('in-janela').innerHTML = apxJanelaTxt(P, C);
+  seguro('in-apex', apxBloco);
+  try{ apxDesenhar(C); } catch(e){ if(window.console) console.error(e); }
+  if(focoApx){ var fa = document.querySelector('#in-apex [data-apx-foco="' + focoApx + '"]'); if(fa) fa.focus({preventScroll:true}); }
+  var mn = document.getElementById('in-mais-nota');
+  mn.hidden = P.janela !== '24h';
+  mn.textContent = P.janela === '24h' ? 'Com 24 horas, os blocos abaixo mostram o dia ' + fmtDate(P.ini) + (vendas.pedidos ? ' (o dia do último pedido)' : ' (o dia do último lançamento)') + ', comparado com o mesmo dia da semana anterior (D-7): eles só funcionam por dia.' : '';
   seguro('in-b1', inBlocoTopo);
   seguro('in-b2', inBlocoPonte);
   seguro('in-bmod', inBlocoModulos);
@@ -16371,7 +17858,31 @@ function setupInicio(){
   var raiz = document.getElementById('in-raiz');
   raiz.addEventListener('click', function(e){
     var b;
-    if((b = e.target.closest('#in-per button'))){ inSetPer(b.dataset.value); return; }
+    if((b = e.target.closest('#in-per button'))){ inSetPer(b.dataset.value); apxDizer('Período: ' + (inEhJanela(b.dataset.value) ? IN_JANELAS[b.dataset.value].nome : b.textContent) + '.'); return; }
+    if((b = e.target.closest('#in-datas'))){ apxCalAbrir(b); return; }
+    // painel do print (etapa 32)
+    if((b = e.target.closest('[data-apx-kebab]'))){ apxAbrirMenuCartao(b); return; }
+    if((b = e.target.closest('[data-apx-fat]'))){ if(apx.fat !== b.dataset.apxFat){ apx.fat = b.dataset.apxFat; apxRedesenhar(); } return; }
+    if((b = e.target.closest('[data-apx-vis]'))){ if(apx.vis !== b.dataset.apxVis) apxVisSelecionar(b.dataset.apxVis, false); return; }
+    if((b = e.target.closest('[data-apx-acao]'))){
+      if(b.dataset.apxAcao === 'baixar') apxExportarCsv();
+      else if(b.dataset.apxAcao === 'saude'){
+        apx.saudeAberta = !apx.saudeAberta;
+        var det = document.getElementById('apx-saude-det');
+        if(det) det.hidden = !apx.saudeAberta;
+        b.setAttribute('aria-expanded', apx.saudeAberta ? 'true' : 'false');
+      }
+      return;
+    }
+    if((b = e.target.closest('[data-apx-ord]'))){
+      var o = b.dataset.apxOrd;
+      if(apx.cliOrd === o) apx.cliDir = apx.cliDir === 'asc' ? 'desc' : 'asc';
+      else { apx.cliOrd = o; apx.cliDir = o === 'nome' ? 'asc' : 'desc'; }
+      apxRedesenhar();
+      return;
+    }
+    var tr = e.target.closest('#apx-cli-corpo tr[data-apx-href]');
+    if(tr && !e.target.closest('a, button')){ setHash(tr.dataset.apxHref); return; }
     if((b = e.target.closest('#in-prev'))){ if(!b.disabled) inMover(-1); return; }
     if((b = e.target.closest('#in-next'))){ if(!b.disabled) inMover(1); return; }
     if((b = e.target.closest('.in-toggle'))){ inAlternarBloco(b.dataset.inBloco); return; }
@@ -16390,6 +17901,54 @@ function setupInicio(){
       else if(a === 'devol'){ devol.erro = null; preCarga.devolErro = false; carregarDevolucoes(true); }
       inicio.sig = null; renderInicioSeVisivel();
     }
+  });
+  // gráfico de barras: mouse e teclado; abas 5D…1A com setas; busca de clientes
+  raiz.addEventListener('pointermove', function(e){
+    var svg = e.target.closest && e.target.closest('#apx-chart');
+    if(!svg){ if(apxChart.active >= 0 && e.pointerType === 'mouse') apxVisEsconder(); return; }
+    var g = apxChart.geom;
+    if(!g) return;
+    var r = svg.getBoundingClientRect(), sx = g.W / r.width, x = (e.clientX - r.left) * sx, y = (e.clientY - r.top) * sx;
+    if(x < g.L - 4){ apxVisEsconder(); return; }
+    apxVisBarra(Math.max(0, Math.min(5, Math.floor((x - g.L) / g.colW))), y);
+  });
+  raiz.addEventListener('pointerout', function(e){ if(e.target.id === 'apx-chart' && !(e.relatedTarget && e.target.contains(e.relatedTarget))) apxVisEsconder(); });
+  raiz.addEventListener('focusout', function(e){ if(e.target.id === 'apx-chart') apxVisEsconder(); });
+  raiz.addEventListener('keydown', function(e){
+    if(e.target.id === 'apx-chart' && apxChart.dados){
+      var i = apxChart.active;
+      if(e.key === 'ArrowRight') i = i < 0 ? 0 : Math.min(5, i + 1);
+      else if(e.key === 'ArrowLeft') i = i < 0 ? 5 : Math.max(0, i - 1);
+      else if(e.key === 'Home') i = 0; else if(e.key === 'End') i = 5;
+      else return;
+      e.preventDefault(); apxVisBarra(i, null);
+      var x = apxChart.dados.d[i];
+      apxDizer(apxChart.dados.tit[i] + ': ' + (x ? 'de ' + fmtValor(x[0]) + ' a ' + fmtValor(x[1]) : 'sem dados'));
+      return;
+    }
+    var t = e.target.closest && e.target.closest('[data-apx-vis]');
+    if(t){
+      var tabs = Array.prototype.slice.call(document.querySelectorAll('#in-apex [data-apx-vis]')), k = tabs.indexOf(t), n = -1;
+      if(e.key === 'ArrowRight') n = (k + 1) % tabs.length; else if(e.key === 'ArrowLeft') n = (k - 1 + tabs.length) % tabs.length;
+      else if(e.key === 'Home') n = 0; else if(e.key === 'End') n = tabs.length - 1;
+      if(n < 0) return;
+      e.preventDefault(); apxVisSelecionar(tabs[n].dataset.apxVis, true);
+    }
+  });
+  var qTimer = 0;
+  raiz.addEventListener('input', function(e){
+    if(e.target.id !== 'apx-cli-q') return;
+    clearTimeout(qTimer);
+    qTimer = setTimeout(function(){ apx.cliQ = e.target.value.trim(); var c = document.getElementById('apx-cli-corpo'); if(c) c.innerHTML = apxClientesCorpo(); }, 120);
+  });
+  var rzTimer = 0;
+  window.addEventListener('resize', function(){
+    clearTimeout(rzTimer);
+    rzTimer = setTimeout(function(){
+      if(currentRoute().id !== 'inicio' || !document.getElementById('apx-chart')) return;
+      apxVisMostrar(apx.vis, false);
+      if(apx._spark) apxSpark(apx._spark, false);
+    }, 150);
   });
   raiz.addEventListener('change', function(e){
     var id = e.target.id, d = inData(e.target.value);
@@ -16708,6 +18267,7 @@ function boot(){
       if(!document.getElementById('cmdk').hidden) closeCmdk();
       else if(!document.getElementById('lanc-drawer').hidden) closeDrawer();
       else if(!document.getElementById('export-menu').hidden) closeExportMenu();
+      else if(apxPop.el) apxFecharPop(true);
       else closeSidebar();
     }
   });
@@ -16786,6 +18346,8 @@ function boot(){
   setupOperacao();
   setupNuvemPago();
   setupInicio();
+  setupNavGrupos();
+  setupTopo();
   setupAjustesLayout();
   if(IS_APPS_SCRIPT){
     setupLogin();
