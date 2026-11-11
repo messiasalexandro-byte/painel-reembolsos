@@ -2447,3 +2447,342 @@ function instalarRelatorioDiario(){
   ScriptApp.newTrigger('enviarRelatoriosDiarios').timeBased().everyMinutes(15).create();
   enviarRelatoriosDiarios();
 }
+
+/* ===================== Atacado: caixa (PDFs do Sisplan) e cheques (planilha financeira) ===================== */
+
+// Etapa 37. Duas fontes, só para o perfil financeiro (podeVerFinanceiro_):
+// 1) Vendas do caixa do atacado: só pela leitura automática dos PDFs "Relatório Fechamento de Caixa" da pasta do Drive
+//    (atPdfsPendentes/salvarDiasAtacado, mais abaixo; não há importação manual, decisão do usuário em 11/11/2026). A base
+//    fica em nuvemshop/_base/atacado-base.json. Só os campos de AT_CAMPOS entram (sem CPF/CNPJ), com tipos conferidos.
+// 2) Recebíveis da planilha financeira (FINANCEIROTALGUI, sempre o mesmo arquivo, renomeado por dia): aba CHEQUES (só
+//    categorias "Vendas…", cheques de clientes), WALLETS (saldo e a receber das maquininhas) e, do Caixa Total, só
+//    WALLETS - A RECEBER, CHEQUES DISPONÍVEL/PROCESSANDO (para conferir a soma das linhas) e DINHEIRO. Lidos pelo export CSV
+//    (mesmo token do Drive, sem escopo novo), em paralelo, e guardados 10 min no cache (comprimidos, em partes). Para o
+//    navegador vão só as 9 colunas de cheques de clientes; fornecedor, plano de contas, saldos de banco, retiradas,
+//    pró-labore e DRE nunca saem do servidor (decisão do usuário em 11/11/2026).
+var AT_BASE_ARQ = 'atacado-base.json';
+var AT_PLANILHA_PADRAO = '1cosKsRolJgNgxTABCCg-GLcHAN3PmjRjnXUvimU6p5A';
+var AT_GID = {cheques:'442266263', wallets:'726857820', caixa:'1404185824'};
+var AT_CACHE_SEG = 600;
+var AT_CACHE_PARTE = 90000;
+var AT_CHEQUE_COLS = ['DIA', 'MÊS', 'ANO', 'ORIGEM / FORNECEDOR', 'VENC. DIA', 'VENC. MÊS', 'VENC. ANO', 'NÚMERO DO CHEQUE', 'DIA DEPÓSITO', 'MÊS DEPÓSITO', 'STATUS', 'VALOR', 'CATEGORIA', 'DATA REPASSE'];
+var AT_CAMPOS = {
+  vendas:{texto:['data', 'hora', 'cod_cliente', 'cliente', 'vendedor', 'tipo_venda', 'condicao', 'moeda_principal', 'moedas', 'marcador_devolucao_troca'],
+    numero:['venda', 'qtde', 'bruto', 'desconto', 'pct_desc', 'liquido', 'n_parcelas', 'valor_pago', 'credito_devolucao']},
+  parcelas:{texto:['data_emissao', 'cod_cliente', 'cliente', 'vendedor', 'tipo_venda', 'moeda', 'condicao', 'vencimento_estimado', 'marcador_devolucao_troca'],
+    numero:['venda', 'linha', 'parcela', 'n_parcelas_condicao', 'valor', 'prazo_dias']}
+};
+
+function atPlanilhaId_(){ return props_().getProperty('ATACADO_PLANILHA') || AT_PLANILHA_PADRAO; }
+
+function atUrl_(gid, faixa){
+  return 'https://docs.google.com/spreadsheets/d/' + atPlanilhaId_() + '/export?format=csv&gid=' + gid + (faixa ? '&range=' + encodeURIComponent(faixa) : '');
+}
+// várias faixas em paralelo → [linhas CSV, ...]
+function atExportar_(pedidos){
+  var token = ScriptApp.getOAuthToken();
+  var resps = UrlFetchApp.fetchAll(pedidos.map(function(p){ return {url:atUrl_(p[0], p[1]), headers:{Authorization:'Bearer ' + token}, muteHttpExceptions:true}; }));
+  return resps.map(function(resp){
+    if(resp.getResponseCode() !== 200) throw new Error('planilha financeira: HTTP ' + resp.getResponseCode());
+    return Utilities.parseCsv(resp.getContentText('UTF-8'), ',');
+  });
+}
+
+function atNum_(v){
+  var t = String(v == null ? '' : v).replace(/R\$|\s| /g, '');
+  if(!t || t === '-') return 0;
+  var neg = /^-|^\(/.test(t);
+  t = t.replace(/[-()]/g, '');
+  var n = parseFloat(t.replace(/\./g, '').replace(',', '.'));
+  return isFinite(n) ? (neg ? -n : n) : 0;
+}
+function atDia_(d, m, a){
+  d = parseInt(d, 10); m = parseInt(m, 10); a = parseInt(a, 10);
+  if(!(d >= 1 && d <= 31 && m >= 1 && m <= 12 && a > 0)) return '';
+  if(a < 100) a += 2000;
+  return a + '-' + (m < 10 ? '0' : '') + m + '-' + (d < 10 ? '0' : '') + d;
+}
+function atDataTexto_(s){
+  var p = String(s || '').trim().split('/');
+  return p.length === 3 ? atDia_(p[0], p[1], p[2]) : '';
+}
+// depósito: a planilha só tem dia e mês confiáveis (o ano da coluna DATA vem do ano de entrada). Fica o ano que deixa a
+// data mais perto do vencimento; "parcial", "pix" e afins (não numéricos) ficam sem data.
+function atDeposito_(dia, mes, venc){
+  if(!/^\d{1,2}$/.test(String(dia).trim()) || !/^\d{1,2}$/.test(String(mes).trim()) || !venc) return '';
+  var va = +venc.slice(0, 4), vt = Date.UTC(va, +venc.slice(5, 7) - 1, +venc.slice(8, 10)), melhor = '', dist = Infinity;
+  [va - 1, va, va + 1].forEach(function(a){
+    var s = atDia_(dia, mes, a);
+    if(!s) return;
+    var t = Date.UTC(a, +s.slice(5, 7) - 1, +s.slice(8, 10));
+    if(Math.abs(t - vt) < dist){ dist = Math.abs(t - vt); melhor = s; }
+  });
+  return melhor;
+}
+
+// cheques de clientes: [entrada, emitente, vencimento, número, depósito, status, valor, categoria, repasse]
+function atChequesDasLinhas_(linhas){
+  var cab = (linhas.shift() || []).map(function(c){ return String(c).trim(); });
+  var I = {};
+  AT_CHEQUE_COLS.forEach(function(n){ I[n] = cab.indexOf(n); });
+  var faltam = AT_CHEQUE_COLS.filter(function(n){ return I[n] < 0; });
+  if(faltam.length) throw new Error('planilha financeira: a aba CHEQUES não tem a(s) coluna(s) ' + faltam.join(', '));
+  var out = [];
+  linhas.forEach(function(r){
+    var cat = String(r[I['CATEGORIA']] || '').trim();
+    if(!/^vendas/i.test(cat)) return;          // só cheques recebidos de clientes
+    var st = String(r[I['STATUS']] || '').trim();
+    if(!st) return;
+    var venc = atDia_(r[I['VENC. DIA']], r[I['VENC. MÊS']], r[I['VENC. ANO']]);
+    out.push([atDia_(r[I['DIA']], r[I['MÊS']], r[I['ANO']]), String(r[I['ORIGEM / FORNECEDOR']] || '').trim(), venc,
+      String(r[I['NÚMERO DO CHEQUE']] || '').trim(), atDeposito_(r[I['DIA DEPÓSITO']], r[I['MÊS DEPÓSITO']], venc), st,
+      atNum_(r[I['VALOR']]), cat, atDataTexto_(r[I['DATA REPASSE']])]);
+  });
+  return out;
+}
+// maquininhas/wallets: [empresa, tipo, saldo atual, a receber], da linha 6 até a primeira linha vazia
+function atWalletsDasLinhas_(linhas){
+  var atualizado = linhas[0] && linhas[0][1] ? String(linhas[0][1]).trim() : '';
+  var out = [];
+  for(var i = 4; i < linhas.length; i++){
+    var r = linhas[i];
+    if(!r[0] || !r[1]) break;
+    out.push([String(r[0]).trim(), String(r[1]).trim(), atNum_(r[2]), atNum_(r[3])]);
+  }
+  return {atualizado:atualizado, linhas:out};
+}
+// do Caixa Total só os rótulos de recebíveis; rótulo não achado = null (a tela mostra "—" e avisa)
+function atCaixaDasLinhas_(dir, din){
+  var q = {};
+  dir.forEach(function(r){ if(r[0]) q[String(r[0]).trim().toUpperCase()] = atNum_(r[1]); });
+  var v = function(k){ return k in q ? q[k] : null; };
+  return {walletsReceber:v('WALLETS - A RECEBER'), chequesDisponivel:v('CHEQUES DISPONÍVEL'), chequesProcessando:v('CHEQUES PROCESSANDO'),
+    dinheiro: din[0] && /dinheiro/i.test(din[0][0]) ? atNum_(din[0][1]) : null};
+}
+
+function atCacheLer_(chave){
+  var cache = CacheService.getScriptCache(), n = +cache.get(chave + '_n');
+  if(!n) return null;
+  var nomes = [];
+  for(var i = 0; i < n; i++) nomes.push(chave + '_' + i);
+  var partes = cache.getAll(nomes), b64 = '';
+  for(var j = 0; j < n; j++){ if(!partes[nomes[j]]) return null; b64 += partes[nomes[j]]; }
+  try{
+    var blob = Utilities.newBlob(Utilities.base64Decode(b64), 'application/x-gzip');
+    return JSON.parse(Utilities.ungzip(blob).getDataAsString('UTF-8'));
+  } catch(e){ return null; }
+}
+function atCacheGravar_(chave, obj){
+  try{
+    var b64 = Utilities.base64Encode(Utilities.gzip(Utilities.newBlob(JSON.stringify(obj), 'application/json')).getBytes());
+    var valores = {}, n = Math.ceil(b64.length / AT_CACHE_PARTE);
+    if(n > 50) return false;
+    for(var i = 0; i < n; i++) valores[chave + '_' + i] = b64.slice(i * AT_CACHE_PARTE, (i + 1) * AT_CACHE_PARTE);
+    valores[chave + '_n'] = String(n);
+    CacheService.getScriptCache().putAll(valores, AT_CACHE_SEG);
+    return true;
+  } catch(e){ return false; }
+}
+
+function atRecebiveis_(forcar){
+  var chave = 'at_rec2_' + atPlanilhaId_();
+  if(!forcar){ var c = atCacheLer_(chave); if(c) return c; }
+  var x = atExportar_([[AT_GID.cheques, 'A5:S'], [AT_GID.wallets, 'A2:D30'], [AT_GID.caixa, 'E7:F12'], [AT_GID.caixa, 'B11:C11']]);
+  var r = {lidoEm:new Date().toISOString(), cheques:atChequesDasLinhas_(x[0]), wallets:atWalletsDasLinhas_(x[1]), caixa:atCaixaDasLinhas_(x[2], x[3])};
+  r.cache = atCacheGravar_(chave, r);
+  return r;
+}
+
+function atPastaBase_(){
+  var pasta = pastaVendas_();
+  if(!pasta) throw new Error('pasta "nuvemshop" não encontrada no Drive');
+  return pastaBaseVendas_(pasta);
+}
+
+// {base, planilha (só admin), admin, recebiveis | erroRecebiveis} ou {erro}
+function obterAtacado(token, forcar){ return comErroBase_('atacado', function(){ return obterAtacado_(token, forcar); }); }
+
+function obterAtacado_(token, forcar){
+  var conta = contaComToken_(token);
+  if(!conta) return {erro:'senha_necessaria'};
+  if(!podeVerFinanceiro_(conta.email)) return {erro:'sem_permissao'};
+  var base = lerJsonBase_(atPastaBase_(), AT_BASE_ARQ);
+  var admin = ehAdmin_(conta.email);
+  var r = {base:base || null, planilha:admin ? atPlanilhaId_() : '', admin:admin};
+  try{ r.recebiveis = atRecebiveis_(!!forcar); }
+  catch(e){ r.erroRecebiveis = textoErro_(e); }
+  return r;
+}
+
+// confere e limpa um registro da importação: só os campos conhecidos, texto como texto (sem tags) e número como número
+function atLimparRegistro_(o, campos){
+  if(!o || typeof o !== 'object') return null;
+  var x = {};
+  campos.texto.forEach(function(k){ if(o[k] != null) x[k] = String(o[k]).replace(/[<>]/g, '').slice(0, 200); });
+  for(var i = 0; i < campos.numero.length; i++){
+    var k = campos.numero[i], v = o[k];
+    if(v == null || v === '') continue;
+    v = Number(v);
+    if(!isFinite(v)) return null;
+    x[k] = v;
+  }
+  return x;
+}
+
+// só administradores: troca a planilha financeira lida (id ou link). Confere antes se a aba CHEQUES abre.
+function salvarPlanilhaAtacado(token, idOuLink){
+  var conta = contaComToken_(token);
+  if(!conta) return {erro:'senha_necessaria'};
+  if(!ehAdmin_(conta.email)) return {erro:'sem_permissao'};
+  var m = String(idOuLink || '').match(/[-\w]{25,}/);
+  if(!m) return {erro:'id_invalido'};
+  var antigo = props_().getProperty('ATACADO_PLANILHA');
+  props_().setProperty('ATACADO_PLANILHA', m[0]);
+  try{ atChequesDasLinhas_(atExportar_([[AT_GID.cheques, 'A5:S6']])[0]); }
+  catch(e){
+    if(antigo) props_().setProperty('ATACADO_PLANILHA', antigo); else props_().deleteProperty('ATACADO_PLANILHA');
+    return {erro:'planilha_invalida', detalhe:textoErro_(e)};
+  }
+  return {ok:true};
+}
+
+// teste para rodar no editor do Apps Script: lê a planilha de verdade e mostra totais (nada vai para o navegador)
+function testarLeituraAtacado(){
+  var t0 = Date.now(), r = atRecebiveis_(true), soma = {};
+  r.cheques.forEach(function(c){ soma[c[5]] = (soma[c[5]] || 0) + c[6]; });
+  Logger.log('cheques de clientes: %s em %s ms · cache gravado: %s', r.cheques.length, Date.now() - t0, r.cache);
+  Logger.log('soma por status: %s', JSON.stringify(soma));
+  Logger.log('wallets: %s linhas, atualizado %s', r.wallets.linhas.length, r.wallets.atualizado);
+  Logger.log('caixa: %s', JSON.stringify(r.caixa));
+}
+
+/* ---- Atacado: leitura automática dos PDFs da pasta do Drive ----
+   A loja salva cada "Relatório Fechamento de Caixa" (PDF) na pasta ATACADO_PDFS (padrão abaixo). Quando alguém do
+   financeiro abre a tela Atacado, a página pede os PDFs novos ou alterados (atPdfsPendentes), lê cada um no navegador com
+   pdf.js (lerCaixaPdf, mesmo resultado do script local nos 18 PDFs de out–nov/2026) e devolve os dias lidos
+   (salvarDiasAtacado). Dia que fecha ao centavo substitui o que havia daquela data; dia que não fecha fica só na
+   conferência, marcado como divergente, e as vendas dele NÃO entram. O controle de arquivos já lidos fica na própria base
+   (base.arquivos: id → {nome, mod, data, status}). */
+var AT_PDFS_PASTA_PADRAO = '1DboMLMjfsnb_b4J7sU6MJkrfh5Pka27w';
+var AT_PDFS_POR_VEZ = 6;
+var AT_PDF_MAX = 3 * 1024 * 1024;
+var AT_PDFS_BYTES_POR_VEZ = 4 * 1024 * 1024;
+
+function atPastaPdfs_(){
+  var id = props_().getProperty('ATACADO_PDFS') || AT_PDFS_PASTA_PADRAO;
+  return DriveApp.getFolderById(id);
+}
+
+// {pendentes:[{id, nome, mod, b64}], restantes, total} ou {erro}
+function atPdfsPendentes(token){
+  var conta = contaComToken_(token);
+  if(!conta) return {erro:'senha_necessaria'};
+  if(!podeVerFinanceiro_(conta.email)) return {erro:'sem_permissao'};
+  var base = lerJsonBase_(atPastaBase_(), AT_BASE_ARQ) || {};
+  var lidos = base.arquivos || {};
+  var it = atPastaPdfs_().getFiles(), novos = [], total = 0;
+  while(it.hasNext()){
+    var f = it.next();
+    if(f.getMimeType() !== 'application/pdf') continue;
+    total++;
+    var mod = f.getLastUpdated().getTime();
+    if(lidos[f.getId()] && lidos[f.getId()].mod === mod) continue;
+    novos.push({f:f, mod:mod});
+  }
+  novos.sort(function(a, b){ return a.mod - b.mod; });
+  var pendentes = [], bytesTot = 0;
+  for(var i = 0; i < novos.length && pendentes.length < AT_PDFS_POR_VEZ; i++){
+    var x = novos[i], tam = x.f.getSize();
+    if(tam > AT_PDF_MAX){ pendentes.push({id:x.f.getId(), nome:x.f.getName(), mod:x.mod, b64:''}); continue; }
+    if(pendentes.length && bytesTot + tam > AT_PDFS_BYTES_POR_VEZ) break;
+    bytesTot += tam;
+    pendentes.push({id:x.f.getId(), nome:x.f.getName(), mod:x.mod, b64:Utilities.base64Encode(x.f.getBlob().getBytes())});
+  }
+  return {pendentes:pendentes, restantes:Math.max(0, novos.length - pendentes.length), total:total};
+}
+
+// resultados: [{id, nome, mod, dia:{data, vendas, parcelas, conferencia, avisos} | null, erro}]
+function salvarDiasAtacado(token, resultados){
+  var conta = contaComToken_(token);
+  if(!conta) return {erro:'senha_necessaria'};
+  if(!podeVerFinanceiro_(conta.email)) return {erro:'sem_permissao'};
+  if(!Array.isArray(resultados) || resultados.length > AT_PDFS_POR_VEZ * 2) return {erro:'arquivo_invalido'};
+  var dataOk = /^\d{4}-\d{2}-\d{2}$/;
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try{
+    var pastaBase = atPastaBase_();
+    var base = lerJsonBase_(pastaBase, AT_BASE_ARQ) || {vendas:[], parcelas:[], conferencia:[]};
+    base.vendas = base.vendas || []; base.parcelas = base.parcelas || []; base.conferencia = base.conferencia || [];
+    base.arquivos = base.arquivos || {};
+    var ok = 0, divergentes = 0, falhas = 0, pastaId = atPastaPdfs_().getId();
+    resultados.forEach(function(r){
+      if(!r || typeof r.id !== 'string' || !/^[-\w]{10,}$/.test(r.id)) return;
+      var arqDrive;
+      try{ arqDrive = DriveApp.getFileById(r.id); } catch(e){ return; }
+      var naPasta = false, pais = arqDrive.getParents();
+      while(pais.hasNext()) if(pais.next().getId() === pastaId) naPasta = true;
+      if(!naPasta || arqDrive.getMimeType() !== 'application/pdf') return;
+      r.mod = arqDrive.getLastUpdated().getTime();
+      var nome = String(r.nome || '').replace(/[<>]/g, '').slice(0, 200);
+      var reg = {nome:nome, mod:+r.mod || 0, lidoEm:new Date().toISOString(), por:conta.email};
+      var d = r.dia;
+      if(!d || !dataOk.test(d.data || '') || !d.conferencia || typeof d.conferencia !== 'object' || !Array.isArray(d.vendas) || !Array.isArray(d.parcelas)){
+        reg.status = 'erro'; reg.aviso = String(r.erro || 'não foi possível ler o PDF').replace(/[<>]/g, '').slice(0, 300);
+        base.arquivos[r.id] = reg; falhas++;
+        return;
+      }
+      var conf = {};
+      Object.keys(d.conferencia).forEach(function(k){
+        if(!/^[\w ]{1,60}$/.test(k)) return;
+        var v = d.conferencia[k];
+        conf[k] = typeof v === 'number' && isFinite(v) ? v : (v == null ? null : String(v).replace(/[<>]/g, '').slice(0, 200));
+      });
+      conf.data = d.data; conf.arquivo = nome;
+      reg.data = d.data;
+      var bate = /^BATEU/.test(String(conf.status || ''));
+      var vendas = bate ? (d.vendas || []).map(function(v){ return atLimparRegistro_(v, AT_CAMPOS.vendas); }) : [];
+      var parcelas = bate ? (d.parcelas || []).map(function(p){ return atLimparRegistro_(p, AT_CAMPOS.parcelas); }) : [];
+      if(vendas.some(function(v){ return !v || v.data !== d.data || !(v.venda > 0); }) || parcelas.some(function(p){ return !p || p.data_emissao !== d.data; })){
+        bate = false; vendas = []; parcelas = [];
+        conf.status = 'DIVERGENTE (registro inválido na leitura)';
+      } else if(bate){
+        var sLiq = 0, sCred = 0, sParc = 0;
+        vendas.forEach(function(v){ sLiq += v.liquido || 0; sCred += v.credito_devolucao || 0; });
+        parcelas.forEach(function(p){ sParc += p.valor || 0; });
+        if(!vendas.length || Math.abs(sLiq - sCred - sParc) > 0.015 || (typeof conf.valor_vendas_pdf === 'number' && Math.abs(sParc - conf.valor_vendas_pdf) > 0.015)){
+          bate = false; vendas = []; parcelas = [];
+          conf.status = 'DIVERGENTE (a soma das vendas não fecha com as parcelas ou com o relatório)';
+        }
+      }
+      // N2: dois PDFs do mesmo dia. Divergente nunca substitui um dia que já fechou; um dia que fechou só é trocado por
+      // outro relatório que também fecha e não tem menos vendas (reimpressão ou relatório mais completo).
+      var atual = base.conferencia.filter(function(c){ return c.data === d.data; })[0];
+      var atualOk = atual && /^BATEU/.test(String(atual.status || ''));
+      if(atualOk && atual.arquivo !== nome && (!bate || (+conf.n_vendas || 0) < (+atual.n_vendas || 0))){
+        reg.status = 'repetido';
+        reg.aviso = 'já há um relatório que fecha para este dia (' + String(atual.arquivo || '').slice(0, 120) + ')' + (bate ? ' com mais vendas' : '') + '; este não foi usado';
+        base.arquivos[r.id] = reg;
+        if(!bate) divergentes++;
+        return;
+      }
+      if(bate){
+        base.vendas = base.vendas.filter(function(v){ return v.data !== d.data; }).concat(vendas);
+        base.parcelas = base.parcelas.filter(function(p){ return p.data_emissao !== d.data; }).concat(parcelas);
+        ok++;
+      } else {
+        conf.status = /^DIVERGENTE/.test(String(conf.status || '')) ? conf.status : 'DIVERGENTE';
+        divergentes++;
+      }
+      if(Array.isArray(d.avisos) && d.avisos.length) conf.avisos = d.avisos.slice(0, 20).map(function(a){ return String(a).replace(/[<>]/g, '').slice(0, 200); }).join(' | ');
+      base.conferencia = base.conferencia.filter(function(c){ return c.data !== d.data; }).concat([conf]);
+      reg.status = bate ? 'ok' : 'divergente';
+      base.arquivos[r.id] = reg;
+    });
+    base.conferencia.sort(function(a, b){ return a.data < b.data ? -1 : a.data > b.data ? 1 : 0; });
+    base.vendas.sort(function(a, b){ return a.data < b.data ? -1 : a.data > b.data ? 1 : a.venda - b.venda; });
+    base.automatico = {em:new Date().toISOString(), por:conta.email};
+    gravarJsonBase_(pastaBase, AT_BASE_ARQ, base);
+    return {ok:ok, divergentes:divergentes, falhas:falhas};
+  } finally { lock.releaseLock(); }
+}

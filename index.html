@@ -2817,6 +2817,37 @@ table.data-table .badge{ border-radius:var(--r-sm); font-size:var(--fs-1); paddi
 :where(.site-content, .drawer, .diagnostics-panel, .upload-card) .btn-ghost{ border-color:transparent; box-shadow:none; }
 :where(.site-content, .drawer, .diagnostics-panel, .upload-card) .btn-ghost:hover:not(:disabled){ background:var(--bg-hover); border-color:var(--border); }
 
+/* ---------- Exportar para Excel (etapa 38): botão em cada quadro com tabela + "Exportar tela" no topo ---------- */
+.panel-header:has(> .exp-btn){ grid-template-columns:minmax(0,1fr) auto auto; }
+.panel-header:has(> .exp-btn) > .exp-btn{ grid-column:3; grid-row:1 / span 2; justify-self:end; }
+.exp-barra{ display:flex; justify-content:flex-end; margin-bottom:var(--sp-2); }
+@media (max-width:560px){ .panel-header:has(> .exp-btn){ grid-template-columns:minmax(0,1fr); } .panel-header:has(> .exp-btn) > .exp-btn{ grid-column:1; grid-row:auto; justify-self:start; margin-top:8px; } }
+@media print{ .exp-btn, .exp-barra, #btn-exp-tela{ display:none !important; } }
+/* ---------- Atacado (etapa 37): ajustes escopados em #at-root, só com tokens do sistema ---------- */
+/* cabeçalho de período: segmento quebra linha (Todo o período + meses) e o Atualizar fica alinhado, sem margem de formulário */
+#at-root .home-scope-head{ align-items:flex-start; margin-bottom:var(--sp-4); }
+#at-root .home-scope-head .segmented{ flex-wrap:wrap; max-width:100%; }
+#at-root .home-scope-head .segmented button{ white-space:nowrap; }
+#at-root .home-scope-head .form-row{ margin-top:0; }
+/* avisos entre o cabeçalho e os números: espaço só embaixo (antes colavam no KPI) */
+#at-root .alert{ margin:0 0 var(--sp-4); }
+/* KPIs: 5 ou 6 cartões numa linha quando cabe, em vez de 4 + sobra */
+@media (min-width:901px){ #at-root .kpi-grid{ grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); } }
+/* Filas: contador legível ao lado do título e lista longa rolando dentro do painel, com cabeçalho fixo */
+#at-root .panel-title .at-fila-n{ display:inline-block; margin-left:var(--sp-2); font-size:var(--fs-2); padding:0 var(--sp-2); vertical-align:1px; }
+#at-root .at-fila .table-wrap{ max-height:min(440px, 60vh); overflow:auto; border-radius:var(--r-ctl); }
+#at-root .at-fila thead th{ position:sticky; top:0; z-index:2; }
+#at-root .at-fila .table-wrap:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+#at-root .form-row .btn:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+@media (max-width:560px){
+  #at-root .home-scope-head .segmented{ width:100%; }
+  #at-root .home-scope-head .segmented button{ flex:1 1 auto; }
+  #at-root .home-scope-head .form-row{ width:100%; }
+  #at-root .home-scope-head .form-row .btn{ flex:1 1 auto; }
+}
+@media (pointer:coarse), (max-width:700px){ #at-root .home-scope-head .segmented button{ min-height:44px; } }
+@media print{ #at-root .at-fila .table-wrap{ max-height:none; overflow:visible; } }
+
 /* Alvos de toque de 44px (etapa 34): fica no fim para vencer as regras de 32–40px acima (abas, segmentos do Início,
    kebab, setas do dia, campo de datas). A área de toque de 44 × 44 do ⓘ está no bloco "Alvos de toque de 44px" acima. */
 @media (pointer:coarse), (max-width:700px){
@@ -2983,6 +3014,7 @@ table.data-table .badge{ border-radius:var(--r-sm); font-size:var(--fs-1); paddi
         <div class="nav-grupo-itens" id="ng-financeiro" role="group" aria-labelledby="ngb-financeiro"><div class="nav-grupo-dentro">
         <a class="side-link" href="#/nuvem-pago" data-route="nuvem-pago" data-financeiro hidden id="nav-nuvem-pago"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="13" rx="2"/><path d="M2.5 10h19"/><path d="M6.5 15h4"/></svg><span>Recebimentos Nuvem Pago</span></a>
         <a class="side-link" href="#/nuvem-pago?aba=conciliacao" data-route="nuvem-pago" data-financeiro hidden data-nav-aba="conciliacao"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg><span>Conciliação</span></a>
+        <a class="side-link" href="#/atacado" data-route="atacado" data-financeiro hidden id="nav-atacado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg><span>Atacado (caixa e cheques)</span></a>
         </div></div>
       </div>
       <div class="nav-grupo" data-grupo="ajuda">
@@ -3024,6 +3056,7 @@ table.data-table .badge{ border-radius:var(--r-sm); font-size:var(--fs-1); paddi
       <!-- etapa 32: o topo guarda o tema, o sino (avisos e pendências) e a conta. Busca foi para o menu; Exportar, Copiar link,
            Atualizar e Sair ficam no menu da conta (os ids e as funções de antes continuam: syncExportMenu, copyViewLink, loadFromDrive) -->
       <div class="header-actions">
+        <button class="btn btn-sm" id="btn-exp-tela" type="button" hidden title="Baixa todas as tabelas desta tela num arquivo do Excel">Exportar tela</button>
         <div class="theme-pill top-tema" role="group" aria-label="Tema"></div>
         <div class="menu-wrap top-sino-wrap">
           <button class="top-icone" id="btn-sino" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="sino-pop" aria-label="Avisos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="top-sino-n" id="sino-n" aria-hidden="true" hidden></span></button>
@@ -3518,6 +3551,10 @@ table.data-table .badge{ border-radius:var(--r-sm); font-size:var(--fs-1); paddi
 
       <!-- Recebimentos do Nuvem Pago (extratos "saldo disponível" soltos numa pasta do Drive), pelo dia de recebimento.
            Abas no endereço: #/nuvem-pago?aba=liberar&mes=set&ano=2026 -->
+      <!-- Atacado (etapa 37): caixa do Sisplan + cheques da planilha financeira. Conteúdo montado por renderAtacado.
+           Abas no endereço: #/atacado?aba=carteira&per=2026-10 -->
+      <section class="page" data-page="atacado" hidden><div id="at-root"></div></section>
+
       <section class="page" data-page="nuvem-pago" hidden>
         <div class="page-tabs" id="tabs-np" role="tablist" aria-label="Recebimentos do Nuvem Pago">
           <button type="button" class="page-tab" role="tab" id="nptab-btn-movimento" data-npaba="movimento" aria-controls="nptab-movimento" aria-selected="true">Movimento</button>
@@ -5249,6 +5286,8 @@ var ROUTES = [
   {id:'fluxo', title:'Fluxo de caixa de recebimentos', filtros:[], financeiro:true},
   // Recebimentos do Nuvem Pago: mês de recebimento e abas próprios (no conteúdo)
   {id:'nuvem-pago', title:'Recebimentos (Nuvem Pago)', filtros:[], financeiro:true},
+  // Atacado (etapa 37): caixa do atacado (PDFs do Sisplan) e cheques da planilha financeira; abas e período próprios
+  {id:'atacado', title:'Atacado (caixa e cheques)', filtros:[], financeiro:true},
   // Devoluções da AfterClick: abas e filtros próprios (no conteúdo)
   {id:'devolucoes', title:'Devoluções', filtros:[]},
   {id:'planilha', title:'Fontes de dados', filtros:[]},
@@ -5322,6 +5361,8 @@ function renderPageSub(){
     parts.push('A área Contas a receber abre só para o perfil financeiro');
   } else if(V_ROTAS.indexOf(route.id) >= 0){
     parts.push(route.id === 'pedidos' && oper.aba !== 'lista' ? opSubtitulo() : vSubtitulo(route.id));
+  } else if(route.id === 'atacado'){
+    parts.push(atSubtitulo());
   } else if(route.id === 'nuvem-pago'){
     parts.push(npSubtitulo());
   } else if(route.id === 'financeiro'){
@@ -5545,6 +5586,7 @@ function buildHash(route){
   if(V_ROTAS.indexOf(route.id) >= 0) return vBuildHash(route.id);
   if(route.id === 'devolucoes') return dvBuildHash();
   if(route.id === 'nuvem-pago') return npBuildHash();
+  if(route.id === 'atacado') return atBuildHash();
   if(route.id === 'financeiro') return finBuildHash();
   if(route.id === 'fluxo') return fxBuildHash();
   if(route.id === 'motivos') return motBuildHash();
@@ -5759,6 +5801,7 @@ function applyRoute(){
   else if(route.id === 'devolucoes') dvApplyParams(parsed.params);
   else if(route.id === 'nuvem-pago' || route.id === 'financeiro') npApplyParams(parsed.params);
   else if(route.id === 'fluxo') fxApplyParams(parsed.params);
+  else if(route.id === 'atacado') atApplyParams(parsed.params);
   // Início: recorte próprio (per=, dia=, sem=, mes=AAAA-MM, ini=, fim=); não mexe nos filtros dos reembolsos
   else if(route.id === 'inicio'){ inApplyParams(parsed.params); inicio.sig = null; }
   // Motivos: só o dia (vindo também do alias #/devolucoes?aba=motivos&dia=…, já filtrado por aliasComParametro)
@@ -5791,6 +5834,7 @@ function applyRoute(){
   renderDevolSeVisivel();
   renderMotivosSeVisivel();
   renderNuvemPagoSeVisivel();
+  renderAtacadoSeVisivel();
   renderFinanceiroModuloSeVisivel();
   renderInicioSeVisivel();
   // gráficos criados enquanto a página estava oculta nascem com tamanho zero
@@ -8857,6 +8901,10 @@ function searchDestinos(){
     } else if(r.id === 'nuvem-pago'){
       add(r, r.title, '#/nuvem-pago', 'financeiro extrato saldo liberar custos estornos chargebacks');
       add(r, 'Conciliação', '#/nuvem-pago?aba=conciliacao', 'financeiro conciliar extrato estornos saldo');
+    } else if(r.id === 'atacado'){
+      add(r, r.title, '#/atacado', 'atacado caixa sisplan vendas loja fisica');
+      add(r, 'Atacado · Carteira a receber', '#/atacado?aba=carteira', 'atacado cheques carteira a receber maquininhas wallets');
+      add(r, 'Atacado · Filas', '#/atacado?aba=filas', 'atacado cheques vencidos devolvidos desconto');
     } else {
       add(r, r.title, '#/' + r.id, r.financeiro ? 'financeiro' : '');
     }
@@ -12696,6 +12744,890 @@ function npAplicar(r){
     if(currentRoute().id === 'nuvem-pago') npAdotarPeriodo();
   }
 }
+
+/* ===================== Exportar para Excel (etapa 38) =====================
+   Todo quadro (.panel) com tabela (table.data-table) ganha o botão "Exportar", e o topo ganha "Exportar tela" (todas as
+   tabelas visíveis da página/aba aberta, uma planilha por tabela). Exporta o que a tabela mostra na tela, com o mesmo
+   recorte (período, filtros, top N). Valores "R$ 1.234,56", "12,3%" e "dd/mm/aaaa" viram número, percentual e data no
+   Excel; códigos com zero à esquerda continuam texto; texto que começa com = + - @ ganha apóstrofo (não vira fórmula).
+   Os botões entram por um observador do conteúdo que só acrescenta o que falta (idempotente: não realimenta o laço). */
+var EXP_MOEDA = '"R$" #,##0.00;[Red]-"R$" #,##0.00';
+function expTexto(el){
+  var c = el.cloneNode(true);
+  Array.prototype.forEach.call(c.querySelectorAll('.info-tip, button.exp-btn, svg, .sr-only, .visually-hidden'), function(x){ x.remove(); });
+  return (c.textContent || '').replace(/\s+/g, ' ').trim();
+}
+// texto da célula → {v, t, z} do SheetJS
+function expCelula(txt){
+  var s = String(txt == null ? '' : txt).trim();
+  if(s === '' || s === '—' || s === '–' || s === '-') return {v:s, t:'s'};
+  var neg = /^[−-]/.test(s);
+  var t = s.replace(/^[+−-]/, '').trim();
+  var m;
+  if((m = t.match(/^R\$\s?(\d{1,3}(?:\.\d{3})*|\d+)(,\d+)?$/))){
+    return {v:(neg ? -1 : 1) * parseFloat(m[1].replace(/\./g, '') + (m[2] ? '.' + m[2].slice(1) : '')), t:'n', z:EXP_MOEDA};
+  }
+  if((m = t.match(/^(\d{1,3}(?:\.\d{3})*|\d+)(,\d+)?\s?%$/))){
+    var dec = m[2] ? m[2].length - 1 : 0;
+    return {v:(neg ? -1 : 1) * parseFloat(m[1].replace(/\./g, '') + (m[2] ? '.' + m[2].slice(1) : '')) / 100, t:'n', z:'0' + (dec ? '.' + '0'.repeat(dec) : '') + '%'};
+  }
+  if((m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/))){
+    var ms = Date.UTC(+m[3], +m[2] - 1, +m[1]), d = new Date(ms);
+    if(d.getUTCMonth() === +m[2] - 1) return {v:ms / 864e5 + 25569, t:'n', z:'dd/mm/yyyy'};   // serial do Excel: sem fuso
+  }
+  if(/^0\d+$/.test(t)) return {v:s, t:'s'};   // código com zero à esquerda (cliente, CEP…)
+  if((m = t.match(/^(\d{1,3}(?:\.\d{3})+|\d+)(,\d+)?$/))){
+    var n = parseFloat(m[1].replace(/\./g, '') + (m[2] ? '.' + m[2].slice(1) : ''));
+    if(isFinite(n) && Math.abs(n) < 1e15) return {v:(neg ? -1 : 1) * n, t:'n', z:m[2] ? '#,##0.' + '0'.repeat(m[2].length - 1) : '#,##0'};
+  }
+  return {v:s, t:'s'};   // célula de texto no .xlsx nunca vira fórmula
+}
+// tabela HTML → planilha (cabeçalho do thead, corpo do tbody e tfoot; colspan respeitado)
+// colunas de identificador (pedido, nº, código, CPF…) ficam texto: não viram "12.345" nem somam
+var EXP_COL_ID = /(pedido|^n[º°o.]|número|numero|\bid\b|^venda$|cpf|cnpj|c[óo]d|rastreio|^nf\b|nota|cheque|transa)/i;
+function expPlanilha(tabela){
+  var linhas = [], ocupado = {}, ehId = {};
+  var trs = Array.prototype.filter.call(tabela.querySelectorAll('tr'), function(tr){ return tr.closest('table') === tabela; });
+  trs.forEach(function(tr, r){
+    var cab = !!tr.closest('thead') || (r === 0 && !tabela.querySelector('thead') && Array.prototype.every.call(tr.children, function(x){ return x.tagName === 'TH'; }));
+    var lin = linhas[r] = linhas[r] || [], c = 0;
+    Array.prototype.forEach.call(tr.children, function(td){
+      while(ocupado[r + ':' + c]) c++;
+      var txt = expTexto(td), cel = cab || ehId[c] ? {v:txt, t:'s'} : expCelula(txt);
+      if(cab && EXP_COL_ID.test(txt)) ehId[c] = true;
+      var cs = td.colSpan || 1, rs = td.rowSpan || 1;
+      for(var i = 0; i < rs; i++) for(var k = 0; k < cs; k++){
+        if(i || k) ocupado[(r + i) + ':' + (c + k)] = true;
+        if(i === 0) lin[c + k] = k ? {v:'', t:'s'} : cel;
+        else { linhas[r + i] = linhas[r + i] || []; linhas[r + i][c + k] = {v:'', t:'s'}; }
+      }
+      c += cs;
+    });
+  });
+  linhas = linhas.filter(function(l){ return l && l.length; }).map(function(l){ for(var i = 0; i < l.length; i++) if(!l[i]) l[i] = {v:'', t:'s'}; return l; });
+  var ws = {}, maxC = 0;
+  linhas.forEach(function(lin, r){
+    lin.forEach(function(cel, c){
+      var ref = XLSX.utils.encode_cell({r:r, c:c});
+      ws[ref] = cel;
+      maxC = Math.max(maxC, c);
+    });
+  });
+  ws['!ref'] = XLSX.utils.encode_range({s:{r:0, c:0}, e:{r:Math.max(0, linhas.length - 1), c:maxC}});
+  var larg = [];
+  linhas.forEach(function(lin){ lin.forEach(function(cel, c){ larg[c] = Math.min(60, Math.max(larg[c] || 8, String(cel.v instanceof Date ? '00/00/0000' : cel.v).length + 2)); }); });
+  ws['!cols'] = larg.map(function(w){ return {wch:w}; });
+  return ws;
+}
+function expNomeAba(nome, usados){
+  var base = String(nome || 'Tabela').replace(/[\[\]:*?\/\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 28) || 'Tabela', n = base, i = 2;
+  while(usados[n.toLowerCase()]) n = base.slice(0, 25) + ' ' + (i++);
+  usados[n.toLowerCase()] = 1;
+  return n;
+}
+function expArquivo(partes){
+  var d = new Date();
+  return partes.filter(Boolean).join(' - ').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w\- ]+/g, ' ').replace(/\s+/g, '_').slice(0, 90) +
+    '_' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + '.xlsx';
+}
+function expVisivel(el){ return !el.closest('[hidden]'); }
+function expTituloPainel(painel){
+  var t = painel.querySelector('.panel-title');
+  return t ? expTexto(t).replace(/\s\d+$/, '') : 'Tabela';
+}
+function expBaixar(itens, nomeArquivo){
+  if(typeof XLSX === 'undefined'){ toast('A biblioteca do Excel não carregou. Recarregue a página e tente de novo.'); return; }
+  if(!itens.length){ toast('Nenhuma tabela para exportar nesta tela.'); return; }
+  var wb = XLSX.utils.book_new(), usados = {};
+  itens.forEach(function(it){ XLSX.utils.book_append_sheet(wb, expPlanilha(it.tabela), expNomeAba(it.nome, usados)); });
+  XLSX.writeFile(wb, nomeArquivo);
+  toast('Exportado: ' + nomeArquivo, 'good');
+}
+function expPainel(painel){
+  var tabelas = Array.prototype.filter.call(painel.querySelectorAll('table.data-table'), function(t){ return t.closest('.panel') === painel; });
+  var titulo = expTituloPainel(painel);
+  expBaixar(tabelas.map(function(t, i){ return {tabela:t, nome:titulo + (tabelas.length > 1 ? ' ' + (i + 1) : '')}; }), expArquivo([tituloPagina(), titulo]));
+}
+function expTela(){
+  var pag = document.querySelector('.page:not([hidden])');
+  if(!pag) return;
+  var itens = [];
+  Array.prototype.forEach.call(pag.querySelectorAll('table.data-table'), function(t){
+    if(!expVisivel(t)) return;
+    var painel = t.closest('.panel');
+    itens.push({tabela:t, nome:painel ? expTituloPainel(painel) : 'Tabela'});
+  });
+  expBaixar(itens, expArquivo([tituloPagina()]));
+}
+// acrescenta os botões que faltam (chamado pelo observador, com no máximo uma passada por quadro de animação)
+var expAgendado = false;
+function expEnfeitar(){
+  expAgendado = false;
+  Array.prototype.forEach.call(document.querySelectorAll('.page .panel'), function(painel){
+    if(painel.querySelector(':scope > .panel-header .exp-btn, :scope > .exp-barra .exp-btn')) return;
+    var temTabela = Array.prototype.some.call(painel.querySelectorAll('table.data-table'), function(t){ return t.closest('.panel') === painel; });
+    if(!temTabela) return;
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn btn-sm btn-ghost exp-btn'; b.textContent = 'Exportar';
+    b.setAttribute('aria-label', 'Exportar "' + expTituloPainel(painel) + '" para Excel');
+    var cab = painel.querySelector(':scope > .panel-header');
+    if(cab) cab.appendChild(b);
+    else { var barra = document.createElement('div'); barra.className = 'exp-barra'; barra.appendChild(b); painel.insertBefore(barra, painel.firstChild); }
+  });
+  var pag = document.querySelector('.page:not([hidden])'), bt = document.getElementById('btn-exp-tela');
+  if(bt){
+    var tem = !!pag && Array.prototype.some.call(pag.querySelectorAll('table.data-table'), expVisivel);
+    if(bt.hidden === tem) bt.hidden = !tem;
+  }
+}
+function expAgendar(){ if(!expAgendado){ expAgendado = true; setTimeout(expEnfeitar, 200); } }
+(function(){
+  var alvo = document.querySelector('main') || document.body;
+  new MutationObserver(function(muts){
+    // ignora as mutações causadas pelos próprios botões
+    if(muts.every(function(m){ return Array.prototype.every.call(m.addedNodes, function(n){ return n.nodeType === 1 && (n.classList.contains('exp-btn') || n.classList.contains('exp-barra')); }) && !m.removedNodes.length && m.type === 'childList'; })) return;
+    expAgendar();
+  }).observe(alvo, {childList:true, subtree:true, attributes:true, attributeFilter:['hidden']});
+  document.addEventListener('click', function(e){
+    var b = e.target.closest && e.target.closest('.exp-btn, #btn-exp-tela');
+    if(!b) return;
+    if(b.id === 'btn-exp-tela') expTela(); else expPainel(b.closest('.panel'));
+  });
+  expAgendar();
+})();
+
+/* ===================== Atacado (etapa 37): caixa do Sisplan + cheques da planilha financeira =====================
+   Só perfil financeiro. Duas fontes (obterAtacado no servidor):
+   - base: vendas/parcelas/conferência extraídas dos PDFs "Relatório Fechamento de Caixa" (importadas em Conferência);
+   - recebiveis: aba CHEQUES (só cheques de clientes), WALLETS e o quadro de recebíveis do Caixa Total.
+   Regra da loja (11/11/2026): cheque não compensado em até 3 dias depois do vencimento vira alerta.
+   Capa = valor líquido da venda; crédito de devolução usado é meio de pagamento; vale funcionária fica fora dos KPIs.
+   Vencimento das parcelas do caixa é ESTIMADO (emissão + prazo da condição); o dos cheques vem da planilha. */
+var AT_ABAS = ['visao', 'carteira', 'vendas', 'filas', 'conferencia'];
+var AT_ABA_NOME = {visao:'Visão geral', carteira:'Carteira a receber', vendas:'Vendas e clientes', filas:'Filas', conferencia:'Conferência'};
+var AT_TOLERANCIA_DIAS = 3;
+// feriados nacionais e de São Paulo (capital) — revisar no fim de 2027
+var AT_FERIADOS = ['2026-11-02', '2026-11-15', '2026-11-20', '2026-12-25', '2027-01-01', '2027-01-25', '2027-02-08', '2027-02-09', '2027-03-26', '2027-04-21',
+  '2027-05-01', '2027-05-27', '2027-07-09', '2027-09-07', '2027-10-12', '2027-11-02', '2027-11-15', '2027-11-20', '2027-12-25'];
+var AT_ST = {'DISPONÍVEL':'disp', 'DISPONIVEL':'disp', 'PROCESSANDO':'proc', 'FINALIZADO':'fin', 'DEVOLVIDO':'dev', 'REPASSADO':'rep', 'PENDENTE':'pend'};
+var AT_ST_NOME = {disp:'Em mãos', proc:'Depositado', fin:'Compensado', dev:'Devolvido', rep:'Repassado', pend:'Pendente', outro:'Outro status'};
+var AT_ST_CLASSE = {disp:'', proc:'is-pendente', fin:'is-venda', dev:'is-cancelado', rep:'', pend:'is-pendente'};
+var at = {aba:'visao', per:'tudo', dados:null, carregando:false, erro:null, carregadoEm:null};
+
+function atHoje(){ var d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function atData(s){ if(!s) return null; var p = String(s).split('-'); return p.length === 3 ? new Date(+p[0], +p[1] - 1, +p[2]) : null; }
+function atDias(a, b){ return Math.round((b - a) / 864e5); }
+function atPct(a, b){ return b ? a / b : null; }
+function atSoma(lista, f){ return lista.reduce(function(s, x){ return s + (f(x) || 0); }, 0); }
+function atSit(st){ return '<span class="v-sit ' + (AT_ST_CLASSE[st] || '') + '">' + AT_ST_NOME[st] + '</span>'; }
+
+/* ---- Carga ---- */
+function carregarAtacado(forcar){
+  if(!IS_APPS_SCRIPT || at.carregando || !acessoToken) return;
+  at.carregando = true; at.erro = null;
+  renderAtacadoSeVisivel();
+  chamarComToken('obterAtacado', !!forcar).then(function(r){
+    if(!r) throw new Error('O Google Drive não devolveu resposta.');
+    if(r.erro === 'senha_necessaria'){ var e = new Error('É preciso digitar a senha.'); e.code = r.erro; throw e; }
+    if(r.erro) throw new Error(r.erro === 'sem_permissao' ? 'A tela Atacado abre só para o perfil financeiro.' : (r.detalhe || r.erro));
+    at.dados = atPreparar(r);
+    at.carregadoEm = new Date();
+    if(!at.sinc.feito){ at.sinc.feito = true; setTimeout(atSincronizarPdfs, 0); }
+    if(forcar) toast('Atacado atualizado: ' + fmtQtd(at.dados.cheques.length) + ' cheques de clientes e ' + fmtQtd(at.dados.vendas.length) + ' vendas do caixa.', 'good');
+  }).catch(function(err){
+    if(err && err.code === 'senha_necessaria'){ pedirSenha('Seu acesso mudou. Entre novamente para continuar.'); return; }
+    at.erro = err && err.message ? err.message : String(err);
+    if(at.dados) toast('Não foi possível atualizar o Atacado. ' + at.erro);
+  }).then(function(){ at.carregando = false; renderAtacadoSeVisivel(); });
+}
+
+function atPreparar(r){
+  var b = r.base || {vendas:[], parcelas:[], conferencia:[]};
+  var vendas = (b.vendas || []).map(function(v){ var o = Object.assign({}, v); o.dt = atData(v.data); return o; });
+  var parcelas = (b.parcelas || []).map(function(p){ var o = Object.assign({}, p); o.emi = atData(p.data_emissao); o.venc = atData(p.vencimento_estimado); return o; });
+  var conf = (b.conferencia || []).map(function(c){ var o = Object.assign({}, c); o.dt = atData(c.data); return o; });
+  var rc = r.recebiveis || null;
+  var cheques = rc ? rc.cheques.map(function(c){
+    return {ent:atData(c[0]), emit:c[1], venc:atData(c[2]), num:c[3], dep:atData(c[4]), st:AT_ST[String(c[5]).trim().toUpperCase()] || 'outro', stTxt:c[5], valor:+c[6] || 0, cat:c[7], rep:atData(c[8])};
+  }) : [];
+  var meses = {}, outros = {};
+  vendas.forEach(function(v){ if(v.dt) meses[v.data.slice(0, 7)] = 1; });
+  cheques.forEach(function(c){ if(c.st === 'outro') outros[c.stTxt] = (outros[c.stTxt] || 0) + 1; });
+  return {base:r.base, vendas:vendas, parcelas:parcelas, conf:conf, cheques:cheques, wallets:rc ? rc.wallets : null, caixa:rc ? rc.caixa : null,
+    lidoEm:rc ? new Date(rc.lidoEm) : null, cacheOk:!!(rc && rc.cache !== false), stOutros:outros, erroReceb:r.erroRecebiveis || null, planilha:r.planilha, admin:!!r.admin, meses:Object.keys(meses).sort()};
+}
+
+/* Leitor do "Relatório Fechamento de Caixa" (Sisplan, loja Atacado) com pdf.js.
+ * Uso:  lerCaixaPdf(pdfjsLib, bytesUint8Array, nomeArquivo) -> Promise<{data, vendas, parcelas, conferencia, avisos}>
+ * No navegador, defina antes pdfjsLib.GlobalWorkerOptions.workerSrc (URL do pdf.worker.min.js da mesma versão).
+ * Regras: lê só os "itens" de texto do PDF (cada célula da tabela) e nunca inventa valores;
+ * se algo não fecha ao centavo, o dia volta com status "DIVERGENTE" e a lista de avisos explica. */
+(function (global) {
+  'use strict';
+
+  var MONEY = /^-?\d{1,3}(?:\.\d{3})*,\d\d$/;
+  var MONEY_FIM = /^(.*\S) (-?\d{1,3}(?:\.\d{3})*,\d\d)$/;
+  var DOW = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+  var MOEDAS = [['0', 'DINHEIRO'], ['1', 'PIX'], ['2', 'CARTAO CREDITO'], ['3', 'CARTAO DEBITO'], ['8', 'CHEQUE'], ['11', 'VALE FUNCIONÁRIO'], ['12', 'LINK DE PAGAMENTO']];
+  // Textos fixos de cabeçalho/rodapé das páginas (ignorados dentro das vendas)
+  var CABECALHO = {
+    'Venda': 1, 'Data': 1, 'Valor Liquido': 1, 'Cliente': 1, 'Valor Bruto': 1, 'Desconto': 1, '% Desc': 1,
+    'Qtde': 1, 'Vendedor': 1, 'Moeda': 1, 'Condição': 1, 'Parcelas': 1, 'Valor Pago': 1, 'Vendas': 1,
+    'caixa.fr3': 1, 'Relatório Fechamento de Caixa': 1
+  };
+  var CABECALHO_RE = /^(RUA RIBEIRO|TALGUI CONFECCOES DE$|TALGUI CONFECCOES DE ROUPAS LTDA - |\d\d\/\d\d\/\d{4} - |.*Pag\.: \d+ \/ \d+$|[A-Z]+\.[A-Z]+$)/;
+
+  function num(s) { return parseFloat(s.replace(/\./g, '').replace(',', '.')); }
+  function r2(x) { return Math.round(x * 100) / 100; }
+  function iso(d) { var p = d.split('/'); return p[2] + '-' + p[1] + '-' + p[0]; }
+  function addDays(isoD, n) { var t = new Date(isoD + 'T12:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); }
+  function diaSemana(isoD) { return DOW[new Date(isoD + 'T12:00:00Z').getUTCDay()]; }
+  function moedaNome(m) { return m.replace(/^\d+ - /, ''); }
+  function moedaCod(m) { return +m.split(' - ')[0]; }
+  function prazos(cond) { var t = cond.replace(/^\d+ - /, ''); return t === 'AVISTA' ? [0] : t.split('/').map(Number); }
+
+  // 1) PDF -> lista de textos (itens do pdf.js, sem os vazios/espaços), na ordem do conteúdo
+  function lerTextos(pdfjsLib, bytes) {
+    var dados = new Uint8Array(bytes); // cópia: o pdf.js pode "consumir" o buffer original
+    return pdfjsLib.getDocument({ data: dados, disableFontFace: true, verbosity: 0 }).promise.then(function (doc) {
+      var textos = [];
+      function pagina(n) {
+        if (n > doc.numPages) return textos;
+        return doc.getPage(n).then(function (p) { return p.getTextContent(); }).then(function (tc) {
+          for (var i = 0; i < tc.items.length; i++) {
+            var s = String(tc.items[i].str || '').replace(/\s+/g, ' ').trim();
+            if (s !== '') textos.push(s);
+          }
+          return pagina(n + 1);
+        });
+      }
+      return pagina(1);
+    });
+  }
+
+  // 2) textos -> blocos de venda + totais do cabeçalho do relatório
+  function agrupar(T) {
+    var d = { resumo: {}, valorVendas: null, totalVendas: null, emissao: null, blocks: [] };
+    var cur = null, m, i, t;
+    for (i = 0; i < T.length; i++) {
+      var s = T[i];
+      var ehInicio = /^\d{3,5}$/.test(s) && /^\d\d\/\d\d\/\d{4}$/.test(T[i + 1] || '') && /^\d\d:\d\d:\d\d$/.test(T[i + 2] || '');
+      if (ehInicio) {
+        cur = { venda: s, data: T[i + 1], hora: T[i + 2], pre: [], par: [], tot: [] };
+        d.blocks.push(cur); i += 2; continue;
+      }
+      if (/^\d\d\/\d\d\/\d{4} - \d\d:\d\d:\d\d$/.test(s) && !d.emissao) d.emissao = s.slice(0, 10);
+      if (s === 'Valor Vendas' && MONEY.test(T[i + 1] || '')) d.valorVendas = num(T[i + 1]);
+      if (/^Total Vendas:/.test(s)) {
+        t = s.replace(/^Total Vendas:\s*/, '');
+        if (!t && MONEY.test(T[i + 1] || '')) t = T[++i];
+        if (MONEY.test(t)) d.totalVendas = num(t);
+        cur = null; continue;
+      }
+      if (!cur) {
+        // Resumo por moeda (antes da primeira venda): "N - NOME" + saldo, entradas, vendas, troco, saídas
+        if (/^\d+ - [^\d]+$/.test(s)) {
+          var vals = [];
+          for (var k = 1; k <= 5 && MONEY.test(T[i + k] || ''); k++) vals.push(T[i + k]);
+          if (vals.length === 5) { d.resumo[s] = num(vals[2]); i += 5; }
+        }
+        continue;
+      }
+      if (CABECALHO[s] || CABECALHO_RE.test(s)) continue;
+      // linha de parcela: moeda, condição, nº, valor (células separadas)
+      if (/^\d+ - [^\d]+$/.test(s) && /^\d+ - ([\d\/]+|AVISTA)$/.test(T[i + 1] || '') && /^\d+$/.test(T[i + 2] || '') && MONEY.test(T[i + 3] || '')) {
+        cur.par.push({ moeda: s, cond: T[i + 1], n: +T[i + 2], valor: num(T[i + 3]) }); i += 3; continue;
+      }
+      m = s.match(/^(\d+ - [^\d]+?) (\d+ - [\d\/]+|\d+ - AVISTA) (\d+) (-?\d{1,3}(?:\.\d{3})*,\d\d)$/); // caso venha tudo junto
+      if (m) { cur.par.push({ moeda: m[1], cond: m[2], n: +m[3], valor: num(m[4]) }); continue; }
+      m = s.match(/^Total Moeda: (\d+ - [^\d]+?)(?: (-?\d{1,3}(?:\.\d{3})*,\d\d))?$/);
+      if (m) {
+        var v = m[2];
+        if (!v && MONEY.test(T[i + 1] || '')) v = T[++i];
+        if (v) cur.tot.push({ moeda: m[1], valor: num(v) });
+        continue;
+      }
+      cur.pre.push(s);
+    }
+    d.blocks.forEach(function (b) {
+      b.nums = []; b.txt = [];
+      b.pre.forEach(function (s) {
+        var mm = s.match(MONEY_FIM);
+        if (MONEY.test(s)) b.nums.push(num(s));
+        else if (mm) { b.txt.push(mm[1]); b.nums.push(num(mm[2])); }
+        else b.txt.push(s);
+      });
+    });
+    return d;
+  }
+
+  // 3) blocos -> vendas, parcelas e conferência (mesmas regras do build.js)
+  function montar(d, arq) {
+    var vendas = [], parcelas = [], avisos = [];
+    d.blocks.forEach(function (b) {
+      var rotulo = 'Venda ' + b.venda;
+      if (b.nums.length !== 5) { avisos.push(rotulo + ': esperados 5 valores numéricos, achei ' + b.nums.length + ' (venda ignorada).'); return; }
+      if (!b.par.length) { avisos.push(rotulo + ': sem linhas de pagamento (venda ignorada).'); return; }
+      if (!b.tot.length) avisos.push(rotulo + ': sem "Total Moeda".');
+      var liq = b.nums[0], pct = b.nums[1], desc = b.nums[2], bruto = b.nums[3], qtde = b.nums[4];
+      if (Math.abs(bruto - desc - liq) > 0.011) avisos.push(rotulo + ': bruto - desconto difere do líquido.');
+      var vend = b.txt[b.txt.length - 1];
+      var cli = b.txt.slice(0, -1).join(' ').replace(/\s+/g, ' ').trim();
+      var mc = cli.match(/^(\d+) - (.*)$/);
+      if (!mc || !vend) { avisos.push(rotulo + ': não consegui ler cliente/vendedor (venda ignorada).'); return; }
+      var cod = mc[1], nome = mc[2], mm;
+      if ((mm = nome.match(/^(\d{2}\.\d{3}\.\d{3}) (.*)$/))) nome = mm[2];
+      else if ((mm = nome.match(/^(.*?) (\d{11})$/))) nome = mm[1];
+      else if ((mm = nome.match(/^(.*?) (\d{14})$/))) nome = mm[1];
+      // (o documento CPF/CNPJ é removido do nome e NÃO é devolvido)
+      var func = b.par.some(function (p) { return moedaCod(p.moeda) === 11; }) || vend === 'ROUPAS LTDA';
+      var pago = r2(b.par.reduce(function (a, p) { return a + p.valor; }, 0));
+      var cred = r2(liq - pago);
+      var byMoeda = {}, ordem = [];
+      b.par.forEach(function (p) { if (!(p.moeda in byMoeda)) { byMoeda[p.moeda] = 0; ordem.push(p.moeda); } byMoeda[p.moeda] = r2(byMoeda[p.moeda] + p.valor); });
+      var principal = ordem.slice().sort(function (x, y) { return byMoeda[y] - byMoeda[x]; })[0]; // empate: mantém a ordem de leitura
+      var conds = [];
+      b.par.forEach(function (p) { if (conds.indexOf(p.cond) < 0) conds.push(p.cond); });
+      var tem9 = b.tot.some(function (t) { return moedaCod(t.moeda) === 9; });
+      var dataIso = iso(b.data);
+      var tipo = func ? 'Funcionária (vale)' : 'Atacado';
+      var vendedor = func ? '(vale funcionária – sem vendedora)' : vend;
+      vendas.push({
+        data: dataIso, hora: b.hora, dia_semana: diaSemana(dataIso), venda: +b.venda, cod_cliente: cod, cliente: nome,
+        documento: '', tipo_documento: '', vendedor: vendedor, tipo_venda: tipo, qtde: qtde, bruto: bruto, desconto: desc, pct_desc: pct, liquido: liq,
+        condicao: conds.join(' + '), n_parcelas: b.par.length, moeda_principal: moedaNome(principal), moedas: ordem.map(moedaNome).join(' + '),
+        valor_pago: pago, credito_devolucao: cred > 0.004 ? cred : 0, marcador_devolucao_troca: tem9 ? 'S' : 'N', arquivo_origem: arq,
+        pct_desc_calc: bruto ? r2(desc / bruto * 100) : 0
+      });
+      b.par.forEach(function (p, i) {
+        var pr = prazos(p.cond), dd = pr[Math.min(p.n - 1, pr.length - 1)];
+        parcelas.push({
+          venda: +b.venda, data_emissao: dataIso, cod_cliente: cod, cliente: nome, vendedor: vendedor, tipo_venda: tipo, linha: i + 1, parcela: p.n,
+          n_parcelas_condicao: pr.length, moeda: moedaNome(p.moeda), condicao: p.cond, valor: p.valor, prazo_dias: dd,
+          vencimento_estimado: addDays(dataIso, dd), marcador_devolucao_troca: tem9 ? 'S' : 'N', arquivo_origem: arq
+        });
+      });
+    });
+    vendas.sort(function (a, b) { return (a.data + a.hora).localeCompare(b.data + b.hora) || a.venda - b.venda; });
+    parcelas.sort(function (a, b) { return a.venda - b.venda || a.linha - b.linha; });
+
+    var datas = {};
+    d.blocks.forEach(function (b) { datas[b.data] = 1; });
+    var listaDatas = Object.keys(datas);
+    if (listaDatas.length > 1) avisos.push('O PDF tem vendas de mais de uma data: ' + listaDatas.join(', ') + '.');
+    if (!listaDatas.length) avisos.push('Nenhuma venda encontrada no PDF.');
+    var data = listaDatas.length ? iso(d.blocks[0].data) : null;
+
+    var row = { data: data, dia_semana: data ? diaSemana(data) : null, arquivo: arq, n_vendas: vendas.length };
+    var difAbs = 0;
+    MOEDAS.forEach(function (mo) {
+      var c = mo[0], n = mo[1];
+      var ext = r2(parcelas.filter(function (p) { return p.moeda === n; }).reduce(function (a, p) { return a + p.valor; }, 0));
+      var key = Object.keys(d.resumo).filter(function (k) { return k.indexOf(c + ' - ') === 0; })[0];
+      var pdf = key ? d.resumo[key] : 0;
+      row['ext_' + n] = ext; row['pdf_' + n] = pdf; row['dif_' + n] = r2(ext - pdf); difAbs += Math.abs(ext - pdf);
+    });
+    var naoMapeada = Object.keys(d.resumo).filter(function (k) { return !MOEDAS.some(function (mo) { return k.indexOf(mo[0] + ' - ') === 0; }); });
+    if (naoMapeada.length) avisos.push('Moeda no Resumo que o leitor não conhece: ' + naoMapeada.join('; ') + '.');
+    if (d.valorVendas === null) avisos.push('Não achei "Valor Vendas" no cabeçalho do PDF.');
+    if (d.totalVendas === null) avisos.push('Não achei "Total Vendas" no rodapé do PDF.');
+    var vV = d.valorVendas, tV = d.totalVendas;
+    var somaLiq = r2(vendas.reduce(function (a, v) { return a + v.liquido; }, 0));
+    var somaPar = r2(parcelas.reduce(function (a, p) { return a + p.valor; }, 0));
+    var cred2 = r2(vendas.reduce(function (a, v) { return a + v.credito_devolucao; }, 0));
+    row.soma_liquido = somaLiq;
+    row.soma_parcelas_extraidas = somaPar;
+    row.valor_vendas_pdf = vV;
+    row.dif_parcelas_vs_valor_vendas = vV === null ? null : r2(somaPar - vV);
+    row.credito_devolucao_extraido = cred2;
+    row.dif_liquido_vs_valor_vendas = vV === null ? null : r2(somaLiq - vV);
+    row.dif_liquido_menos_credito_vs_valor_vendas = vV === null ? null : r2(somaLiq - cred2 - vV);
+    row.total_vendas_rodape_pdf = tV;
+    row.dif_rodape_vs_liquido = tV === null ? null : r2(tV - somaLiq);
+    row.credito_x2_negativo = tV === null ? null : r2(somaLiq - 2 * cred2 - tV);
+    row.vendas_com_credito = vendas.filter(function (v) { return v.credito_devolucao > 0; }).map(function (v) { return v.venda; }).join(' ');
+    row.vendas_marcador_9 = vendas.filter(function (v) { return v.marcador_devolucao_troca === 'S'; }).map(function (v) { return v.venda; }).join(' ');
+    row.pdf_emitido_em = d.emissao;
+    var fecha = vV !== null && Math.abs(row.dif_parcelas_vs_valor_vendas) < 0.005 && difAbs < 0.005 && !naoMapeada.length && data !== null;
+    row.status = fecha
+      ? (cred2 > 0 ? 'BATEU (parcelas = Resumo por moeda; líquido difere pelo crédito de devolução)' : 'BATEU (líquido = parcelas = Resumo)')
+      : 'DIVERGENTE';
+    if (!fecha) avisos.push('O dia não bateu ao centavo: confira a diferença nos campos dif_* da conferência.');
+    return { data: data, vendas: vendas, parcelas: parcelas, conferencia: row, avisos: avisos };
+  }
+
+  function lerCaixaPdf(pdfjsLib, bytes, nomeArquivo) {
+    return lerTextos(pdfjsLib, bytes).then(function (T) {
+      return montar(agrupar(T), nomeArquivo);
+    });
+  }
+
+  global.lerCaixaPdf = lerCaixaPdf;
+})(typeof window !== 'undefined' ? window : (typeof self !== 'undefined' ? self : globalThis));
+
+/* ---- Leitura automática dos PDFs da pasta do Drive (atPdfsPendentes → lerCaixaPdf no navegador → salvarDiasAtacado) ----
+   Roda uma vez ao abrir a tela (e de novo no Atualizar). pdf.js 3.11.174 vem do cdnjs só quando há PDF novo. */
+var AT_PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+var AT_PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+var atPdfjsPromessa = null;
+at.sinc = {rodando:false, feito:false, msg:'', erro:null};
+function atCarregarPdfjs(){
+  if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if(atPdfjsPromessa) return atPdfjsPromessa;
+  atPdfjsPromessa = new Promise(function(ok, falha){
+    var sc = document.createElement('script');
+    sc.src = AT_PDFJS;
+    sc.onload = function(){
+      if(!window.pdfjsLib){ atPdfjsPromessa = null; falha(new Error('o leitor de PDF não carregou')); return; }
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = AT_PDFJS_WORKER;
+      ok(window.pdfjsLib);
+    };
+    sc.onerror = function(){ atPdfjsPromessa = null; falha(new Error('não foi possível baixar o leitor de PDF')); };
+    document.head.appendChild(sc);
+  });
+  return atPdfjsPromessa;
+}
+function atB64Bytes(b64){ var bin = atob(b64), u = new Uint8Array(bin.length); for(var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+function atSincronizarPdfs(){
+  if(!IS_APPS_SCRIPT || at.sinc.rodando || !acessoToken) return;
+  at.sinc.rodando = true; at.sinc.erro = null;
+  var tot = {ok:0, div:0, falha:0}, voltas = 0;
+  function rodada(){
+    return chamarComToken('atPdfsPendentes').then(function(r){
+      if(!r || r.erro) throw new Error(r && r.erro === 'sem_permissao' ? 'sem permissão' : (r && (r.detalhe || r.erro)) || 'o Drive não respondeu');
+      if(!r.pendentes.length) return voltas > 0;
+      voltas++;
+      at.sinc.msg = 'Lendo ' + fmtQtd(r.pendentes.length + r.restantes) + (r.pendentes.length + r.restantes === 1 ? ' relatório novo' : ' relatórios novos') + ' da pasta do Drive…';
+      renderAtacadoSeVisivel();
+      return atCarregarPdfjs().then(function(lib){
+        return r.pendentes.reduce(function(p, arq){
+          return p.then(function(lista){
+            var base = {id:arq.id, nome:arq.nome, mod:arq.mod, dia:null};
+            if(!arq.b64) return lista.concat([Object.assign(base, {erro:'PDF maior que 3 MB'})]);
+            return lerCaixaPdf(lib, atB64Bytes(arq.b64), arq.nome).then(function(dia){ return lista.concat([Object.assign(base, {dia:dia})]); },
+              function(e){ return lista.concat([Object.assign(base, {erro:String(e && e.message || e)})]); });
+          });
+        }, Promise.resolve([]));
+      }).then(function(res){ return chamarComToken('salvarDiasAtacado', res); }).then(function(s){
+        if(!s || s.erro) throw new Error((s && s.erro) || 'o Drive não respondeu');
+        tot.ok += s.ok; tot.div += s.divergentes; tot.falha += s.falhas;
+        return r.restantes && voltas < 30 ? rodada() : true;
+      });
+    });
+  }
+  rodada().then(function(houve){
+    at.sinc.rodando = false; at.sinc.msg = '';
+    if(!houve){ renderAtacadoSeVisivel(); return; }
+    toast('Caixa do atacado: ' + fmtQtd(tot.ok) + (tot.ok === 1 ? ' dia lido' : ' dias lidos') + ' da pasta' + (tot.div ? ', ' + fmtQtd(tot.div) + ' com diferença (ver Conferência)' : '') + (tot.falha ? ', ' + fmtQtd(tot.falha) + ' sem leitura' : '') + '.', tot.div || tot.falha ? undefined : 'good');
+    at.dados = null; carregarAtacado(false);
+  }).catch(function(e){
+    at.sinc.rodando = false; at.sinc.msg = ''; at.sinc.erro = String(e && e.message || e);
+    renderAtacadoSeVisivel();
+  });
+}
+
+/* ---- Recortes e contas ---- */
+function atVendasPer(){
+  var d = at.dados;
+  return d.vendas.filter(function(v){ return at.per === 'tudo' || v.data.slice(0, 7) === at.per; });
+}
+function atEhAtacado(v){ return String(v.tipo_venda || 'Atacado').toLowerCase() === 'atacado'; }
+function atResumoVendas(lista){
+  var at_ = lista.filter(atEhAtacado), func = lista.filter(function(v){ return !atEhAtacado(v); });
+  var nums = at_.map(function(v){ return v.venda; });
+  var parc = at.dados.parcelas.filter(function(p){ return nums.indexOf(p.venda) >= 0 && String(p.tipo_venda || 'Atacado').toLowerCase() === 'atacado'; });
+  var liq = atSoma(at_, function(v){ return v.liquido; }), bruto = atSoma(at_, function(v){ return v.bruto; });
+  var pago = atSoma(parc, function(p){ return p.valor; });
+  var prazo = parc.filter(function(p){ return p.prazo_dias > 0; });
+  var vPrazo = atSoma(prazo, function(p){ return p.valor; });
+  var moedas = {};
+  parc.forEach(function(p){ moedas[p.moeda] = (moedas[p.moeda] || 0) + p.valor; });
+  var credito = atSoma(at_, function(v){ return v.credito_devolucao; });
+  if(credito > 0) moedas['CRÉDITO DE DEVOLUÇÃO'] = credito;
+  return {n:at_.length, liq:liq, bruto:bruto, desc:bruto - liq, pctDesc:atPct(bruto - liq, bruto), ticket:at_.length ? liq / at_.length : null,
+    pecas:atSoma(at_, function(v){ return v.qtde; }), pago:pago, credito:credito, vPrazo:vPrazo, pctPrazo:atPct(vPrazo, pago),
+    pmrPrazo:vPrazo ? atSoma(prazo, function(p){ return p.valor * p.prazo_dias; }) / vPrazo : null,
+    pmrGeral:pago ? atSoma(parc, function(p){ return p.valor * p.prazo_dias; }) / pago : null,
+    aVista:pago - vPrazo, moedas:moedas, func:{n:func.length, liq:atSoma(func, function(v){ return v.liquido; })}, lista:at_, parc:parc};
+}
+// dias úteis (seg–sex, sem feriado) entre o 1º e o último dia com relatório × dias com PDF
+function atCobertura(){
+  var c = at.dados.conf;
+  if(!c.length) return null;
+  var tem = {}; c.forEach(function(x){ tem[x.data] = 1; });
+  var ini = c[0].dt, fim = c[c.length - 1].dt, uteis = 0, faltam = [];
+  for(var d = new Date(ini); d <= fim; d.setDate(d.getDate() + 1)){
+    var iso = isoDate(d), dow = d.getDay();
+    if(dow === 0 || dow === 6 || AT_FERIADOS.indexOf(iso) >= 0) continue;
+    uteis++;
+    if(!tem[iso]) faltam.push(new Date(d));
+  }
+  return {ini:ini, fim:fim, uteis:uteis, com:uteis - faltam.length, faltam:faltam, pct:atPct(uteis - faltam.length, uteis)};
+}
+// cheques em aberto e a regra dos 3 dias
+function atChequesAbertos(){
+  var hoje = atHoje();
+  return at.dados.cheques.filter(function(c){ return c.st === 'disp' || c.st === 'proc' || c.st === 'pend'; }).map(function(c){
+    var ref = c.st === 'proc' ? (c.dep || c.venc) : c.venc;
+    var atraso = ref ? atDias(ref, hoje) : null;
+    var x = Object.assign({}, c);
+    x.diasVenc = c.venc ? atDias(hoje, c.venc) : null;   // >0 a vencer, <0 vencido
+    x.alerta = atraso != null && atraso > AT_TOLERANCIA_DIAS;
+    return x;
+  });
+}
+function atFaixa(dias){
+  if(dias == null) return 'sem data';
+  if(dias < -AT_TOLERANCIA_DIAS) return 'Vencido há mais de 3 dias';
+  if(dias < 0) return 'Vencido até 3 dias';
+  if(dias <= 7) return '0–7 dias';
+  if(dias <= 30) return '8–30 dias';
+  if(dias <= 60) return '31–60 dias';
+  if(dias <= 90) return '61–90 dias';
+  return 'Mais de 90 dias';
+}
+var AT_FAIXAS = ['Vencido há mais de 3 dias', 'Vencido até 3 dias', '0–7 dias', '8–30 dias', '31–60 dias', '61–90 dias', 'Mais de 90 dias', 'sem data'];
+
+/* ---- Endereço ---- */
+function atBuildHash(){
+  var q = [];
+  if(at.aba !== 'visao') q.push('aba=' + at.aba);
+  if(at.per !== 'tudo') q.push('per=' + at.per);
+  return '#/atacado' + (q.length ? '?' + q.join('&') : '');
+}
+function atApplyParams(p){
+  at.aba = AT_ABAS.indexOf(p.aba) >= 0 ? p.aba : 'visao';
+  at.per = /^\d{4}-\d{2}$/.test(p.per || '') ? p.per : 'tudo';
+}
+function atSubtitulo(){
+  if(!at.dados) return 'Caixa do atacado (Sisplan) e cheques da planilha financeira';
+  var cob = atCobertura(), partes = [];
+  partes.push(at.per === 'tudo' ? 'Todo o período' : vMesNome(+at.per.slice(5) - 1) + ' ' + at.per.slice(0, 4));
+  if(cob) partes.push('caixa de ' + fmtDate(cob.ini) + ' a ' + fmtDate(cob.fim));
+  if(at.dados.lidoEm) partes.push('cheques lidos ' + fmtDateTime(at.dados.lidoEm));
+  return partes.join(' · ');
+}
+
+/* ---- Telas ---- */
+function renderAtacadoSeVisivel(){
+  if(!isDashboardVisible() || currentRoute().id !== 'atacado') return;
+  if(IS_APPS_SCRIPT && !at.dados && !at.carregando && !at.erro) carregarAtacado(false);
+  renderAtacado();
+}
+
+function atKpi(rotulo, valor, sub, cor){
+  return '<div class="kpi-card" style="--kpi-accent:var(' + (cor || '--kpi-ticket') + ')"><div class="kpi-label">' + rotulo + '</div><div class="kpi-value">' + valor + '</div><div class="kpi-sub">' + (sub || '') + '</div></div>';
+}
+function atPainel(titulo, meta, corpo, largo){
+  return '<div class="panel' + (largo ? ' panel-wide' : '') + '"><div class="panel-header"><div class="panel-title">' + titulo + '</div>' + (meta ? '<div class="panel-meta">' + meta + '</div>' : '') + '</div>' + corpo + '</div>';
+}
+function atTabela(cab, linhas, vazio){
+  if(!linhas.length) return '<p class="empty-note">' + (vazio || 'Nada a mostrar.') + '</p>';
+  return '<div class="table-wrap"><table class="data-table"><thead><tr>' + cab.map(function(c){ return '<th' + (c.num ? ' class="num"' : '') + '>' + c.t + '</th>'; }).join('') + '</tr></thead><tbody>' +
+    linhas.map(function(l){ return '<tr>' + l.map(function(v, i){ return '<td' + (cab[i].num ? ' class="num"' : '') + '>' + v + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+}
+function atDataTxt(d){ return d ? fmtDate(d) : '—'; }
+
+function renderAtacado(){
+  var root = document.getElementById('at-root');
+  if(!root) return;
+  var tabs = '<div class="page-tabs" role="tablist" aria-label="Atacado">' + AT_ABAS.map(function(a){
+    var sel = a === at.aba;
+    return '<button type="button" class="page-tab' + (sel ? ' active' : '') + '" role="tab" id="at-tab-' + a + '" aria-controls="at-painel" data-at-aba="' + a + '" aria-selected="' + sel + '"' + (sel ? '' : ' tabindex="-1"') + '>' + AT_ABA_NOME[a] + '</button>';
+  }).join('') + '</div>';
+  // conteúdo da aba ativa num role=tabpanel ligado à aba (aria-controls / aria-labelledby)
+  var painel = function(inner){ return '<div id="at-painel" role="tabpanel" aria-labelledby="at-tab-' + at.aba + '">' + inner + '</div>'; };
+  if(!IS_APPS_SCRIPT){ root.innerHTML = tabs + painel(atPainel('Atacado', '', '<p class="empty-note">A tela Atacado só carrega no <a href="' + PAINEL_ONLINE_URL + '" target="_blank" rel="noopener">painel online</a>.</p>')); return; }
+  if(!at.dados){
+    root.innerHTML = tabs + painel('<div class="panel">' + (at.erro ? '<div class="drive-status alert-critical" role="alert">' + escapeHtml(at.erro) + '</div><div class="form-row"><button class="btn btn-primary btn-sm" type="button" data-at-acao="atualizar">Tentar de novo</button></div>'
+      : '<div class="drive-status loading" role="status">Buscando o caixa do atacado e os cheques da planilha financeira…</div>') + '</div>');
+    renderPageSub();
+    return;
+  }
+  var d = at.dados, html = '';
+  // seletor de período (vendas do caixa) e faixa de cobertura
+  var pers = ['tudo'].concat(d.meses);
+  html += '<div class="home-scope-head"><div class="segmented" role="group" aria-label="Período das vendas">' + pers.map(function(p){
+    var sel = p === at.per;
+    return '<button type="button" data-at-per="' + escapeHtml(p) + '" aria-pressed="' + sel + '" class="' + (sel ? 'active' : '') + '">' + (p === 'tudo' ? 'Todo o período' : vMesNome(+p.slice(5) - 1)) + '</button>';
+  }).join('') + '</div><div class="form-row"><button class="btn btn-sm" type="button" data-at-acao="atualizar"' + (at.carregando ? ' disabled' : '') + '>' + (at.carregando ? 'Atualizando…' : 'Atualizar') + '</button></div></div>';
+  var cob = atCobertura();
+  if(cob && cob.faltam.length) html += '<div class="alert alert-warning" role="status">Faltam relatórios de caixa de ' + cob.faltam.map(function(x){ return vDiaCurto(x); }).join(', ') + ' (' + fmtQtd(cob.com) + ' de ' + fmtQtd(cob.uteis) + ' dias úteis). Os totais de vendas desses dias ficam de fora.</div>';
+  if(!d.base && !at.sinc.rodando) html += '<div class="alert alert-info" role="status">Ainda não há relatórios de caixa lidos. Eles são lidos sozinhos da pasta do Drive ao abrir esta tela.</div>';
+  if(d.erroReceb) html += '<div class="alert alert-critical" role="alert">Não foi possível ler a planilha financeira: ' + escapeHtml(d.erroReceb) + '</div>';
+  if(at.erro) html += '<div class="alert alert-critical" role="alert">A última atualização falhou (' + escapeHtml(at.erro) + '). Os números abaixo são da leitura anterior.</div>';
+  if(at.sinc.msg) html += '<div class="drive-status loading" role="status">' + escapeHtml(at.sinc.msg) + '</div>';
+  if(at.sinc.erro) html += '<div class="alert alert-warning" role="status">A leitura automática dos PDFs da pasta falhou (' + escapeHtml(at.sinc.erro) + '). Clique em Atualizar para tentar de novo.</div>';
+  var stOut = Object.keys(d.stOutros || {});
+  if(stOut.length) html += '<div class="alert alert-warning" role="status">Cheques com status que o painel não conhece ficaram fora da carteira: ' + stOut.map(function(k){ return escapeHtml(k) + ' (' + fmtQtd(d.stOutros[k]) + ')'; }).join(', ') + '.</div>';
+  if(d.caixa){
+    var somaSt = function(st){ return atSoma(d.cheques.filter(function(c){ return c.st === st; }), function(c){ return c.valor; }); };
+    var difs = [];
+    if(d.caixa.chequesDisponivel != null && Math.abs(somaSt('disp') - d.caixa.chequesDisponivel) > 1) difs.push('em mãos ' + fmtValor(somaSt('disp')) + ' × ' + fmtValor(d.caixa.chequesDisponivel) + ' no Caixa Total');
+    if(d.caixa.chequesProcessando != null && Math.abs(somaSt('proc') - d.caixa.chequesProcessando) > 1) difs.push('depositados ' + fmtValor(somaSt('proc')) + ' × ' + fmtValor(d.caixa.chequesProcessando) + ' no Caixa Total');
+    if(d.caixa.walletsReceber == null) difs.push('o rótulo "WALLETS - A RECEBER" não foi achado no Caixa Total');
+    if(difs.length) html += '<div class="alert alert-warning" role="status">Conferência com a planilha: ' + difs.join('; ') + '. Confira se a planilha mudou de formato.</div>';
+  }
+  var corpo = at.aba === 'carteira' ? atTelaCarteira() : at.aba === 'vendas' ? atTelaVendas() : at.aba === 'filas' ? atTelaFilas() : at.aba === 'conferencia' ? atTelaConferencia() : atTelaVisao();
+  root.innerHTML = tabs + painel(html + corpo.html);
+  if(corpo.graficos) corpo.graficos();
+  renderPageSub();
+  syncUrl();
+}
+
+function atTelaVisao(){
+  var r = atResumoVendas(atVendasPer()), abertos = atChequesAbertos();
+  var carteira = atSoma(abertos, function(c){ return c.valor; }) + (at.dados.caixa && at.dados.caixa.walletsReceber || 0);
+  var html = '<div class="kpi-grid">' +
+    atKpi('Faturamento líquido', fmtValor(r.liq), fmtQtd(r.n) + ' vendas · bruto ' + fmtValor(r.bruto), '--kpi-impacto') +
+    atKpi('Ticket médio', r.ticket == null ? '—' : fmtValor(r.ticket), fmtQtd(r.pecas) + ' peças · ' + (r.n ? (r.pecas / r.n).toFixed(1).replace('.', ',') : '—') + ' por venda', '--kpi-ticket') +
+    atKpi('Desconto', fmtPctOrDash(r.pctDesc), fmtValor(r.desc) + ' sobre o bruto', '--kpi-volume') +
+    atKpi('Vendido a prazo', fmtPctOrDash(r.pctPrazo), fmtValor(r.vPrazo) + ' · prazo médio concedido ' + (r.pmrPrazo == null ? '—' : Math.round(r.pmrPrazo) + ' dias') + ' (estimado)', '--kpi-repr') +
+    atKpi('Carteira a receber', fmtValor(carteira), 'cheques em aberto + maquininhas a receber', '--kpi-ticket') +
+    '</div>';
+  // mix de meios e reconciliação
+  var mix = Object.keys(r.moedas).map(function(k){ return {k:k, v:r.moedas[k]}; }).sort(function(a, b){ return b.v - a.v; });
+  var totMix = atSoma(mix, function(x){ return x.v; });
+  html += '<div class="panels-grid">' +
+    atPainel('Faturamento por dia de caixa', 'valor líquido das vendas de atacado · dias sem relatório ficam vazios', '<div class="chart-box"><canvas id="at-chart-dias"></canvas></div>', true) +
+    atPainel('Como o atacado recebe', 'participação no valor da venda', '<div class="chart-box"><canvas id="at-chart-mix"></canvas></div>' +
+      atTabela([{t:'Meio'}, {t:'Valor', num:true}, {t:'%', num:true}], mix.map(function(x){ return [escapeHtml(x.k), fmtValor(x.v), fmtPctOrDash(atPct(x.v, totMix))]; }))) +
+    atPainel('Do faturamento ao valor registrado', 'reconciliação', atTabela([{t:''}, {t:'Valor', num:true}], [
+      ['Faturamento líquido (capa)', fmtValor(r.liq)],
+      ['− crédito de devolução usado como pagamento', fmtValor(r.credito)],
+      ['= valor registrado nos meios de pagamento', fmtValor(r.pago)],
+      ['… já em caixa (Pix, dinheiro, débito)', fmtValor(r.aVista)],
+      ['… a receber (cheque, link, cartão)', fmtValor(r.vPrazo)]
+    ]) + (r.func.n ? '<p class="empty-note">Fora dos números acima: ' + fmtQtd(r.func.n) + ' vendas a funcionárias (vale), ' + fmtValor(r.func.liq) + '.</p>' : '') +
+      '<p class="empty-note">O "Total Vendas" do rodapé do relatório do Sisplan desconta o crédito de devolução duas vezes e não é usado aqui.</p>') +
+    '</div>';
+  return {html:html, graficos:function(){
+    var dias = {};
+    r.lista.forEach(function(v){ dias[v.data] = (dias[v.data] || 0) + v.liquido; });
+    var conf = at.dados.conf.filter(function(c){ return at.per === 'tudo' || c.data.slice(0, 7) === at.per; });
+    var cob = atCobertura(), labels = [], valores = [];
+    if(cob){
+      for(var x = new Date(cob.ini); x <= cob.fim; x.setDate(x.getDate() + 1)){
+        var iso = isoDate(x), dow = x.getDay();
+        if(at.per !== 'tudo' && iso.slice(0, 7) !== at.per) continue;
+        if(dow === 0 || (dow === 6 && !dias[iso]) || (AT_FERIADOS.indexOf(iso) >= 0 && !dias[iso])) continue;
+        labels.push(vDiaCurto(x)); valores.push(dias[iso] != null ? dias[iso] : null);
+      }
+    }
+    var comDado = valores.filter(function(v){ return v != null; });
+    upsertChart('at-chart-dias', buildComboConfig({labels:labels, barLabel:'Faturamento líquido', barData:valores, barColor:getCss('--chart-ink'),
+      avgValue:comDado.length ? atSoma(comDado, function(v){ return v; }) / comDado.length : null, avgLabel:'Média por dia com relatório', valueFormatter:fmtValor}));
+    var cores = [getCss('--chart-accent'), getCss('--chart-ink'), getCss('--chart-ink-2'), getCss('--chart-ink-3'), getCss('--text-muted')];
+    upsertChart('at-chart-mix', {type:'bar', fmtAria:fmtValor,
+      data:{labels:mix.map(function(x){ return x.k; }), datasets:[{label:'Valor', data:mix.map(function(x){ return x.v; }), backgroundColor:mix.map(function(_, i){ return cores[Math.min(i, cores.length - 1)]; }), borderRadius:6, maxBarThickness:22}]},
+      options:{indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){ return fmtValor(c.parsed.x) + ' · ' + fmtPctOrDash(atPct(c.parsed.x, totMix)); }}}},
+        scales:{x:{grid:{color:getCss('--chart-grid')}, ticks:yTicks(fmtValor), beginAtZero:true}, y:{grid:{display:false}, ticks:{color:getCss('--text-secondary')}}}}});
+  }};
+}
+
+function atTelaCarteira(){
+  var d = at.dados, abertos = atChequesAbertos(), hoje = atHoje();
+  var soma = function(f){ return atSoma(abertos.filter(f), function(c){ return c.valor; }); };
+  var conta = function(f){ return abertos.filter(f).length; };
+  var emMaos = function(c){ return c.st === 'disp' && !c.alerta; };
+  var vencNaoDep = function(c){ return c.st === 'disp' && c.alerta; };
+  var depSemComp = function(c){ return c.st === 'proc' && c.alerta; };
+  var dev = d.cheques.filter(function(c){ return c.st === 'dev'; });
+  // taxa de devolução: cheques com vencimento nos últimos 12 meses já resolvidos (compensado, devolvido ou repassado)
+  var desde = new Date(hoje); desde.setFullYear(desde.getFullYear() - 1);
+  var resolvidos = d.cheques.filter(function(c){ return c.venc && c.venc >= desde && c.venc <= hoje && (c.st === 'fin' || c.st === 'dev' || c.st === 'rep'); });
+  var taxaDev = atPct(atSoma(resolvidos.filter(function(c){ return c.st === 'dev'; }), function(c){ return c.valor; }), atSoma(resolvidos, function(c){ return c.valor; }));
+  // repassados: cheques recebidos nos últimos 90 dias usados como pagamento
+  var d90 = new Date(hoje); d90.setDate(d90.getDate() - 90);
+  var rec90 = d.cheques.filter(function(c){ return c.ent && c.ent >= d90; });
+  var pctRep = atPct(atSoma(rec90.filter(function(c){ return c.st === 'rep'; }), function(c){ return c.valor; }), atSoma(rec90, function(c){ return c.valor; }));
+  var w = d.wallets, cx = d.caixa;
+  var html = '<div class="kpi-grid">' +
+    atKpi('Cheques em mãos a vencer', fmtValor(soma(emMaos)), fmtQtd(conta(emMaos)) + ' cheques', '--kpi-ticket') +
+    atKpi('Vencidos e não depositados', fmtValor(soma(vencNaoDep)), fmtQtd(conta(vencNaoDep)) + ' cheques · mais de 3 dias do vencimento', '--kpi-impacto') +
+    atKpi('Depositados sem compensar', fmtValor(soma(depSemComp)), fmtQtd(conta(depSemComp)) + ' há mais de 3 dias · ' + fmtValor(soma(function(c){ return c.st === 'proc' && !c.alerta; })) + ' dentro do prazo', '--kpi-volume') +
+    atKpi('Cheques devolvidos', fmtValor(atSoma(dev, function(c){ return c.valor; })), fmtQtd(dev.length) + ' cheques · taxa 12 meses ' + fmtPctOrDash(taxaDev), '--kpi-impacto') +
+    atKpi('Maquininhas a receber', cx && cx.walletsReceber != null ? fmtValor(cx.walletsReceber) : '—', w && w.atualizado ? 'planilha atualizada em ' + escapeHtml(w.atualizado) : 'aba WALLETS', '--kpi-repr') +
+    atKpi('Dinheiro em caixa', cx && cx.dinheiro != null ? fmtValor(cx.dinheiro) : '—', 'aba DINHEIRO', '--kpi-repr') +
+    '</div>';
+  // aging
+  var faixas = {}; AT_FAIXAS.forEach(function(f){ faixas[f] = {n:0, v:0}; });
+  abertos.forEach(function(c){ var f = atFaixa(c.diasVenc); faixas[f].n++; faixas[f].v += c.valor; });
+  var totAb = atSoma(abertos, function(c){ return c.valor; });
+  // concentração por emitente
+  var porEmit = {};
+  abertos.forEach(function(c){ var k = c.emit || '(sem nome)'; porEmit[k] = porEmit[k] || {n:0, v:0, alerta:0}; porEmit[k].n++; porEmit[k].v += c.valor; if(c.alerta) porEmit[k].alerta += c.valor; });
+  var topEmit = Object.keys(porEmit).map(function(k){ return {k:k, x:porEmit[k]}; }).sort(function(a, b){ return b.x.v - a.x.v; }).slice(0, 15);
+  // agenda estimada das vendas a prazo do caixa (link e cartão: recebem da operadora)
+  var adq = {};
+  d.parcelas.forEach(function(p){
+    if(!(p.prazo_dias > 0) || !p.venc || p.venc < hoje || /CHEQUE/i.test(p.moeda)) return;
+    var k = isoDate(p.venc).slice(0, 7); adq[k] = (adq[k] || 0) + p.valor;
+  });
+  html += '<div class="panels-grid">' +
+    atPainel('Agenda dos cheques em aberto', 'próximas 12 semanas, pelo vencimento da planilha · vencidos na 1ª barra', '<div class="chart-box"><canvas id="at-chart-agenda"></canvas></div>', true) +
+    atPainel('Cheques em aberto por vencimento', fmtValor(totAb) + ' em ' + fmtQtd(abertos.length) + ' cheques', atTabela([{t:'Faixa'}, {t:'Cheques', num:true}, {t:'Valor', num:true}, {t:'%', num:true}],
+      AT_FAIXAS.filter(function(f){ return faixas[f].n; }).map(function(f){ return [f, fmtQtd(faixas[f].n), fmtValor(faixas[f].v), fmtPctOrDash(atPct(faixas[f].v, totAb))]; }))) +
+    atPainel('Clientes com mais cheques em aberto', 'concentração · top 15', atTabela([{t:'Emitente'}, {t:'Cheques', num:true}, {t:'Em aberto', num:true}, {t:'% da carteira', num:true}, {t:'Em alerta', num:true}],
+      topEmit.map(function(e){ return [escapeHtml(e.k), fmtQtd(e.x.n), fmtValor(e.x.v), fmtPctOrDash(atPct(e.x.v, totAb)), e.x.alerta ? fmtValor(e.x.alerta) : '—']; }))) +
+    atPainel('Maquininhas e carteiras digitais', w && w.atualizado ? 'atualizado em ' + escapeHtml(w.atualizado) : '', w ? atTabela([{t:'Empresa'}, {t:'Tipo'}, {t:'Saldo atual', num:true}, {t:'A receber', num:true}],
+      w.linhas.filter(function(x){ return x[2] || x[3]; }).map(function(x){ return [escapeHtml(x[0]), escapeHtml(x[1]), fmtValor(x[2]), fmtValor(x[3])]; })) : '<p class="empty-note">Aba WALLETS não lida.</p>') +
+    atPainel('Vendas a prazo do caixa por mês (link e cartão)', 'estimado: emissão + prazo da condição · recebe da operadora, menos a taxa', atTabela([{t:'Mês'}, {t:'A receber', num:true}],
+      Object.keys(adq).sort().map(function(k){ return [vMesNome(+k.slice(5) - 1) + ' ' + k.slice(0, 4), fmtValor(adq[k])]; }), 'Nenhuma parcela de link ou cartão a vencer.')) +
+    atPainel('Uso dos cheques recebidos', 'últimos 90 dias', '<p class="empty-note">' + fmtPctOrDash(pctRep) + ' do valor dos cheques recebidos de clientes nos últimos 90 dias foi repassado como pagamento (fornecedor, retirada etc.), em vez de depositado.</p>') +
+    '</div>';
+  return {html:html, graficos:function(){
+    var labels = ['Vencidos'], vals = [atSoma(abertos.filter(function(c){ return c.diasVenc != null && c.diasVenc < 0; }), function(c){ return c.valor; })];
+    for(var s = 0; s < 12; s++){
+      var ini = new Date(hoje); ini.setDate(ini.getDate() + s * 7);
+      var fim = new Date(ini); fim.setDate(fim.getDate() + 7);
+      labels.push(vDiaCurto(ini));
+      vals.push(atSoma(abertos.filter(function(c){ return c.venc && c.venc >= ini && c.venc < fim; }), function(c){ return c.valor; }));
+    }
+    // série em grafite; a 1ª barra ("Vencidos") em --crit: o rótulo do eixo nomeia a barra, a cor só reforça
+    var cfg = buildComboConfig({labels:labels, barLabel:'Cheques em aberto', barData:vals, barColor:getCss('--chart-ink'), valueFormatter:fmtValor});
+    cfg.data.datasets[0].backgroundColor = vals.map(function(_, i){ return i === 0 ? getCss('--crit') : getCss('--chart-ink'); });
+    cfg.options.plugins.legend.display = false;
+    upsertChart('at-chart-agenda', cfg);
+  }};
+}
+
+function atTelaVendas(){
+  var r = atResumoVendas(atVendasPer());
+  var porVend = {};
+  r.lista.forEach(function(v){
+    var k = v.vendedor || '(sem vendedora)';
+    var x = porVend[k] = porVend[k] || {n:0, liq:0, bruto:0, prazo:0, prazoDias:0};
+    x.n++; x.liq += v.liquido; x.bruto += v.bruto;
+  });
+  r.parc.forEach(function(p){ var x = porVend[p.vendedor || '(sem vendedora)']; if(x && p.prazo_dias > 0){ x.prazo += p.valor; x.prazoDias += p.valor * p.prazo_dias; } });
+  var vend = Object.keys(porVend).map(function(k){ return {k:k, x:porVend[k]}; }).sort(function(a, b){ return b.x.liq - a.x.liq; });
+  var porCli = {};
+  r.lista.forEach(function(v){
+    var k = v.cod_cliente || v.cliente;
+    var x = porCli[k] = porCli[k] || {nome:v.cliente, n:0, liq:0, prazo:0};
+    x.n++; x.liq += v.liquido;
+  });
+  r.parc.forEach(function(p){ var x = porCli[p.cod_cliente || p.cliente]; if(x && p.prazo_dias > 0) x.prazo += p.valor; });
+  var cli = Object.keys(porCli).map(function(k){ return {k:k, x:porCli[k]}; }).sort(function(a, b){ return b.x.liq - a.x.liq; });
+  var top = cli.slice(0, 20), uma = cli.filter(function(c){ return c.x.n === 1; }).length;
+  var faixas = {sem:{n:0, v:0}, dez:{n:0, v:0}, outro:{n:0, v:0}};
+  r.lista.forEach(function(v){ var f = !v.pct_desc ? 'sem' : Math.abs(v.pct_desc - 10) < 0.01 ? 'dez' : 'outro'; faixas[f].n++; faixas[f].v += v.liquido; });
+  var fora = r.lista.filter(function(v){ return v.pct_desc && Math.abs(v.pct_desc - 10) >= 0.01; }).sort(function(a, b){ return b.pct_desc - a.pct_desc; });
+  var html = '<div class="panels-grid">' +
+    atPainel('Vendedoras', 'faturamento líquido no período', atTabela([{t:'Vendedora'}, {t:'Vendas', num:true}, {t:'Faturamento', num:true}, {t:'% do total', num:true}, {t:'Ticket', num:true}, {t:'Desconto', num:true}, {t:'Prazo médio a prazo', num:true}],
+      vend.map(function(v){ return [escapeHtml(v.k), fmtQtd(v.x.n), fmtValor(v.x.liq), fmtPctOrDash(atPct(v.x.liq, r.liq)), fmtValor(v.x.liq / v.x.n), fmtPctOrDash(atPct(v.x.bruto - v.x.liq, v.x.bruto)), v.x.prazo ? Math.round(v.x.prazoDias / v.x.prazo) + ' dias' : '—']; })), true) +
+    atPainel('Maiores clientes', fmtQtd(cli.length) + ' clientes · ' + fmtPctOrDash(atPct(uma, cli.length)) + ' compraram uma vez no período · top 20', atTabela([{t:'Cliente'}, {t:'Compras', num:true}, {t:'Faturamento', num:true}, {t:'% do total', num:true}, {t:'Ticket', num:true}, {t:'A prazo', num:true}],
+      top.map(function(c){ return [escapeHtml(c.k + ' · ' + c.x.nome), fmtQtd(c.x.n), fmtValor(c.x.liq), fmtPctOrDash(atPct(c.x.liq, r.liq)), fmtValor(c.x.liq / c.x.n), c.x.prazo ? fmtValor(c.x.prazo) : '—']; })), true) +
+    atPainel('Descontos', 'padrão da loja: sem desconto ou 10%', atTabela([{t:'Faixa'}, {t:'Vendas', num:true}, {t:'Faturamento', num:true}, {t:'% das vendas', num:true}], [
+      ['Sem desconto', fmtQtd(faixas.sem.n), fmtValor(faixas.sem.v), fmtPctOrDash(atPct(faixas.sem.n, r.n))],
+      ['10%', fmtQtd(faixas.dez.n), fmtValor(faixas.dez.v), fmtPctOrDash(atPct(faixas.dez.n, r.n))],
+      ['Outros percentuais', fmtQtd(faixas.outro.n), fmtValor(faixas.outro.v), fmtPctOrDash(atPct(faixas.outro.n, r.n))]
+    ])) +
+    atPainel('Peças', 'informativo', atTabela([{t:''}, {t:'Valor', num:true}], [
+      ['Peças vendidas', fmtQtd(r.pecas)], ['Peças por venda', r.n ? (r.pecas / r.n).toFixed(1).replace('.', ',') : '—'], ['Preço médio por peça', r.pecas ? fmtValor(r.liq / r.pecas) : '—']
+    ])) +
+    '</div>';
+  return {html:html};
+}
+
+function atTelaFilas(){
+  var abertos = atChequesAbertos(), hoje = atHoje();
+  var linhaCheque = function(c){ return [escapeHtml(c.emit), escapeHtml(c.num || '—'), atDataTxt(c.venc), c.st === 'proc' ? atDataTxt(c.dep) : '—', atSit(c.st), fmtValor(c.valor)]; };
+  var cabCheque = [{t:'Emitente'}, {t:'Nº'}, {t:'Vencimento'}, {t:'Depósito'}, {t:'Situação'}, {t:'Valor', num:true}];
+  var f1 = abertos.filter(function(c){ return c.st === 'disp' && c.alerta; }).sort(function(a, b){ return a.venc - b.venc; });
+  var f2 = abertos.filter(function(c){ return c.st === 'proc' && c.alerta; }).sort(function(a, b){ return (a.dep || a.venc) - (b.dep || b.venc); });
+  var f3 = abertos.filter(function(c){ return c.st === 'disp' && c.diasVenc != null && c.diasVenc >= 0 && c.diasVenc <= 7; }).sort(function(a, b){ return a.venc - b.venc; });
+  var dev = at.dados.cheques.filter(function(c){ return c.st === 'dev'; });
+  var devEmit = {}; dev.forEach(function(c){ devEmit[(c.emit || '').toLowerCase()] = 1; });
+  var f4 = abertos.filter(function(c){ return devEmit[(c.emit || '').toLowerCase()]; });
+  var r = atResumoVendas(atVendasPer());
+  var f5 = r.lista.filter(function(v){ return v.pct_desc && Math.abs(v.pct_desc - 10) >= 0.01; }).sort(function(a, b){ return b.pct_desc - a.pct_desc; });
+  var f6 = r.lista.filter(function(v){ return v.credito_devolucao > 0 || v.marcador_devolucao_troca === 'S'; });
+  var f7 = abertos.filter(function(c){ return c.st === 'pend'; }).sort(function(a, b){ return (a.venc || 0) - (b.venc || 0); });
+  var cob = atCobertura();
+  // lista longa rola dentro do painel (.at-fila); a área de rolagem recebe foco pelo teclado e o nome da fila
+  var bloco = function(titulo, meta, n, corpo){
+    corpo = corpo.replace('<div class="table-wrap">', '<div class="table-wrap" tabindex="0" role="region" aria-label="' + titulo + '">');
+    return atPainel(titulo + ' <span class="v-sit at-fila-n ' + (n ? 'is-cancelado' : 'is-venda') + '">' + fmtQtd(n) + '</span>', meta, '<div class="at-fila">' + corpo + '</div>', true);
+  };
+  var html = '<div class="panels-grid">' +
+    bloco('Cheques vencidos e não depositados', 'em mãos há mais de 3 dias depois do vencimento · ' + fmtValor(atSoma(f1, function(c){ return c.valor; })), f1.length, atTabela(cabCheque, f1.map(linhaCheque), 'Nenhum cheque vencido parado.')) +
+    bloco('Cheques depositados e não compensados', 'mais de 3 dias desde o depósito · ' + fmtValor(atSoma(f2, function(c){ return c.valor; })), f2.length, atTabela(cabCheque, f2.map(linhaCheque), 'Nenhum depósito atrasado.')) +
+    bloco('Cheques a depositar nos próximos 7 dias', fmtValor(atSoma(f3, function(c){ return c.valor; })), f3.length, atTabela(cabCheque, f3.map(linhaCheque), 'Nenhum cheque vence nos próximos 7 dias.')) +
+    bloco('Clientes com cheque devolvido e cheque em aberto', 'risco de nova devolução · ' + fmtValor(atSoma(f4, function(c){ return c.valor; })), f4.length, atTabela(cabCheque, f4.map(linhaCheque), 'Nenhum.')) +
+    bloco('Vendas com desconto fora do padrão', 'diferente de 0% e 10% · período selecionado', f5.length, atTabela([{t:'Venda'}, {t:'Data'}, {t:'Cliente'}, {t:'Vendedora'}, {t:'Desconto', num:true}, {t:'Líquido', num:true}],
+      f5.map(function(v){ return [escapeHtml(String(v.venda)), atDataTxt(v.dt), escapeHtml(v.cliente), escapeHtml(v.vendedor || '—'), fmtPctOrDash(v.pct_desc / 100), fmtValor(v.liquido)]; }), 'Nenhuma.')) +
+    bloco('Vendas pagas com crédito de devolução', 'conferir o crédito no Sisplan · período selecionado', f6.length, atTabela([{t:'Venda'}, {t:'Data'}, {t:'Cliente'}, {t:'Líquido', num:true}, {t:'Pago', num:true}, {t:'Crédito usado', num:true}],
+      f6.map(function(v){ return [escapeHtml(String(v.venda)), atDataTxt(v.dt), escapeHtml(v.cliente), fmtValor(v.liquido), fmtValor(v.valor_pago), v.credito_devolucao ? fmtValor(v.credito_devolucao) : '— (só o marcador 9)']; }), 'Nenhuma.')) +
+    bloco('Cheques com status Pendente', 'situação a definir na planilha · ' + fmtValor(atSoma(f7, function(c){ return c.valor; })), f7.length, atTabela(cabCheque, f7.map(linhaCheque), 'Nenhum.')) +
+    bloco('Dias úteis sem relatório de caixa', cob ? 'de ' + fmtDate(cob.ini) + ' a ' + fmtDate(cob.fim) : '', cob ? cob.faltam.length : 0, cob && cob.faltam.length ? '<p class="empty-note">' + cob.faltam.map(function(x){ return fmtDate(x) + ' (' + V_DOW_CURTO[x.getDay()] + ')'; }).join(', ') + '</p>' : '<p class="empty-note">Todos os dias úteis têm relatório.</p>') +
+    '</div>';
+  return {html:html};
+}
+
+// PDFs da pasta que a leitura automática não conseguiu ler ou que não fecharam ao centavo
+function atArquivosComProblema(b){
+  var arqs = b && b.arquivos ? Object.keys(b.arquivos).map(function(k){ return b.arquivos[k]; }).filter(function(a){ return a.status !== 'ok'; }) : [];
+  if(!arqs.length) return '';
+  return atTabela([{t:'Arquivo'}, {t:'Dia'}, {t:'Situação'}], arqs.map(function(a){ return [escapeHtml(a.nome || '—'), a.data ? atDataTxt(atData(a.data)) : '—', (a.status === 'divergente' ? '<span class="v-sit is-cancelado">não fecha</span>' : a.status === 'repetido' ? '<span class="v-sit">repetido</span>' : '<span class="v-sit is-pendente">sem leitura</span>') + (a.aviso ? ' ' + escapeHtml(a.aviso) : '')]; }));
+}
+function atTelaConferencia(){
+  var d = at.dados, b = d.base, cob = atCobertura();
+  var moedas = ['PIX', 'CHEQUE', 'LINK DE PAGAMENTO', 'CARTAO CREDITO', 'CARTAO DEBITO', 'DINHEIRO'];
+  var linhas = d.conf.map(function(c){
+    var dif = 0;
+    moedas.forEach(function(m){ dif += Math.abs(+c['dif_' + m] || 0); });
+    if(!/^BATEU/.test(c.status || '') && dif < 0.005) dif = Math.abs(+c.dif_parcelas_vs_valor_vendas || 0) || 0.01;
+    return [atDataTxt(c.dt), fmtQtd(c.n_vendas || 0)].concat(moedas.map(function(m){ return fmtValor(+c['pdf_' + m] || 0); })).concat([dif < 0.005 ? '<span class="v-sit is-venda">bate</span>' : '<span class="v-sit is-cancelado"' + (c.avisos ? ' title="' + escapeHtml(c.avisos) + '"' : '') + '>diferença ' + fmtValor(dif) + '</span>' + (c.avisos ? '<br><span class="txt-muted">' + escapeHtml(c.avisos) + '</span>' : '')]);
+  });
+  var html = '<div class="panels-grid">' +
+    atPainel('De onde vêm os dados', 'tudo automático: não é preciso importar nada',
+      '<p class="empty-note"><strong>Caixa do atacado:</strong> os PDFs de "Relatório Fechamento de Caixa" que a loja salva na pasta do Drive são lidos sozinhos quando alguém do financeiro abre esta tela. Dia que não fecha ao centavo aparece abaixo como diferença e as vendas dele não entram.' +
+      (b && b.automatico ? ' Última leitura: ' + fmtDateTime(new Date(b.automatico.em)) + '.' : '') + '</p>' +
+      '<p class="empty-note"><strong>Cheques e maquininhas:</strong> lidos da planilha financeira a cada abertura (guardados por 10 min; o botão Atualizar lê de novo).</p>' + atArquivosComProblema(b), true) +
+    atPainel('Cobertura dos relatórios', '', cob ? atTabela([{t:''}, {t:'Valor', num:true}], [['Período', fmtDate(cob.ini) + ' a ' + fmtDate(cob.fim)], ['Dias úteis', fmtQtd(cob.uteis)], ['Dias com relatório', fmtQtd(cob.com) + ' (' + fmtPctOrDash(cob.pct) + ')'], ['Faltando', cob.faltam.length ? cob.faltam.map(vDiaCurto).join(', ') : 'nenhum']]) : '<p class="empty-note">Ainda não há relatórios lidos.</p>') +
+    atPainel('Planilha financeira (cheques e maquininhas)', d.lidoEm ? 'lida em ' + fmtDateTime(d.lidoEm) + (d.cacheOk ? ' · guardada por 10 min (Atualizar lê de novo)' : '') : '',
+      '<p class="empty-note">Lida da planilha FINANCEIROTALGUI: só a aba CHEQUES (cheques de clientes), WALLETS e o quadro de recebíveis do Caixa Total. Saldos de banco, retiradas e DRE não entram no painel.</p>' +
+      (d.admin && d.planilha ? '<div class="form-row"><a class="text-link" href="https://docs.google.com/spreadsheets/d/' + encodeURIComponent(d.planilha) + '/edit" target="_blank" rel="noopener">Abrir a planilha</a> <button class="btn btn-sm" type="button" data-at-acao="planilha">Trocar a planilha</button></div>' : '')) +
+    atPainel('Relatório do Sisplan × leitura, por dia', 'soma por meio de pagamento no Resumo de Moedas do PDF; "bate" = a soma das vendas lidas é igual ao centavo', atTabela(
+      [{t:'Dia'}, {t:'Vendas', num:true}].concat(moedas.map(function(m){ return {t:m.charAt(0) + m.slice(1).toLowerCase(), num:true}; })).concat([{t:'Conferência'}]), linhas, 'Nenhum dia importado.'), true) +
+    '</div>';
+  return {html:html};
+}
+
+/* ---- Ações ---- */
+function atTrocarPlanilha(){
+  var v = window.prompt('Cole o link ou o ID da planilha financeira (FINANCEIROTALGUI):', at.dados && at.dados.planilha || '');
+  if(!v) return;
+  chamarComToken('salvarPlanilhaAtacado', v).then(function(r){
+    if(!r || r.erro) throw new Error(r && r.erro || 'sem resposta');
+    toast('Planilha trocada.', 'good'); at.dados = null; carregarAtacado(true);
+  }).catch(function(err){ toast('Não foi possível trocar a planilha: ' + (err && err.message || err)); });
+}
+document.addEventListener('click', function(e){
+  var el = e.target.closest && e.target.closest('#at-root [data-at-aba], #at-root [data-at-per], #at-root [data-at-acao]');
+  if(!el) return;
+  if(el.dataset.atAba){ at.aba = el.dataset.atAba; renderAtacado(); atFocar('[data-at-aba="' + at.aba + '"]'); pulseContent(); return; }
+  if(el.dataset.atPer){ at.per = el.dataset.atPer; renderAtacado(); atFocar('[data-at-per="' + at.per + '"]'); pulseContent(); return; }
+  if(el.dataset.atAcao === 'atualizar'){ at.erro = null; at.sinc.feito = false; carregarAtacado(true); return; }
+  if(el.dataset.atAcao === 'planilha'){ atTrocarPlanilha(); return; }
+});
+// o render refaz o HTML: devolve o foco ao controle acionado (teclado e leitor de tela não voltam ao topo)
+function atFocar(sel){ var b = document.querySelector('#at-root ' + sel); if(b) b.focus({preventScroll:true}); }
+// abas: setas ←/→, Home e End com ativação automática, como nas outras telas
+document.addEventListener('keydown', function(e){
+  var t = e.target.closest && e.target.closest('#at-root [role=tab][data-at-aba]');
+  if(!t) return;
+  var i = AT_ABAS.indexOf(t.dataset.atAba), n = -1;
+  if(e.key === 'ArrowRight') n = (i + 1) % AT_ABAS.length;
+  else if(e.key === 'ArrowLeft') n = (i - 1 + AT_ABAS.length) % AT_ABAS.length;
+  else if(e.key === 'Home') n = 0;
+  else if(e.key === 'End') n = AT_ABAS.length - 1;
+  if(n < 0) return;
+  e.preventDefault();
+  at.aba = AT_ABAS[n]; renderAtacado(); atFocar('[data-at-aba="' + at.aba + '"]'); pulseContent();
+});
 
 function npLimpar(){
   np.linhas = null; np.versao = null; np.erro = null; np.consolidando = null; np.checkedAt = null;
