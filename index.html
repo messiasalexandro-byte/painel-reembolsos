@@ -3,18 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Painel Financeiro · Talgui</title>
+<title>BI E-commerce · Talgui</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%230A0A0A'/%3E%3Ctext x='20' y='20.6' fill='%23FFFFFF' font-family='Inter,Arial,Helvetica,sans-serif' font-weight='800' font-size='9.6' text-anchor='middle' dominant-baseline='central' textLength='32' lengthAdjust='spacingAndGlyphs'%3ETALGUI%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <script>
 (function(){
-  // Tema único (etapa 31): escuro (padrão) ou claro. Quem tinha um dos 8 temas antigos salvo é migrado:
-  // light, minimal e nimbus (claros) → claro; dark, grafite, contraste, neon, cockpit e auto → escuro. Sem escolha salva: escuro.
+  // Tema único (etapa 31): escuro ou claro. Sem escolha salva, segue o sistema (prefers-color-scheme; etapa 34).
+  // Com escolha salva, ela vale. Quem tinha um dos 8 temas antigos é migrado: light, minimal e nimbus → claro;
+  // "auto" passa a seguir o sistema (a chave é apagada); dark, grafite, contraste, neon e cockpit → escuro.
   var t = null;
   try{ t = localStorage.getItem('reembolsos_tema_v1'); } catch(e){}
-  var novo = /^(light|minimal|nimbus)$/.test(t || '') ? 'light' : 'dark';
+  if(t === 'auto'){ try{ localStorage.removeItem('reembolsos_tema_v1'); } catch(e){} t = null; }
+  var sistema = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  var novo = t === null ? sistema : /^(light|minimal|nimbus)$/.test(t) ? 'light' : 'dark';
   if(t !== null && t !== novo){ try{ localStorage.setItem('reembolsos_tema_v1', novo); } catch(e){} }
   document.documentElement.setAttribute('data-theme', novo);
 })();
@@ -89,7 +92,6 @@
   --glow-soft:rgba(190,210,255,.55);
   --glow-faint:rgba(150,175,230,.22);
   --spot:rgba(255,255,255,.055);
-  --spot-border:rgba(255,255,255,.22);
   --shadow-sm:0 1px 0 rgba(255,255,255,.045) inset, 0 20px 40px -24px rgba(0,0,0,.8);
   --shadow-md:0 1px 0 rgba(255,255,255,.05) inset, 0 24px 48px -22px rgba(0,0,0,.85);
   --shadow-lg:0 1px 0 rgba(255,255,255,.045) inset, 0 24px 60px -18px rgba(0,0,0,.85);
@@ -102,12 +104,10 @@
   /* elevação: 1 = cartões em repouso (sm) · 2 = hover e barra fixa (md) · 3 = menus e avisos (lg) · 4 = diálogos (xl) */
   --shadow-xl:0 1px 0 rgba(255,255,255,.045) inset, 0 30px 70px -18px rgba(0,0,0,.9);
   --scrim:rgba(4,6,12,.62);
-  --press:rgba(255,255,255,.06);
   --fab-bg:#e8ecf3;
   --fab-fg:#0b0f18;
   /* movimento: durações e curvas únicas para o painel inteiro */
   --dur-1:90ms; --dur-2:160ms; --dur-3:240ms; --dur-4:420ms; --dur-5:680ms;
-  --ease-in-out:cubic-bezier(.65,0,.35,1);
   --ease-emph:cubic-bezier(.2,0,0,1);
   --r-card:12px;
   --r-ctl:9px;
@@ -166,7 +166,6 @@
   --glow-soft:rgba(51,65,85,.30);
   --glow-faint:rgba(51,65,85,.12);
   --spot:rgba(15,23,42,.035);
-  --spot-border:rgba(15,23,42,.18);
   --shadow-sm:0 1px 0 rgba(255,255,255,.9) inset, 0 10px 30px -20px rgba(15,23,42,.22);
   --shadow-md:0 1px 0 rgba(255,255,255,.9) inset, 0 16px 36px -20px rgba(15,23,42,.28);
   --shadow-lg:0 20px 50px -18px rgba(15,23,42,.3);
@@ -176,7 +175,6 @@
   --crosshair:rgba(15,23,42,.3);
   --shadow-xl:0 24px 60px -18px rgba(15,23,42,.34);
   --scrim:rgba(15,23,42,.35);
-  --press:rgba(15,23,42,.05);
   --fab-bg:#111827;
   --fab-fg:#f8fafc;
   color-scheme:light;
@@ -281,7 +279,6 @@ button{ font-family:inherit; }
 }
 .badge-warning{ background:rgba(250,178,25,.14); color:var(--warn-text); border-color:rgba(250,178,25,.35); }
 .badge-good{ background:rgba(12,163,12,.14); color:var(--good-text); border-color:rgba(12,163,12,.35); }
-.hairline{ height:1px; background:var(--border); margin:20px 0; border:none; }
 
 /* ---------- Filter bar ---------- */
 /* barra de filtros da página: um único desenho para a barra global (#filter-bar) e para os filtros próprios
@@ -315,8 +312,6 @@ button{ font-family:inherit; }
 .kpi-label{ font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--text-muted); }
 .kpi-value{ font-family:var(--font-display); font-size:26px; font-weight:700; margin-top:8px; font-variant-numeric:tabular-nums; }
 .kpi-sub{ font-size:11.5px; color:var(--text-secondary); margin-top:4px; }
-.kpi-sub.up{ color:var(--status-good); }
-.kpi-sub.down{ color:var(--status-critical); }
 .kpi-spark{ height:38px; margin-top:auto; } /* encosta no pé do cartão: o valor fica na mesma altura em todas as páginas */
 .kpi-card:has(.kpi-spark) .kpi-sub{ margin-bottom:10px; }
 
@@ -371,7 +366,6 @@ button{ font-family:inherit; }
 .panel-meta{ font-size:11px; color:var(--text-muted); }
 .chart-box{ height:230px; margin-top:10px; }
 .chart-box.chart-box-sm{ height:120px; }
-.panel-split{ display:flex; flex-direction:column; gap:4px; }
 .panel-sub-title{ font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-top:16px; }
 
 /* ---------- Tables ---------- */
@@ -382,7 +376,8 @@ table.data-table th{
   color:var(--text-muted); padding:6px 8px; border-bottom:1px solid var(--border); white-space:nowrap;
 }
 table.data-table td{ padding:7px 8px; border-bottom:1px solid var(--row-sep); font-variant-numeric:tabular-nums; white-space:nowrap; }
-table.data-table tr.total-row td{ font-weight:700; color:var(--status-warning); border-top:1px solid var(--border); }
+/* linha de total: um estilo só em todas as tabelas (negrito, borda superior, sem cor nem fundo) */
+table.data-table tr.total-row td, table.data-table tr.total-row th{ font-weight:700; color:var(--text-primary); border-top:1px solid var(--border-strong); }
 table.data-table tr:last-child td{ border-bottom:none; }
 .indicator-list{ list-style:none; margin:10px 0 0; padding:0; display:flex; flex-direction:column; gap:10px; }
 .indicator-list li{ display:flex; justify-content:space-between; gap:10px; font-size:12.5px; border-bottom:1px dashed var(--border); padding-bottom:8px; }
@@ -444,7 +439,6 @@ details.table-toggle summary{ cursor:pointer; font-size:11.5px; color:var(--kpi-
 .sidebar-nav{ display:flex; flex-direction:column; gap:2px; flex:1; }
 .nav-group-label{ font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); padding:16px 10px 4px; }
 .sidebar-nav > .nav-group-label:first-child{ padding-top:4px; }
-.nav-sub-label{ font-size:11.5px; font-weight:600; color:var(--text-secondary); padding:12px 10px 3px 12px; }
 /* 17 itens: altura mínima única (36px; 44px no toque) e mesmo ritmo com ou sem o prefixo da área */
 .side-link{
   display:flex; align-items:center; gap:10px; padding:8px 10px; min-height:36px; border-radius:9px;
@@ -485,13 +479,14 @@ details.table-toggle summary{ cursor:pointer; font-size:11.5px; color:var(--kpi-
 @media (min-width:961px){ .topbar{ padding-right:max(32px, calc(100% - var(--content-max) + 32px)); } }
 .sidebar-backdrop{ position:fixed; inset:0; background:rgba(9,4,13,.55); z-index:35; }
 @media (max-width:960px){
-  .sidebar{ position:fixed; left:0; top:0; bottom:0; transform:translateX(-100%); transition:transform .38s var(--ease-out); }
-  body.sidebar-open .sidebar{ transform:none; box-shadow:0 10px 40px rgba(0,0,0,.35); }
+  /* fechado: fora da tela E fora da ordem de Tab (visibility:hidden, aplicada só depois da animação de saída) */
+  .sidebar{ position:fixed; left:0; top:0; bottom:0; transform:translateX(-100%); visibility:hidden; transition:transform .38s var(--ease-out), visibility 0s linear .38s; }
+  body.sidebar-open .sidebar{ transform:none; visibility:visible; transition:transform .38s var(--ease-out), visibility 0s; box-shadow:0 10px 40px rgba(0,0,0,.35); }
   .menu-btn{ display:inline-grid; }
   .topbar{ padding:12px 16px; }
   .site-content{ padding:16px 16px 40px; }
 }
-@media (prefers-reduced-motion:reduce){ .sidebar{ transition:none; } }
+@media (prefers-reduced-motion:reduce){ .sidebar, body.sidebar-open .sidebar{ transition:none; } }
 
 /* ---------- Diagnostics ---------- */
 .diagnostics-panel{
@@ -515,7 +510,6 @@ details.table-toggle summary{ cursor:pointer; font-size:11.5px; color:var(--kpi-
 .month-chip .mc-status{ color:var(--text-muted); margin-top:3px; }
 .dot{ width:7px; height:7px; border-radius:50%; display:inline-block; }
 .dot-ok{ background:var(--status-good); } .dot-warn{ background:var(--status-warning); } .dot-err{ background:var(--status-critical); } .dot-off{ background:var(--text-muted); }
-.issues-controls{ display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
 .issues-scroll{ max-height:320px; overflow-y:auto; margin-top:10px; border:1px solid var(--border); border-radius:10px; }
 .sev-pill{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px; }
 .sev-pill.error{ background:rgba(208,59,59,.18); color:var(--crit-text); }
@@ -567,7 +561,6 @@ table.data-table tfoot td{ font-weight:700; border-top:1px solid var(--border); 
 .meta-bar-fill.warning{ background:var(--status-warning); }
 .meta-bar-fill.critical{ background:var(--status-critical); }
 .meta-bar-label{ font-size:12px; color:var(--text-secondary); margin-top:6px; font-variant-numeric:tabular-nums; }
-.mc-flag{ display:inline-block; font-size:10px; font-weight:700; color:var(--crit-text); margin-top:5px; }
 .link-btn{ appearance:none; background:none; border:none; color:var(--crit-text); cursor:pointer; font:inherit; font-size:11.5px; padding:0; text-decoration:underline; }
 
 /* =====================================================================
@@ -825,7 +818,6 @@ details.table-toggle[open] > .table-wrap{ animation:rise-sm .35s var(--ease-out)
   font:500 12.5px var(--font-body); cursor:pointer; text-align:left;
 }
 .search-trigger svg{ width:15px; height:15px; flex:0 0 15px; }
-.search-trigger-label{ flex:1; }
 .search-trigger:hover{ border-color:var(--border-strong); color:var(--text-secondary); }
 .search-trigger:focus-visible{ outline:2px solid var(--kpi-ticket); outline-offset:2px; }
 
@@ -870,10 +862,8 @@ details.table-toggle[open] > .table-wrap{ animation:rise-sm .35s var(--ease-out)
 .home-scope-ctrl .filter-label{ white-space:nowrap; }
 #home-metrica button, .seg-cat button{ padding:4px 12px; font-size:12px; white-space:nowrap; }
 .page[data-page=reembolsos] .month-grid-section{ margin-bottom:16px; }
-/* Top 5 acompanha a altura do painel dos 7 dias: as 5 linhas se distribuem e a dica vai para o rodapé */
-#panel-top5{ display:flex; flex-direction:column; }
-#panel-top5 > #table-top5{ flex:1 1 auto; }
-#panel-top5 #table-top5 > table{ height:100%; }
+/* Top 5: altura do próprio conteúdo (antes esticava até a altura do painel dos 7 dias e as 5 linhas ficavam espaçadas) */
+.panels-grid:has(> #panel-top5){ align-items:start; }
 
 /* Início novo: resumo do processo do dinheiro (recorte único, blocos por data-base) */
 .in-toolbar{ display:flex; align-items:center; flex-wrap:wrap; gap:10px 16px; margin-bottom:10px; }
@@ -895,9 +885,6 @@ details.table-toggle[open] > .table-wrap{ animation:rise-sm .35s var(--ease-out)
 .in-nota-fixa{ font-size:11.5px; line-height:1.5; color:var(--text-muted); margin:12px 0 0; max-width:760px; }
 .in-info{ font-size:12px; line-height:1.55; color:var(--text-secondary); margin:12px 0 0; }
 .in-links{ font-size:12.5px; margin:12px 0 0; }
-.in-kpi-wide{ grid-column:span 2; }
-@media (max-width:900px){ .in-kpi-wide{ grid-column:1 / -1; } }
-.in-quebra{ margin-top:12px; }
 /* subtítulo do cartão em linhas próprias (quantidade em cima, comparação embaixo) */
 .in-sub-linha{ display:block; margin-bottom:4px; color:var(--text-secondary); }
 /* estado "período sem cobertura da fonte": no lugar dos zeros */
@@ -925,7 +912,7 @@ details.table-toggle[open] > .table-wrap{ animation:rise-sm .35s var(--ease-out)
 .in-cas-amostra.is-menos{ background:var(--status-critical); } .in-cas-amostra.is-mais{ background:var(--status-good); } .in-cas-amostra.is-total{ background:var(--kpi-ticket); }
 @media (max-width:700px){ .in-ponte-tab .in-cascata{ display:none; } }
 .in-ponte-tab .in-sinal{ width:28px; text-align:center; color:var(--text-muted); font-weight:700; }
-.in-ponte-tab tr.in-total td{ font-weight:700; border-top:1px solid var(--border-strong); background:var(--bg-raised); }
+.in-ponte-tab tr.in-total td{ font-weight:700; border-top:1px solid var(--border-strong); }
 .in-ponte-tab tr.in-total td.in-sinal{ color:var(--text-secondary); }
 .in-bloco .indicator-list .ind-value{ white-space:nowrap; }
 .in-pos{ margin-top:16px; }
@@ -953,7 +940,6 @@ details.table-toggle[open] > .table-wrap{ animation:rise-sm .35s var(--ease-out)
 /* coluna Total sempre à vista: fixa à direita, fundo opaco e sombra sutil */
 .dre-tab thead th:last-child, .dre-tab td.dre-total{ position:sticky; right:0; z-index:1; background:var(--bg-surface); box-shadow:-8px 0 8px -8px rgba(0,0,0,.45); }
 .dre-tab thead th:last-child{ z-index:2; }
-.dre-tab tr.dre-tot td.dre-total{ background:var(--bg-raised); }
 .dre-aj-alto{ color:var(--status-critical); font-weight:700; }
 .dre-aj-tag{ display:block; font-size:9.5px; font-weight:600; letter-spacing:.03em; text-transform:uppercase; }
 @media (max-width:700px){
@@ -966,7 +952,7 @@ details.table-toggle[open] > .table-wrap{ animation:rise-sm .35s var(--ease-out)
 .dre-tab thead th:first-child{ position:sticky; left:0; z-index:2; background:var(--bg-surface); }
 .dre-n{ display:inline-block; min-width:44px; font-size:10.5px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
 .dre-s{ display:inline-block; width:16px; color:var(--text-muted); font-weight:700; }
-.dre-tab tr.dre-tot td, .dre-tab tr.dre-tot th.dre-rot{ font-weight:700; background:var(--bg-raised); border-top:1px solid var(--border-strong); }
+.dre-tab tr.dre-tot td, .dre-tab tr.dre-tot th.dre-rot{ font-weight:700; border-top:1px solid var(--border-strong); }
 .dre-tab td.dre-total{ font-weight:700; border-left:1px solid var(--border-strong); }
 .dre-tab tr.dre-sep th{ padding-top:16px; font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); text-align:left; }
 .dre-tab tr.dre-info td, .dre-tab tr.dre-info th.dre-rot{ font-size:12px; color:var(--text-secondary); }
@@ -1065,7 +1051,7 @@ details.table-toggle[open] > .table-wrap{ animation:rise-sm .35s var(--ease-out)
 .in-mm-tag{ display:inline-block; margin-left:8px; font-size:10.5px; font-weight:600; padding:0 7px; border-radius:999px; border:1px dashed var(--border-strong); color:var(--text-secondary); line-height:1.6; }
 .in-mm-parc{ display:block; font-size:10.5px; font-weight:500; color:var(--text-muted); line-height:1.3; }
 .in-mm-sem{ color:var(--text-muted); }
-.in-mm-tab tfoot .in-total > *{ font-weight:700; border-top:1px solid var(--border-strong); border-bottom:none; background:var(--bg-raised); }
+.in-mm-tab tfoot .in-total > *{ font-weight:700; border-top:1px solid var(--border-strong); border-bottom:none; }
 .in-mm-nota{ max-width:none; }
 /* blocos de detalhe recolhíveis: o título vira botão; estado lembrado neste navegador */
 .in-toggle{ display:inline-flex; align-items:center; gap:10px; min-height:32px; margin:-4px 0; padding:4px 8px 4px 0; border:0; border-radius:8px; background:none; font:inherit; color:inherit; text-align:left; cursor:pointer; }
@@ -1081,8 +1067,6 @@ details.table-toggle[open] > .table-wrap{ animation:rise-sm .35s var(--ease-out)
 @media (min-width:1100px){
   .in-pos .indicator-list{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); column-gap:48px; }
   .in-pos .indicator-list li{ border-bottom:none; padding-bottom:0; }
-  .in-ritmo{ display:grid; grid-template-columns:minmax(0, 3fr) minmax(340px, 2fr); column-gap:48px; align-items:center; }
-  .in-ritmo .indicator-list{ margin-top:0; }
 }
 /* tabelas com rolagem horizontal: o lado que ainda tem conteúdo esmaece (classes postas por layoutRolagem) */
 .table-wrap.rola-dir{ -webkit-mask-image:linear-gradient(90deg, #000 calc(100% - 48px), transparent); mask-image:linear-gradient(90deg, #000 calc(100% - 48px), transparent); }
@@ -1188,7 +1172,7 @@ table.data-table .badge{ padding:1px 8px; font-size:11px; line-height:1.5; curso
 .cmdk-foot{ border-top:1px solid var(--border); padding:8px 14px; font-size:11px; color:var(--text-muted); }
 
 /* Celular */
-@media (max-width:1100px){ .search-trigger{ min-width:0; } .search-trigger-label, .search-trigger .kbd{ display:none; } }
+@media (max-width:1100px){ .search-trigger{ min-width:0; } .search-trigger .kbd{ display:none; } }
 @media (max-width:700px){
   .filter-bar{ padding:10px 12px; gap:10px 14px; }
   .filter-toggle{
@@ -1198,7 +1182,6 @@ table.data-table .badge{ padding:1px 8px; font-size:11px; line-height:1.5; curso
   .filter-toggle:focus-visible{ outline:2px solid var(--kpi-ticket); outline-offset:2px; }
   .filter-fields{ display:none; }
   .filter-bar.is-open .filter-fields{ display:flex; flex-wrap:wrap; gap:12px 16px; width:100%; }
-  .icon-btn-label{ display:none; }
   .header-actions{ gap:6px; }
   .topbar-titles{ flex-basis:100%; order:3; }
 }
@@ -1237,8 +1220,6 @@ html{ -webkit-tap-highlight-color:transparent; text-rendering:optimizeLegibility
 @media (hover:hover){ .panel:hover{ border-color:var(--border-strong); } }
 
 /* Textos de status sempre com a cor "de texto" (as cores de preenchimento não têm contraste para texto) */
-table.data-table tr.total-row td{ color:var(--warn-text); }
-.kpi-sub.up{ color:var(--good-text); } .kpi-sub.down{ color:var(--crit-text); }
 .warn-flag{ color:var(--warn-text); }
 
 /* KPIs: valor se ajusta à largura do cartão (R$ 2.631.379,24 não encosta mais na borda) */
@@ -1293,7 +1274,6 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
 
 /* Aberturas: menu cresce do botão; busca desce com leve escala */
 .menu:not([hidden]){ transform-origin:top right; animation:menu-in var(--dur-3) var(--ease-out) backwards; }
-.menu.menu-up:not([hidden]){ transform-origin:bottom left; animation-name:menu-up-in; }
 .cmdk{ transform-origin:top center; animation:cmdk-in var(--dur-3) var(--ease-out) backwards; }
 .cmdk-item{ transition:background-color var(--dur-1) ease; }
 .cmdk-item[aria-selected="true"]{ box-shadow:inset 2px 0 0 var(--kpi-ticket); }
@@ -1325,7 +1305,8 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
   .alert-go{ padding:12px 0; margin:-12px 0; }
   .kpi-month-card{ min-height:48px; }
   .info-tip, .link-cell, .th-sort{ position:relative; }
-  .info-tip::after, .link-cell::after{ content:''; position:absolute; inset:-14px -8px; }
+  .link-cell::after{ content:''; position:absolute; inset:-14px -8px; }
+  .info-tip::after{ content:''; position:absolute; inset:-15px; }   /* ⓘ: área de toque de 44 × 44 */
   .check-inline{ min-height:44px; }
   .check-inline input{ width:20px; height:20px; }
   .select, .num-input, .date-input, .text-input{ min-height:44px; font-size:16px; }
@@ -1352,10 +1333,8 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
 .day-swipe-area.day-in-prev{ animation:day-in-prev var(--dur-4) var(--ease-out) backwards; }
 
 /* menus que abrem para cima (rodapé do menu lateral) */
-.menu.menu-up{ top:auto; bottom:calc(100% + 6px); }
 
 @keyframes menu-in{ from{ opacity:0; transform:translateY(-4px) scale(.97); } }
-@keyframes menu-up-in{ from{ opacity:0; transform:translateY(4px) scale(.97); } }
 @keyframes cmdk-in{ from{ opacity:0; transform:translateY(-10px) scale(.98); } }
 @keyframes day-in-next{ from{ opacity:0; transform:translateX(28px); } }
 @keyframes day-in-prev{ from{ opacity:0; transform:translateX(-28px); } }
@@ -1398,13 +1377,11 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
   body.sidebar-recolhido .sidebar-toggle{ left:52px; }
   body.sidebar-recolhido .sidebar-brand{ justify-content:center; padding:0 0 4px; }
   body.sidebar-recolhido .sidebar-brand .brand-text,
-  body.sidebar-recolhido .side-link > span:not(.nav-count):not(.avatar),
-  body.sidebar-recolhido .sidebar-file{ display:none; }
+  body.sidebar-recolhido .side-link > span:not(.nav-count):not(.avatar){ display:none; }
   body.sidebar-recolhido .sidebar-toggle svg{ transform:rotate(180deg); }
   body.sidebar-recolhido .side-link{ justify-content:center; gap:0; padding:9px 0; }
   body.sidebar-recolhido .nav-count{ position:absolute; top:1px; right:1px; margin:0; font-size:9px; padding:1px 5px; }
   body.sidebar-recolhido .nav-group-label{ font-size:0; height:1px; padding:0; margin:10px 8px; background:var(--border); }
-  body.sidebar-recolhido .nav-sub-label{ display:none; }
   /* rodapé: Atualizar agora e tema viram só ícone (o nome continua no title / aria-label) */
   body.sidebar-recolhido .sidebar-footer .btn{ display:flex; align-items:center; justify-content:center; text-align:center; padding:0; min-height:36px; }
   body.sidebar-recolhido #btn-drive-refresh{ font-size:0; }
@@ -1479,8 +1456,6 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
 }
 
 /* Esqueleto da lista de Acesso enquanto carrega */
-.sk-row td{ padding-top:10px; padding-bottom:10px; }
-.sk-line{ height:12px; }
 
 @keyframes page-in{ from{ opacity:0; transform:translateY(8px); } }
 @keyframes refresh-in{ from{ opacity:.4; transform:translateY(4px); } }
@@ -1521,7 +1496,7 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
   canvas{ max-width:100%!important; }
   .kpi-month-grid{ display:grid!important; grid-template-columns:repeat(6,1fr)!important; overflow:visible!important; margin:0!important; padding:0!important; -webkit-mask-image:none!important; mask-image:none!important; }
   .kpi-month-card, .kpi-card{ transform:none!important; }
-  .swipe-hint, .theme-pill, .fab-cmdk, .day-swipe-dots{ display:none!important; }
+  .swipe-hint, .theme-pill, .fab-cmdk{ display:none!important; }
   .issues-scroll{ max-height:none; }
   *, *::before, *::after{ animation:none!important; transition:none!important; }
   body::before, .toast-region, .skeleton-screen{ display:none!important; }
@@ -1596,6 +1571,7 @@ table.data-table tr.total-row td{ color:var(--warn-text); }
 .v-sit.is-cancelado, .v-sit.is-recusado{ color:var(--crit-text); background:rgba(208,59,59,.12); }
 .v-sit.is-pendente{ color:var(--warn-text); background:rgba(250,178,25,.12); }
 .data-table td.v-total-label{ color:var(--text-muted); }
+.data-table tr.total-row td.v-total-label{ color:var(--text-primary); }
 /* dois blocos lado a lado dentro de um painel largo (empilham no celular) */
 .v-lado-a-lado{ display:grid; grid-template-columns:1fr 1fr; gap:12px 28px; align-items:start; }
 .v-lado-a-lado > *{ min-width:0; } /* a tabela rola dentro do bloco em vez de alargar a página */
@@ -1982,7 +1958,6 @@ html.theme-anim *, html.theme-anim *::before, html.theme-anim *::after{
 .sidebar-toggle:hover{ border-color:color-mix(in srgb, var(--text-primary) 35%, transparent); }
 .brand-title{ font-weight:600; font-size:14px; letter-spacing:-.01em; }
 .nav-group-label{ font-size:10.5px; font-weight:600; letter-spacing:.09em; color:var(--text-muted); padding:14px 8px 6px; }
-.nav-sub-label{ font-weight:600; color:var(--text-secondary); padding:10px 8px 3px; }
 .side-link{ min-height:34px; padding:6px 8px; border-radius:var(--r-ctl); border:1px solid transparent; font-weight:500; color:var(--text-secondary); z-index:1; }
 .side-link svg{ color:var(--text-muted); width:16px; height:16px; flex-basis:16px; }
 .side-link:hover{ background:var(--bg-hover); color:var(--text-primary); }
@@ -2152,6 +2127,10 @@ table.data-table tfoot td{ border-top-color:var(--border-strong); }
 .fab-cmdk:active{ transform:scale(.94); }
 .fab-cmdk:focus-visible{ outline:2px solid var(--focus); outline-offset:3px; }
 body.sidebar-open .fab-cmdk{ display:none!important; }
+/* ao rolar para baixo o botão sai de cena (não cobre colunas nem o fim das tabelas); volta ao rolar para cima ou ao parar */
+.fab-cmdk{ transition:transform .2s var(--ease), box-shadow .2s, opacity .2s; }
+.fab-cmdk.is-oculto{ transform:translateY(calc(100% + 28px)); opacity:0; pointer-events:none; }
+.fab-cmdk.is-oculto:focus-visible{ transform:none; opacity:1; pointer-events:auto; }
 .site-content{ padding-bottom:96px; } /* o botão flutuante não cobre o fim da página (paginação, últimos links) */
 
 /* Links de texto sem classe própria (notas "abra o painel online"): mesma cor dos demais links */
@@ -2226,6 +2205,7 @@ body.sidebar-open .fab-cmdk{ display:none!important; }
 }
 @media (prefers-reduced-motion:reduce){
   .kpi-card.is-tilt, .in-mod-card.is-tilt, .kpi-card:hover, .fab-cmdk:hover{ transform:none; }
+  .fab-cmdk, .fab-cmdk.is-oculto{ transition:none; }
   .ripple{ display:none; }
   .theme-pill .knob, .theme-pill button svg, .nav-thumb{ transition:none; }
 }
@@ -2566,8 +2546,6 @@ th[aria-sort="ascending"] .apx-ord, th[aria-sort="descending"] .apx-ord{ color:v
 .apx-tab-pe{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px 12px; margin-top:12px; font-size:12px; color:var(--text-muted); }
 
 /* "Mais detalhes": os blocos de antes, sem mudança */
-.apx-mais{ margin:36px 0 0; padding-top:22px; border-top:1px solid var(--border); font-size:18px; font-weight:600; letter-spacing:-.01em; color:var(--text-primary); }
-.apx-mais-nota{ margin-top:6px; }
 
 /* Calendário de intervalo */
 .apx-cal{ width:300px; max-width:calc(100vw - 16px); padding:12px; }
@@ -2633,6 +2611,14 @@ th[aria-sort="ascending"] .apx-ord, th[aria-sort="descending"] .apx-ord{ color:v
 @media print{
   .apx-pop, .apx-kebab, .apx-filtros, .apx-acoes, .apx-busca, .apx-ver, .side-search, .top-sino-wrap, .top-user-wrap{ display:none!important; }
 }
+/* Alvos de toque de 44px (etapa 34): fica no fim para vencer as regras de 32–40px acima (abas, segmentos do Início,
+   kebab, setas do dia, campo de datas). A área de toque de 44 × 44 do ⓘ está no bloco "Alvos de toque de 44px" acima. */
+@media (pointer:coarse), (max-width:700px){
+  .page-tab{ min-height:44px; }
+  .apx-per button, .apx-vis-tabs button, .apx-texttabs button, .apx-datas{ min-height:44px; }
+  .apx-kebab, .apx-ico{ width:44px; height:44px; }
+  .day-nav .icon-btn{ min-width:44px; min-height:44px; }
+}
 </style>
 </head>
 <body>
@@ -2642,7 +2628,7 @@ th[aria-sort="ascending"] .apx-ord, th[aria-sort="descending"] .apx-ord{ color:v
   <section id="screen-upload" class="upload-wrap">
     <div class="upload-card">
       <div class="upload-top">
-        <div class="upload-eyebrow">Painel Financeiro · Talgui</div>
+        <div class="upload-eyebrow">BI E-commerce · Talgui</div>
         <div class="theme-pill" role="group" aria-label="Tema"></div>
       </div>
       <h1>Importar planilha</h1>
@@ -2686,7 +2672,7 @@ th[aria-sort="ascending"] .apx-ord, th[aria-sort="descending"] .apx-ord{ color:v
   <section id="screen-login" class="upload-wrap" hidden>
     <form class="upload-card" id="login-form" autocomplete="on">
       <div class="upload-top">
-        <div class="upload-eyebrow">Painel Financeiro · Talgui</div>
+        <div class="upload-eyebrow">BI E-commerce · Talgui</div>
         <div class="theme-pill" role="group" aria-label="Tema"></div>
       </div>
       <h1 id="login-titulo">Entrar</h1>
@@ -2746,27 +2732,23 @@ th[aria-sort="ascending"] .apx-ord, th[aria-sort="descending"] .apx-ord{ color:v
   <aside class="sidebar" id="sidebar" aria-label="Menu principal">
     <div class="sidebar-brand">
       <svg class="brand-mark" viewBox="0 0 40 40" width="40" height="40" role="img" aria-label="Talgui"><title>Talgui</title><rect width="40" height="40" rx="10" fill="#0A0A0A"/><text x="20" y="20.6" fill="#FFFFFF" font-size="9.6" text-anchor="middle" dominant-baseline="central" textLength="32" lengthAdjust="spacingAndGlyphs">TALGUI</text></svg>
-      <div class="brand-text"><div class="brand-title">Talgui</div><div class="brand-sub" id="dash-sub">Painel Financeiro</div></div>
-      <!-- etapa 32: troca de painel (só o Financeiro existe; Atacado em breve) -->
-      <button class="brand-switch" id="btn-marca" type="button" aria-label="Trocar de painel" aria-haspopup="menu" aria-expanded="false" aria-controls="marca-menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9l4-4 4 4"/><path d="M8 15l4 4 4-4"/></svg></button>
-    </div>
-    <div class="apx-pop menu-pop" id="marca-menu" role="menu" aria-label="Painéis" hidden>
-      <a class="menu-item apx-mi" role="menuitem" href="#/inicio" aria-current="true"><span>Painel Financeiro</span><svg class="apx-mi-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></a>
-      <button class="menu-item apx-mi" role="menuitem" type="button" aria-disabled="true"><span>Atacado</span><span class="menu-item-sub">em breve</span></button>
+      <div class="brand-text"><div class="brand-title">Talgui</div><div class="brand-sub" id="dash-sub">BI E-commerce</div></div>
+      <!-- etapa 35: o seletor de painel (#btn-marca + #marca-menu) saiu; com o Atacado fora, sobrava um item só. setupTopo checa null. -->
     </div>
     <!-- busca do painel (Ctrl K): abre a mesma paleta de comandos (openCmdk); antes ficava no topo -->
     <button class="side-search" id="btn-search" type="button" aria-label="Buscar pedido, caso, valor ou data (Ctrl+K)" aria-haspopup="dialog" aria-controls="cmdk" aria-keyshortcuts="Control+K">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       <span class="side-search-label">Buscar</span><span class="side-search-kbd" aria-hidden="true"><kbd class="kbd" id="side-search-mod">Ctrl</kbd><kbd class="kbd">K</kbd></span>
     </button>
-    <!-- Menu por módulos em grupos recolhíveis (acordeão; só o grupo da tela aberta fica aberto): Principal · Comercial e Operação ·
-         Reembolsos e Devoluções · Financeiro (só perfil financeiro) · Central de ajuda. data-route = id da rota (não renomear);
+    <!-- Menu por módulos em grupos recolhíveis (acordeão; só o grupo da tela aberta fica aberto): Principal · Vendas ·
+         Devoluções e logística reversa · Contas a receber (só perfil financeiro) · Central de ajuda. Etapa 35: Visão financeira,
+         DRE e Fluxo de caixa saíram do menu (rotas viram alias do Início em ROUTE_ALIASES). data-route = id da rota (não renomear);
          data-nav-aba = aba que o item abre e acende (syncNavAtivo); data-nav-fila = fila de Devoluções (NF). [data-financeiro] some para quem não tem acesso. -->
     <nav class="sidebar-nav" aria-label="Páginas">
       <div class="nav-group-label nav-principal">Principal</div>
         <a class="side-link" href="#/inicio" data-route="inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg><span>Início</span></a>
       <div class="nav-grupo" data-grupo="comercial">
-        <button class="nav-grupo-btn" id="ngb-comercial" type="button" aria-expanded="true" aria-controls="ng-comercial"><span class="nav-grupo-nome">Comercial e Operação</span><span class="nav-grupo-n" hidden></span><span class="nav-grupo-chev" aria-hidden="true"></span></button>
+        <button class="nav-grupo-btn" id="ngb-comercial" type="button" aria-expanded="true" aria-controls="ng-comercial"><span class="nav-grupo-nome">Vendas</span><span class="nav-grupo-n" hidden></span><span class="nav-grupo-chev" aria-hidden="true"></span></button>
         <div class="nav-grupo-itens" id="ng-comercial" role="group" aria-labelledby="ngb-comercial"><div class="nav-grupo-dentro">
         <a class="side-link" href="#/vendas" data-route="vendas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span>Vendas</span></a>
         <a class="side-link" href="#/pedidos" data-route="pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg><span>Pedidos</span></a>
@@ -2774,7 +2756,7 @@ th[aria-sort="ascending"] .apx-ord, th[aria-sort="descending"] .apx-ord{ color:v
         </div></div>
       </div>
       <div class="nav-grupo" data-grupo="reembolsos">
-        <button class="nav-grupo-btn" id="ngb-reembolsos" type="button" aria-expanded="true" aria-controls="ng-reembolsos"><span class="nav-grupo-nome">Reembolsos e Devoluções</span><span class="nav-grupo-n" hidden></span><span class="nav-grupo-chev" aria-hidden="true"></span></button>
+        <button class="nav-grupo-btn" id="ngb-reembolsos" type="button" aria-expanded="true" aria-controls="ng-reembolsos"><span class="nav-grupo-nome">Devoluções e logística reversa</span><span class="nav-grupo-n" hidden></span><span class="nav-grupo-chev" aria-hidden="true"></span></button>
         <div class="nav-grupo-itens" id="ng-reembolsos" role="group" aria-labelledby="ngb-reembolsos"><div class="nav-grupo-dentro">
         <a class="side-link" href="#/devolucoes" data-route="devolucoes" data-nav-aba="fila"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span>Filas de trabalho</span><span class="nav-count" id="nav-filas-count" hidden></span></a>
         <a class="side-link" href="#/devolucoes?aba=casos" data-route="devolucoes" data-nav-aba="casos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h5l2 3h4l2-3h5"/><path d="M5.5 5h13L21 13v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"/></svg><span>Casos de devolução</span></a>
@@ -2791,11 +2773,8 @@ th[aria-sort="ascending"] .apx-ord, th[aria-sort="descending"] .apx-ord{ color:v
         </div></div>
       </div>
       <div class="nav-grupo" data-grupo="financeiro" data-financeiro hidden>
-        <button class="nav-grupo-btn" id="ngb-financeiro" type="button" aria-expanded="true" aria-controls="ng-financeiro"><span class="nav-grupo-nome">Financeiro</span><span class="nav-grupo-n" hidden></span><span class="nav-grupo-chev" aria-hidden="true"></span></button>
+        <button class="nav-grupo-btn" id="ngb-financeiro" type="button" aria-expanded="true" aria-controls="ng-financeiro"><span class="nav-grupo-nome">Contas a receber</span><span class="nav-grupo-n" hidden></span><span class="nav-grupo-chev" aria-hidden="true"></span></button>
         <div class="nav-grupo-itens" id="ng-financeiro" role="group" aria-labelledby="ngb-financeiro"><div class="nav-grupo-dentro">
-        <a class="side-link" href="#/financeiro" data-route="financeiro" data-financeiro hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg><span>Visão financeira</span></a>
-        <a class="side-link" href="#/dre" data-route="dre" data-financeiro hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg><span>DRE de receitas</span></a>
-        <a class="side-link" href="#/fluxo" data-route="fluxo" data-financeiro hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h13l-3-3M17 17H4l3 3"/></svg><span>Fluxo de caixa</span></a>
         <a class="side-link" href="#/nuvem-pago" data-route="nuvem-pago" data-financeiro hidden id="nav-nuvem-pago"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="13" rx="2"/><path d="M2.5 10h19"/><path d="M6.5 15h4"/></svg><span>Recebimentos Nuvem Pago</span></a>
         <a class="side-link" href="#/nuvem-pago?aba=conciliacao" data-route="nuvem-pago" data-financeiro hidden data-nav-aba="conciliacao"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg><span>Conciliação</span></a>
         </div></div>
@@ -5076,7 +5055,11 @@ function routeLiberada(r){ return (!r.admin || (IS_APPS_SCRIPT && acessoAdmin)) 
 // endereços da estrutura anterior (favoritos e links já enviados) → páginas novas
 // (#/metas virou a aba Metas e projeções de Dia a dia e metas: applyRoute abre a aba certa)
 // (#/conciliacao virou a aba Conciliação de Recebimentos: applyRoute injeta aba=conciliacao, como em #/metas)
-var ROUTE_ALIASES = { 'visao-geral':'reembolsos', 'diario-semanal':'dia-a-dia', 'relatorio':'dia-a-dia', 'diagnostico':'planilha', 'metas':'dia-a-dia', 'conciliacao':'nuvem-pago' };
+// (etapa 35, BI: Visão financeira, DRE e Fluxo de caixa saíram; os endereços caem no Início. As entradas em ROUTES e as funções
+//  de render ficam no código, só não são mais alcançadas. ROTAS_DESATIVADAS também tira as três da busca Ctrl K.)
+var ROTAS_DESATIVADAS = ['financeiro', 'dre', 'fluxo'];
+var ROUTE_ALIASES = { 'visao-geral':'reembolsos', 'diario-semanal':'dia-a-dia', 'relatorio':'dia-a-dia', 'diagnostico':'planilha', 'metas':'dia-a-dia', 'conciliacao':'nuvem-pago',
+  'financeiro':'inicio', 'dre':'inicio', 'fluxo':'inicio' };
 // aliases que dependem de parâmetro: rota antiga + parâmetros que a identificam → rota nova, levando só os parâmetros de "manter".
 // O endereço é reescrito por syncUrl (replace, sem entrada nova no histórico), como nos aliases simples.
 var ROUTE_ALIASES_PARAM = [
@@ -5130,7 +5113,7 @@ function renderPageSub(){
   } else if(route.id === 'minha-conta'){
     parts.push('Foto, senha e saída do painel online');
   } else if(route.id === 'sem-permissao'){
-    parts.push('O módulo Financeiro abre só para o perfil financeiro');
+    parts.push('A área Contas a receber abre só para o perfil financeiro');
   } else if(V_ROTAS.indexOf(route.id) >= 0){
     parts.push(route.id === 'pedidos' && oper.aba !== 'lista' ? opSubtitulo() : vSubtitulo(route.id));
   } else if(route.id === 'nuvem-pago'){
@@ -5562,6 +5545,8 @@ function applyRoute(){
     if(parsed.id === 'relatorio' && !pendingScroll) pendingScroll = 'panel-daily-report';
     if(parsed.id === 'metas') parsed.params.aba = 'metas';
     if(parsed.id === 'conciliacao') parsed.params.aba = 'conciliacao';
+    // rotas desativadas (etapa 35): os parâmetros delas (mes=out, gran=…) não valem no Início
+    if(ROTAS_DESATIVADAS.indexOf(parsed.id) >= 0) parsed.params = {};
   }
   // Vendas e Pedidos têm parâmetros próprios (mes= de lá não é o mês dos reembolsos)
   if(V_ROTAS.indexOf(route.id) >= 0) vApplyParams(parsed.params, route.id);
@@ -5656,7 +5641,7 @@ function tituloPagina(route){
 }
 function syncDocTitle(){
   var route = currentRoute(), t = tituloPagina(route);
-  document.title = t + (t !== route.title ? ' · ' + route.title : '') + ' · Painel Financeiro · Talgui';
+  document.title = t + (t !== route.title ? ' · ' + route.title : '') + ' · BI E-commerce · Talgui';
 }
 // título do topo e da aba do navegador (na entrada da página e a cada troca de aba)
 function syncPageTitle(){
@@ -5722,15 +5707,33 @@ function syncFilterBar(){
   document.getElementById('filter-count').textContent = n ? String(n) : '';
 }
 
+// Gaveta (até 960px): fechada fica fora do Tab (CSS visibility:hidden). Ao abrir, o foco vai para o item ativo
+// do menu; ao fechar com o foco lá dentro, ele volta para o botão do menu.
+function sidebarEhGaveta(){ return window.innerWidth <= 960; }
 function openSidebar(){
   document.body.classList.add('sidebar-open');
   document.getElementById('sidebar-backdrop').hidden = false;
   document.getElementById('btn-menu').setAttribute('aria-expanded', 'true');
+  if(sidebarEhGaveta()){
+    var sb = document.getElementById('sidebar');
+    // o item ativo, se estiver num grupo aberto; senão o primeiro item visível (grupo fechado = visibility:hidden).
+    // Espera 60 ms: alguns itens têm transição própria e só ficam "visible" depois do primeiro quadro.
+    setTimeout(function(){
+      if(!document.body.classList.contains('sidebar-open')) return;
+      var lista = [sb.querySelector('.side-link.active')].concat(Array.prototype.slice.call(sb.querySelectorAll('a[href], button:not([disabled]), input')));
+      var alvo = lista.find(function(el){ return el && el.getClientRects().length && getComputedStyle(el).visibility === 'visible'; });
+      if(alvo) alvo.focus({preventScroll:true});
+    }, 60);
+  }
 }
 function closeSidebar(){
+  var estavaAberto = document.body.classList.contains('sidebar-open');
+  var sb = document.getElementById('sidebar');
+  var focoDentro = sb && sb.contains(document.activeElement);
   document.body.classList.remove('sidebar-open');
   document.getElementById('sidebar-backdrop').hidden = true;
   document.getElementById('btn-menu').setAttribute('aria-expanded', 'false');
+  if(estavaAberto && focoDentro && sidebarEhGaveta()) document.getElementById('btn-menu').focus({preventScroll:true});
 }
 
 // Menu lateral recolhido (só ícones) no desktop; no celular a classe não tem efeito (lá o menu é gaveta)
@@ -5783,9 +5786,38 @@ function setupMenuRecolhido(){
 
 // Atualiza o gráfico existente no lugar (as barras e linhas "migram" para os valores novos
 // em vez de recomeçar do zero). Só recria quando o tipo muda.
+// Nome acessível do <canvas>: role="img" + aria-label montado do título do painel, das séries e do intervalo,
+// refeito a cada atualização. Sparklines são decorativas (o número está no cartão): aria-hidden.
+// Canvas com aria-label escrito à mão (sem data-aria-auto) mantém o texto dele.
+function chartAria(canvas, config){
+  if(config.sparkline){ canvas.setAttribute('aria-hidden', 'true'); canvas.removeAttribute('role'); return; }
+  if(canvas.getAttribute('aria-label') && !canvas.hasAttribute('data-aria-auto')) return;
+  var txt = function(e){ return e ? e.textContent.replace(/\s+/g, ' ').trim() : ''; };
+  var caixa = canvas.closest('.chart-box') || canvas.parentElement, painel = canvas.closest('.panel, figure, .apx-card');
+  var titulo = painel ? txt(painel.querySelector('.panel-title, figcaption, h2, h3')) : '';
+  var sub = caixa && caixa.previousElementSibling && caixa.previousElementSibling.classList.contains('panel-sub-title') ? txt(caixa.previousElementSibling) : '';
+  var labels = (config.data.labels || []).map(String), sets = (config.data.datasets || []).filter(function(d){ return !d.soLegenda; });
+  var fmt = config.fmtAria, partes = [];
+  if(config.type === 'doughnut'){
+    var d0 = sets[0] ? sets[0].data : [];
+    partes.push('Gráfico de rosca com ' + labels.length + ' fatias: ' + labels.map(function(l, i){ return l + (fmt ? ' ' + fmt(d0[i]) : ''); }).join(', ') + '.');
+  } else {
+    var tipo = config.type === 'bar' ? 'barras' : 'linha';
+    partes.push('Gráfico de ' + tipo + (sets.length ? ' com ' + sets.map(function(d){ return d.label || 'valor'; }).join(', ') : '') +
+      (labels.length ? ': ' + labels.length + ' pontos, de ' + labels[0] + ' a ' + labels[labels.length - 1] : '') + '.');
+    var s0 = sets[0] ? sets[0].data : [], iMax = -1;
+    s0.forEach(function(v, i){ if(v != null && (iMax < 0 || v > s0[iMax])) iMax = i; });
+    if(fmt && iMax >= 0) partes.push('Maior ' + (sets[0].label || 'valor') + ': ' + fmt(s0[iMax]) + ' em ' + labels[iMax] + '.');
+  }
+  if(painel && painel.querySelector('.table-toggle, table')) partes.push('Os valores estão na tabela do painel.');
+  canvas.setAttribute('role', 'img');
+  canvas.setAttribute('data-aria-auto', '');
+  canvas.setAttribute('aria-label', [titulo, sub].filter(Boolean).join(' · ') + (titulo || sub ? '. ' : '') + partes.join(' '));
+}
 function upsertChart(id, config){
   var canvas = document.getElementById(id);
   if(!canvas) return;
+  try{ chartAria(canvas, config); } catch(e){}
   var chart = state.charts[id];
   if(chart && chart.config.type === config.type && chart.canvas === canvas){
     var oldSets = chart.data.datasets, newSets = config.data.datasets;
@@ -5863,13 +5895,23 @@ var centerTextPlugin = {
 
 // eixo Y: em métricas inteiras (quantidade), só marcas inteiras — antes 0,2 / 0,4 / 0,6 viravam "0 0 1 1".
 // Qualquer rótulo repetido que ainda sobrar é omitido.
+// Eixo compacto ("R$ 5 mil", "R$ 2,5 mi", "1,2 mil"), no máximo 6 marcas: o valor cheio fica no tooltip e na tabela.
+var nfEixo = new Intl.NumberFormat('pt-BR', {maximumFractionDigits:2});
+function fmtEixoCompacto(v, moeda){
+  var a = Math.abs(v), s = a >= 1e6 ? nfEixo.format(a / 1e6) + ' mi' : a >= 1e3 ? nfEixo.format(a / 1e3) + ' mil' : nfEixo.format(a);
+  return (v < 0 ? '-' : '') + (moeda ? 'R$ ' : '') + s;
+}
 function yTicks(valueFormatter){
   var inteiro = valueFormatter(0.4) === valueFormatter(0);
+  var moeda = /R\$/.test(valueFormatter(1000));
+  var compacto = moeda || (inteiro && /^[\d.]+$/.test(valueFormatter(1000)));
   var t = {
     color:getCss('--text-muted'),
+    maxTicksLimit:6,
     callback:function(v, i, ticks){
-      var s = valueFormatter(v);
-      if(i > 0 && ticks && ticks[i-1] && valueFormatter(ticks[i-1].value) === s) return null;
+      var fmt = compacto ? function(x){ return fmtEixoCompacto(x, moeda); } : valueFormatter;
+      var s = fmt(v);
+      if(i > 0 && ticks && ticks[i-1] && fmt(ticks[i-1].value) === s) return null;
       return s;
     }
   };
@@ -5893,11 +5935,18 @@ function comboBaseOptions(valueFormatter){
 }
 
 function buildComboConfig(opts){
+  // destaque (semana selecionada) na MESMA série: cor e contorno por barra. Antes era uma 2ª série de barras,
+  // que o Chart.js desenhava ao lado da original (parecia haver dois valores por dia/semana).
+  var hl = opts.highlightData, temHl = !!(hl && hl.some(function(v){ return v != null; }));
+  var marca = function(sim, nao){ return temHl ? opts.barData.map(function(_, i){ return hl[i] != null ? sim : nao; }) : nao; };
   var datasets = [
-    { type:'bar', label:opts.barLabel, data:opts.barData, backgroundColor:opts.barColor, borderRadius:6, borderSkipped:false, order:2, maxBarThickness:26 }
+    { type:'bar', label:opts.barLabel, data:opts.barData, backgroundColor:marca(opts.highlightColor, opts.barColor),
+      borderColor:marca(getCss('--text-primary'), 'transparent'), borderWidth:marca(2, 0),
+      borderRadius:6, borderSkipped:false, order:2, maxBarThickness:26, corLegenda:opts.barColor }
   ];
-  if(opts.highlightData){
-    datasets.push({ type:'bar', label:opts.highlightLabel, data:opts.highlightData, backgroundColor:opts.highlightColor, borderRadius:6, borderSkipped:false, order:1, maxBarThickness:26 });
+  if(temHl){
+    // série vazia, só para a legenda explicar a cor do destaque (grouped:false: não reserva espaço ao lado da barra)
+    datasets.push({ type:'bar', label:opts.highlightLabel, data:opts.labels.map(function(){ return null; }), backgroundColor:opts.highlightColor, grouped:false, soLegenda:true, order:1 });
   }
   if(opts.avgValue != null){
     datasets.push({ type:'line', label:opts.avgLabel, data:opts.labels.map(function(){return opts.avgValue;}), borderColor:getCss('--series-avg'), borderDash:[4,4], borderWidth:1.5, pointRadius:0, fill:false, order:0, tension:0 });
@@ -5905,16 +5954,37 @@ function buildComboConfig(opts){
   if(opts.compareData){
     datasets.push({ type:'line', label:opts.compareLabel, data:opts.compareData, borderColor:getCss('--text-secondary'), borderDash:[6,3], borderWidth:1.5, pointRadius:0, fill:false, order:0, tension:0.25 });
   }
-  return { type:'bar', data:{ labels:opts.labels, datasets:datasets }, options: comboBaseOptions(opts.valueFormatter) };
+  var options = comboBaseOptions(opts.valueFormatter);
+  // tooltip sem itens vazios (série só de legenda, comparação sem dia correspondente)
+  options.plugins.tooltip.filter = function(item){ return item.parsed.y != null; };
+  // a legenda pega a cor da 1ª barra: com o destaque no dia/semana 1, a série principal saía com a cor do destaque
+  options.plugins.legend.labels.generateLabels = function(chart){
+    return Chart.defaults.plugins.legend.labels.generateLabels(chart).map(function(it){
+      var ds = chart.data.datasets[it.datasetIndex];
+      if(ds && ds.corLegenda){ it.fillStyle = ds.corLegenda; it.strokeStyle = ds.corLegenda; it.lineWidth = 0; }
+      return it;
+    });
+  };
+  options.plugins.legend.onClick = function(e, item, legend){
+    var ds = legend.chart.data.datasets[item.datasetIndex];
+    if(ds && ds.soLegenda) return;
+    Chart.defaults.plugins.legend.onClick.call(this, e, item, legend);
+  };
+  return { type:'bar', data:{ labels:opts.labels, datasets:datasets }, options: options, fmtAria: opts.valueFormatter };
 }
 
-function buildAreaConfig(labels, data, color, valueFormatter, label, compare){
+// parcial (opcional): por índice, true no mês em andamento → ponto vazado e o trecho que chega nele tracejado
+function buildAreaConfig(labels, data, color, valueFormatter, label, compare, parcial){
   var datasets = [{ label:label, data:data, borderColor:color, backgroundColor:fadeFill(color, '55'), fill:true, borderWidth:2, pointRadius:0, tension:0.3 }];
+  if(parcial && parcial.some(Boolean)){
+    Object.assign(datasets[0], { pointRadius:data.map(function(_, i){ return parcial[i] ? 3.5 : 0; }), pointBackgroundColor:getCss('--bg-surface'), pointBorderColor:color, pointBorderWidth:2,
+      segment:{ borderDash:function(ctx){ return parcial[ctx.p1DataIndex] ? [5, 4] : undefined; } } });
+  }
   if(compare){
     datasets.push({ label:compare.label, data:compare.data, borderColor:getCss('--text-secondary'), borderDash:[6,3], backgroundColor:'transparent', fill:false, borderWidth:1.5, pointRadius:0, tension:0.25 });
   }
   return {
-    type:'line',
+    type:'line', fmtAria: valueFormatter,
     data:{ labels:labels, datasets:datasets },
     options:{
       responsive:true, maintainAspectRatio:false,
@@ -5931,7 +6001,7 @@ function buildAreaConfig(labels, data, color, valueFormatter, label, compare){
 function buildDoughnutConfig(labels, data, colors, valueFormatter){
   var total = data.reduce(function(a,b){ return a+b; }, 0);
   return {
-    type:'doughnut',
+    type:'doughnut', fmtAria: valueFormatter,
     data:{ labels:labels, datasets:[{ data:data, backgroundColor:colors, borderColor:getCss('--bg-surface'), borderWidth:2, borderRadius:data.filter(function(v){ return v > 0; }).length > 1 ? 6 : 0, hoverOffset:10, hoverBorderColor:getCss('--bg-surface') }] },
     options:{
       responsive:true, maintainAspectRatio:false, cutout:'64%', layout:{ padding:10 },
@@ -5946,8 +6016,13 @@ function buildDoughnutConfig(labels, data, colors, valueFormatter){
 
 function buildMonthlyLineConfig(labels, data, avgValue, color, valueFormatter, opts){
   opts = opts || {};
+  // mês parcial (em andamento): ponto vazado e o trecho que chega nele tracejado, para não parecer mês fechado
+  var parcial = opts.parcial || [];
   var datasets = [
-    { label:opts.label || 'Valor', data:data, borderColor:color, backgroundColor:'transparent', borderWidth:2.5, pointRadius:3.5, pointBackgroundColor:color, pointHoverRadius:6, pointHoverBorderWidth:3, pointHoverBorderColor:getCss('--bg-surface'), tension:0.3 }
+    { label:opts.label || 'Valor', data:data, borderColor:color, backgroundColor:'transparent', borderWidth:2.5, pointRadius:3.5,
+      pointBackgroundColor:data.map(function(_, i){ return parcial[i] ? getCss('--bg-surface') : color; }), pointBorderColor:color, pointBorderWidth:2,
+      segment:{ borderDash:function(ctx){ return parcial[ctx.p1DataIndex] ? [5, 4] : undefined; } },
+      pointHoverRadius:6, pointHoverBorderWidth:3, pointHoverBorderColor:getCss('--bg-surface'), tension:0.3 }
   ];
   if(avgValue != null){
     datasets.push({ label:'Média mensal (meses fechados)', data:labels.map(function(){return avgValue;}), borderColor:getCss('--series-avg'), borderDash:[4,4], borderWidth:1.5, pointRadius:0, tension:0 });
@@ -5958,13 +6033,13 @@ function buildMonthlyLineConfig(labels, data, avgValue, color, valueFormatter, o
   var options = comboBaseOptions(valueFormatter);
   // tooltip ignora pontos sem valor (meses futuros, MM3 sem base)
   options.plugins.tooltip.filter = function(item){ return item.parsed.y != null; };
-  return { type:'line', data:{ labels:labels, datasets:datasets }, options: options };
+  return { type:'line', data:{ labels:labels, datasets:datasets }, options: options, fmtAria: valueFormatter };
 }
 
 function buildSparklineConfig(data, color){
   color = getCss('--spark') || color;
   return {
-    type:'line',
+    type:'line', sparkline:true,
     data:{ labels:data.map(function(_,i){return i;}), datasets:[{ data:data, borderColor:color, backgroundColor:fadeFill(color, '40'), fill:true, borderWidth:2, pointRadius:0, tension:0.35 }] },
     options:{
       responsive:true, maintainAspectRatio:false,
@@ -6844,10 +6919,14 @@ var THEMES = [
 ];
 var THEME_IDS = ['dark','light'];
 function themeById(id){ for(var i = 0; i < THEMES.length; i++) if(THEMES[i].id === id) return THEMES[i]; return THEMES[0]; }
-function themePref(){
-  var t = null;
-  try{ t = localStorage.getItem(THEME_KEY); } catch(e){}
-  return THEME_IDS.indexOf(t) !== -1 ? t : 'dark';
+// sem escolha salva, o tema segue o sistema (e acompanha a troca do sistema enquanto a página está aberta)
+var THEME_SISTEMA = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
+function themeSistema(){ return THEME_SISTEMA && THEME_SISTEMA.matches ? 'light' : 'dark'; }
+function themeSalvo(){ var t = null; try{ t = localStorage.getItem(THEME_KEY); } catch(e){} return THEME_IDS.indexOf(t) !== -1 ? t : null; }
+function themePref(){ return themeSalvo() || themeSistema(); }
+if(THEME_SISTEMA){
+  var temaSistemaMudou = function(){ if(!themeSalvo() && !printState && currentTheme() !== themeSistema()) applyTheme(themeSistema(), false); };
+  if(THEME_SISTEMA.addEventListener) THEME_SISTEMA.addEventListener('change', temaSistemaMudou); else if(THEME_SISTEMA.addListener) THEME_SISTEMA.addListener(temaSistemaMudou);
 }
 function currentTheme(){
   var t = document.documentElement.getAttribute('data-theme');
@@ -7002,8 +7081,8 @@ function renderSemPermissao(){
   if(!el) return;
   el.innerHTML = '<div class="panel-header"><div class="panel-title">Página só para o perfil financeiro</div></div>' +
     '<p class="empty-note">' + (IS_APPS_SCRIPT
-      ? 'A página <strong>' + escapeHtml(nome) + '</strong> faz parte do módulo Financeiro, que abre só para quem tem o perfil financeiro (o dono do painel e os e-mails em NUVEMPAGO_LEITORES). Se você precisa dela, peça a liberação a quem administra o painel.'
-      : 'A página <strong>' + escapeHtml(nome) + '</strong> faz parte do módulo Financeiro, que só abre no <a href="' + PAINEL_ONLINE_URL + '" target="_blank" rel="noopener">painel online</a>, com o perfil financeiro.') + '</p>' +
+      ? 'A página <strong>' + escapeHtml(nome) + '</strong> faz parte da área Contas a receber, que abre só para quem tem o perfil financeiro (o dono do painel e os e-mails em NUVEMPAGO_LEITORES). Se você precisa dela, peça a liberação a quem administra o painel.'
+      : 'A página <strong>' + escapeHtml(nome) + '</strong> faz parte da área Contas a receber, que só abre no <a href="' + PAINEL_ONLINE_URL + '" target="_blank" rel="noopener">painel online</a>, com o perfil financeiro.') + '</p>' +
     '<div class="form-row"><a class="btn btn-primary btn-sm" href="#/inicio">Ir para o Início</a></div>';
 }
 function rotaLiberadaId(id){ var r = ROUTES.find(function(x){ return x.id === id; }); return !!(r && routeLiberada(r)); }
@@ -7173,7 +7252,7 @@ var DEFS = {
   vs_valor_modelo: ['Valor das peças', 'Parte do (subtotal − desconto) de cada pedido que cabe à peça, rateada pelo preço × quantidade dos itens. Sem frete: por isso a soma é menor que o faturamento.'],
   vs_var: ['Variação', 'Peças no período ÷ peças no período-base (o mesmo da comparação MoM, WoW ou D-7) − 1. "novo" = não vendeu no período-base.'],
   vs_abc: ['Curva ABC', 'A = modelos que somam até 80% do valor das peças (do maior para o menor); B = até 95%; C = o restante.'],
-  vs_devol: ['Devolução', 'Peças devolvidas ou trocadas (casos da AfterClick não cancelados) dos pedidos de venda do período ÷ peças vendidas nesses pedidos. Em moda, ~24% é o teto de atenção do mercado.'],
+  vs_devol: ['Devolução', 'Peças devolvidas ou trocadas (casos da AfterClick não cancelados) dos pedidos de venda do período ÷ peças vendidas nesses pedidos. A meta interna é de 10% por pedido (pedidos com devolução ÷ pedidos de venda, na Saúde do mês).'],
   vs_frete: ['Frete médio', 'Valor do Frete ÷ pedidos de venda. Frete grátis = pedido com frete zero.'],
   vs_cupom_desc: ['Desconto concedido', 'Desconto dos pedidos de venda que usaram o cupom (com mais de um cupom no pedido, o desconto é dividido entre eles).'],
   vs_meta: ['Meta', 'Meta mensal aprovada (Metas e prazos, no fim da Visão geral). Mês em andamento e semana em curso: a projeção do fechamento é comparada com a meta. Semana = meta × 7 ÷ dias do mês; dia = meta ÷ dias do mês.'],
@@ -7209,12 +7288,12 @@ var DEFS = {
   dv_taxa: ['Taxa de devolução (pedidos)', 'Pedidos com pelo menos um caso de devolução válido (sem cancelados e sem trocas) ÷ pedidos da base escolhida (de venda ou entregues), pelo mês da venda (coorte). Meses recentes ainda podem subir.'],
   dv_taxa_efetivada: ['Taxa efetivada', 'Pedidos com devolução cuja peça já chegou à loja (Recebida, Conferida ou Encerrada) ÷ pedidos da base. Tira os casos que nunca viraram devolução de fato.'],
   dv_taxa_troca: ['Taxa de troca', 'Pedidos com pelo menos um caso de troca válido ÷ pedidos da base. A troca fica fora da taxa de devolução.'],
-  dv_taxa_pecas: ['Taxa de devolução (peças)', 'Peças dos casos de devolução válidos (sem trocas) ÷ peças vendidas nos pedidos de venda do mês (Quantidade Comprada).'],
-  dv_taxa_valor: ['Taxa de devolução (valor)', 'Valor Total dos casos de devolução válidos (sem trocas) ÷ faturamento dos pedidos de venda do mês.'],
-  dv_vendidas: ['Peças vendidas', 'Quantidade Comprada do produto nos pedidos de venda da Nuvemshop dos meses do período escolhido.'],
-  dv_taxa_produto: ['Taxa de devolução do produto', 'Peças devolvidas ÷ peças vendidas nos meses do período. Pela data da venda (coorte), as duas pontas são do mesmo recorte; pela data de abertura do caso, é uma aproximação em períodos curtos.'],
+  dv_taxa_pecas: ['Taxa de devolução (peças)', 'Peças dos casos de devolução válidos (sem trocas) ÷ peças vendidas nos pedidos de venda do mês (Quantidade Comprada). Só na base "Pedidos de venda": na base "entregue" fica em branco, porque o servidor não traz as peças só dos entregues.'],
+  dv_taxa_valor: ['Taxa de devolução (valor)', 'Valor Total dos casos de devolução válidos (sem trocas) ÷ faturamento dos pedidos de venda do mês. Só na base "Pedidos de venda": na base "entregue" fica em branco, porque o servidor não traz o faturamento só dos entregues.'],
+  dv_vendidas: ['Peças vendidas', 'Quantidade Comprada do produto nos pedidos de venda da Nuvemshop dos meses do período escolhido. O período vira meses inteiros (ex.: últimos 30 dias em 30/10 = desde 01/10), porque a venda só existe somada por mês.'],
+  dv_taxa_produto: ['Taxa de devolução do produto', 'Peças devolvidas ÷ peças vendidas nos mesmos meses inteiros: o período começa no dia 1 do mês em que a janela começa, nas duas pontas. Pela data da venda (coorte), as duas pontas são do mesmo recorte; pela data de abertura do caso, é uma aproximação em períodos curtos.'],
   dv_pequeno: ['Ficou pequeno / Ficou grande', 'Peças com o motivo "O tamanho ficou pequeno" (ou "grande") ÷ peças devolvidas daquele tamanho.'],
-  dv_enquadramento: ['Enquadramento', 'Sugerido pelo painel, nesta ordem: vício → erro da loja → não entregue → aberto em até 7 dias da entrega (arrependimento, mesmo com motivo de tamanho ou gosto) → troca comercial. Sem data de entrega segura, fica A classificar. A confirmação por uma pessoa ainda não tem onde ser gravada.'],
+  dv_enquadramento: ['Enquadramento', 'Sugerido pelo painel, nesta ordem: vício → erro da loja → não entregue → aberto em até 7 dias da entrega (arrependimento, mesmo com motivo de tamanho ou gosto) → fora de prazo (a loja não trabalha com trocas). Sem data de entrega segura, fica A classificar. A confirmação por uma pessoa ainda não tem onde ser gravada.'],
   dv_entrega: ['Entrega do pedido de origem', 'A API da Nuvemshop não informa a data de entrega. O painel guarda a primeira vez em que viu o pedido como entregue (limite superior) e o último registro ainda sem entrega ou a data do pedido (limite inferior).'],
   dv_forma: ['Desfecho previsto (forma)', 'Vem da solução pretendida pela cliente e do meio de pagamento do pedido: estorno no cartão, devolução por Pix, devolução por boleto/TED, crédito em loja ou troca. O desfecho executado ainda não chega ao painel.'],
   dv_situacao: ['Situação do desfecho', 'Não devido ainda (peça não chegou) → Devido (peça na loja) → Solicitado (NF emitida, aguardando o Financeiro) → Concluído na loja (encerrado ou processado no card FINA). Divergente = os dados da Nuvemshop ou da planilha não batem com o caso.'],
@@ -7256,14 +7335,15 @@ var DEFS = {
   fin_prazo: ['Prazo médio de recebimento', 'Dias entre a data do pagamento e a data de recebimento (quando o dinheiro fica disponível) nas vendas liberadas no mês, ponderados pelo valor bruto. Pix costuma cair no mesmo dia; cartão, em até 5 dias.'],
   fin_conc: ['Conciliado (vendas × pedidos)', '(Vendas do extrato com pedido e valor iguais + canceladas com estorno do valor inteiro) ÷ (vendas do extrato do mês − links de pagamento). É o mesmo cálculo da aba Conciliação.'],
   fin_chb_taxa: ['Taxa de chargeback (valor)', 'Valor debitado nos chargebacks de saída do mês ÷ valor bruto das vendas liberadas no mês. É por valor, não por número de transações (o chargeback ratio das bandeiras usa transações). Reversões a favor da loja ficam de fora.'],
-  fin_rec_liq: ['Receita líquida × mês anterior', 'Linha 8 da DRE de receitas (faturamento − aguardando Nuvem Pago − estornos − chargebacks, pelo mês do pedido) do mês escolhido contra o mês anterior, nos mesmos dias quando o mês ainda não terminou.'],
-  dre_chb: ['Chargebacks (DRE)', 'Contestações de saída do extrato do Nuvem Pago, ligadas ao pedido pelo número da transação e somadas no mês do PEDIDO. As revertidas a favor da loja (entrada) somam de volta. Se a coluna Estorno do pedido (ou a linha Aguardando Nuvem Pago) já tirou esse valor, só entra o que passar disso: nada é descontado duas vezes.'],
-  dre_recliq: ['Receita líquida', 'Faturamento − aguardando Nuvem Pago − estornos − chargebacks. Ainda sem o custo do meio de pagamento.'],
+  fin_rec_liq: ['Receita líquida × mês anterior', 'Linha 8 da DRE de receitas (faturamento − estornos − chargebacks, pelo mês do pedido) do mês escolhido contra o mês anterior, nos mesmos dias quando o mês ainda não terminou. Quando há pedidos aguardando dados do Nuvem Pago, o estorno deles ainda não é conhecido e o comparativo é parcial (o texto avisa).'],
+  dre_chb: ['Chargebacks (DRE)', 'Contestações de saída do extrato do Nuvem Pago, ligadas ao pedido pelo número da transação e somadas no mês do PEDIDO. As revertidas a favor da loja (entrada) somam de volta. Se a coluna Estorno do pedido já tirou esse valor, só entra o que passar disso: nada é descontado duas vezes.'],
+  dre_semfin: ['Aguardando dados do Nuvem Pago (não é dedução)', 'Total dos pedidos de venda que ainda não trouxeram taxa, juros e estorno do Nuvem Pago (vieram só da API). Não é dedução: esses pedidos continuam no Faturamento, na Receita líquida (linha 8) e na linha 13, pelo valor total, porque o custo do meio de pagamento e o estorno deles ainda não são conhecidos. Quando o extrato chegar, a taxa entra nas linhas 9 e 10. Informativo, fora da soma: no mês corrente, as linhas 8 e 13 ainda podem cair um pouco.'],
+  dre_recliq: ['Receita líquida', 'Faturamento − estornos − chargebacks. Ainda sem o custo do meio de pagamento. Os pedidos que aguardam o Nuvem Pago (linha 5, informativa) continuam aqui pelo total.'],
   dre_taxa: ['Taxa do meio de pagamento e juros de antecipação (linhas 9 e 10)', 'Taxas + juros do parcelamento dos pedidos que já têm dado financeiro. Somados porque, no CSV da Nuvemshop, "Taxas" já inclui os juros; a separação pelo extrato do Nuvem Pago está na linha informativa.'],
-  dre_recrec: ['Receita líquida de recebimento', 'Receita líquida − taxa e juros + devolução dos custos ± ajuste do Total líquido da Nuvemshop. É o que a venda do mês deixa depois do meio de pagamento, ainda por competência (data do pedido): não é o caixa do mês (veja o Fluxo de caixa) nem lucro. Difere do Líquido estimado da venda (Vendas e Início) pelos chargebacks da linha 7, que o Líquido estimado ainda não desconta.'],
-  dre_reconc: ['Conferência da DRE', 'Linha 13 + chargebacks (linha 7) = Líquido estimado da venda (soma do Total líquido da Nuvemshop dos pedidos do mês, o mesmo número de Vendas e do Início). Fecha por construção (a linha 12 absorve a diferença), então NÃO é uma validação independente: olhe a linha 12, que fica destacada quando passa de R$ 1.'],
+  dre_recrec: ['Líquido da venda após meio de pagamento (competência)', 'Receita líquida − taxa e juros + devolução dos custos ± ajuste do Total líquido da Nuvemshop. É o que a venda do mês deixa depois do meio de pagamento, ainda por competência (data do pedido): não é o caixa do mês (veja o Fluxo de caixa) nem lucro. Difere do Líquido estimado da venda (Vendas e Início) pelos chargebacks da linha 7, que o Líquido estimado ainda não desconta, e pelos pedidos que aguardam o Nuvem Pago (linha 5), que aqui entram pelo total, ainda sem a taxa.'],
+  dre_reconc: ['Conferência da DRE', 'Linha 13 + chargebacks (linha 7) − aguardando Nuvem Pago (linha 5) = Líquido estimado da venda (soma do Total líquido da Nuvemshop dos pedidos do mês, o mesmo número de Vendas e do Início). Fecha por construção (a linha 12 absorve a diferença), então NÃO é uma validação independente: olhe a linha 12, que fica destacada quando passa de R$ 1.'],
   dre_cancel: ['Cancelados após o pagamento', 'Pedidos pagos e depois cancelados: ficam fora das vendas (e fora desta DRE). O dinheiro volta pelo estorno do extrato. Informativo, não entra na soma.'],
-  dre_chb_ja: ['Chargebacks já contados em Estorno ou Aguardando', 'Chargebacks cujo valor líquido é igual (R$ 0,01) ao que a Nuvemshop já lançou na coluna Estorno do pedido, e todo chargeback de pedido em "aguardando" (o total desse pedido já saiu na linha 5). Ficam aqui para não ser descontados duas vezes. Se estorno e chargeback somam (estorno parcial e depois contestação do resto), o chargeback entra inteiro na linha 7.'],
+  dre_chb_ja: ['Chargebacks já contados em Estorno', 'Chargebacks cujo valor líquido é igual (R$ 0,01) ao que a Nuvemshop já lançou na coluna Estorno do pedido. Ficam aqui para não ser descontados duas vezes. Se estorno e chargeback somam (estorno parcial e depois contestação do resto), o chargeback entra inteiro na linha 7.'],
   dre_chb_rev: ['Reversões sem a contestação original', 'Chargebacks revertidos a favor da loja (entrada) cuja saída não está nos extratos carregados (aconteceu antes do primeiro extrato). Quando a coluna Estorno do pedido já descontou o mesmo valor, a reversão soma de volta na linha 7 (a perda já tinha entrado); nos demais casos não dá para saber se o valor foi descontado, e a reversão fica só aqui, sem somar. Sinal negativo = dinheiro a favor da loja.'],
   dre_chb_sem: ['Chargebacks sem pedido de venda no ano', 'Contestações do extrato cujo pedido não está entre as vendas carregadas do ano (pedido de outro ano, cancelado ou sem número). Não dá para saber o mês do pedido: ficam à parte, sem distribuir pelos meses.'],
   dre_sep: ['Taxa e juros separados pelo extrato', 'Só para os pedidos que têm a linha de venda no extrato do Nuvem Pago (o extrato traz taxa e juros em colunas separadas). Pedidos anteriores ao primeiro extrato não podem ser separados.'],
@@ -7354,7 +7434,7 @@ function renderAll(){
 
 function renderHeader(){
   // marca fixa; o exercício da planilha aparece no subtítulo da página (renderPageSub) e em Planilha
-  document.getElementById('dash-sub').textContent = 'Painel Financeiro';
+  document.getElementById('dash-sub').textContent = 'BI E-commerce';
   renderPageSub();
   document.getElementById('sidebar-file-name').textContent = (state.data.fileName || '—') +
     (state.data.source === 'drive' && state.data.importedAt ? ' · Google Drive, modificado em ' + fmtDateTime(state.data.importedAt) : '');
@@ -7622,10 +7702,10 @@ function renderMonthlyPanel(){
   });
   document.getElementById('panel-monthly-title').textContent = 'Evolução mensal — '+catLabelShort()+' — '+labelForMetric();
   upsertChart('chart-monthly-main', buildMonthlyLineConfig(labels, data, avgValue, color, function(v){ return fmtMetric(v, metric); },
-    {label: labelForMetric(), mm3: mm3.some(function(v){ return v != null; }) ? mm3 : null}));
+    {label: labelForMetric(), mm3: mm3.some(function(v){ return v != null; }) ? mm3 : null, parcial: status.map(function(s){ return s === 'andamento'; })}));
   var cum = 0;
   var cumData = monthAgg.map(function(m, i){ cum += m[metric]; return status[i] === 'futuro' ? null : cum; });
-  upsertChart('chart-monthly-cum', buildAreaConfig(labels, cumData, getCss('--series-cum'), function(v){ return fmtMetric(v, metric); }, 'Acumulado no ano (YTD)'));
+  upsertChart('chart-monthly-cum', buildAreaConfig(labels, cumData, getCss('--series-cum'), function(v){ return fmtMetric(v, metric); }, 'Acumulado no ano (YTD)', null, status.map(function(s){ return s === 'andamento'; })));
 
   var rows = monthAgg.map(function(m, i){
     var mom = temDado[i] ? agg.computeKPIs(txns, state.filters.categoria, m.key, state.referenceDate, year)[metric === 'valor' ? 'valor' : 'volume'].pctChange : null;
@@ -8534,7 +8614,7 @@ function searchPedidosCasos(q){
 }
 
 // módulo de cada rota (aparece no subtítulo dos resultados do Ctrl K)
-var MOD_COM = 'Comercial e Operação', MOD_RD = 'Comercial e Operação · Reembolsos e Devoluções', MOD_FIN = 'Financeiro', MOD_CFG = 'Configuração';
+var MOD_COM = 'Vendas', MOD_RD = 'Devoluções e logística reversa', MOD_FIN = 'Contas a receber', MOD_CFG = 'Configuração';
 var MODULO_ROTA = {inicio:'Início', vendas:MOD_COM, pedidos:MOD_COM, reembolsos:MOD_RD, lancamentos:MOD_RD, 'dia-a-dia':MOD_RD, mensal:MOD_RD, canais:MOD_RD, motivos:MOD_RD, devolucoes:MOD_RD,
   financeiro:MOD_FIN, dre:MOD_FIN, fluxo:MOD_FIN, 'nuvem-pago':MOD_FIN, planilha:MOD_CFG, acesso:MOD_CFG, 'minha-conta':MOD_CFG};
 // destinos da busca: páginas do menu, com as abas de Dia a dia e metas, de Devoluções e a Conciliação como itens próprios.
@@ -8543,7 +8623,7 @@ function searchDestinos(){
   var out = [];
   function add(r, title, hash, keys, sub){ out.push({id:r.id, title:title, hash:hash, sub:sub || MODULO_ROTA[r.id] || '', keys:keys || ''}); }
   ROUTES.forEach(function(r){
-    if(!routeLiberada(r)) return;
+    if(!routeLiberada(r) || ROTAS_DESATIVADAS.indexOf(r.id) >= 0) return;
     if(r.id === 'dia-a-dia'){
       add(r, 'Dia a dia', '#/dia-a-dia', 'resumo do dia diario semanal evolucao', MOD_RD + ' · aba de ' + r.title);
       add(r, 'Metas e projeções', '#/dia-a-dia?aba=metas', 'meta teto projecao previsao run-rate', MOD_CFG + ' · aba de ' + r.title);
@@ -9825,7 +9905,7 @@ function vTabelaMeios(lista, total){
         '<td class="num">' + fmtPctOrDash(vPct(x.r.faturamento, total.faturamento)) + '</td><td class="num">' + fmtValor(x.r.ticket) + '</td>' +
         '<td class="num">' + fmtPctOrDash(vPct(x.r.custoPag, x.r.faturamento)) + '</td><td class="num">' + fmtValor(x.r.liquido) + '</td></tr>';
     }).join('') +
-    '<tr><td class="v-total-label">Total</td><td class="num">' + fmtQtd(total.pedidos) + '</td><td class="num">' + fmtValor(total.faturamento) + '</td><td class="num">' + fmtPct(1) + '</td><td class="num">' + fmtValor(total.ticket) + '</td><td class="num">' + fmtPctOrDash(vPct(total.custoPag, total.faturamento)) + '</td><td class="num">' + fmtValor(total.liquido) + '</td></tr>' +
+    '<tr class="total-row"><td class="v-total-label">Total</td><td class="num">' + fmtQtd(total.pedidos) + '</td><td class="num">' + fmtValor(total.faturamento) + '</td><td class="num">' + fmtPct(1) + '</td><td class="num">' + fmtValor(total.ticket) + '</td><td class="num">' + fmtPctOrDash(vPct(total.custoPag, total.faturamento)) + '</td><td class="num">' + fmtValor(total.liquido) + '</td></tr>' +
     '</tbody></table>';
 }
 function vTabelaFora(r){
@@ -10203,9 +10283,10 @@ var VS_UFS = {
 var VS_REGIOES = ['Sudeste', 'Sul', 'Nordeste', 'Centro-Oeste', 'Norte'];
 var VS_CUPOM_SISTEMA = /^(TROCA|DRAFT-ORDER|EDIT-ORDER|POS-ORDER)/i;
 var VS_SEM = 'Não informado';
-// metas aprovadas (as do servidor, VENDAS_METAS, prevalecem; estas valem fora do painel online e até a resposta chegar)
+// metas aprovadas (as do servidor, VENDAS_METAS, prevalecem; estas valem fora do painel online e até a resposta chegar).
+// Ticket 436/370 desde 30/10/2026: 2,18 mi ÷ 5.000 pedidos = R$ 436; amarelo na mesma proporção de 340/400.
 var VS_METAS_PADRAO = {
-  faturamento:{verde:2180000, amarelo:1490000}, pedidos:{verde:5000, amarelo:3500}, ticket:{verde:400, amarelo:340},
+  faturamento:{verde:2180000, amarelo:1490000}, pedidos:{verde:5000, amarelo:3500}, ticket:{verde:436, amarelo:370},
   recorrentes:{verde:38, amarelo:30}, prazos:{pendente:2, boleto:4, cancelPago:5, topProblema:3, recusadoRecorrente:1, emRisco:90}
 };
 
@@ -11302,7 +11383,7 @@ function vsRenderMetasPainel(){
   var linhas = [['faturamento', 'Faturamento do mês (R$)'], ['pedidos', 'Pedidos do mês'], ['ticket', 'Ticket médio (R$)'], ['recorrentes', '% de clientes recorrentes']];
   var prazos = [['pendente', 'Pagamento pendente (dias)'], ['boleto', 'Boleto pendente (dias)'], ['cancelPago', 'Cancelado pago sem estorno (dias úteis)'], ['topProblema', 'Cliente top 50 com problema (dias)'], ['recusadoRecorrente', 'Recusado de cliente recorrente (dias)'], ['emRisco', 'Campeãs e Fiéis sem comprar (dias)']];
   el.innerHTML = '<details class="table-toggle"><summary>Metas e prazos das filas' + (m.autor ? ' · alterados por ' + escapeHtml(m.autor) : '') + '</summary>' +
-    '<p class="empty-note">Verde a partir do primeiro valor; amarelo a partir do segundo; abaixo disso, vermelho. Faturamento e pedidos: na semana e no dia, a meta do mês proporcional aos dias; ticket e % de recorrentes valem como estão. Os outros indicadores comparam com a mediana dos últimos 6 meses. Pedidos e ticket são estimativas sobre o histórico da loja (março a outubro de 2026), não metas oficiais.' + (adm ? '' : ' Só administradores alteram.') + '</p>' +
+    '<p class="empty-note">Verde a partir do primeiro valor; amarelo a partir do segundo; abaixo disso, vermelho. Faturamento e pedidos: na semana e no dia, a meta do mês proporcional aos dias; ticket e % de recorrentes valem como estão. Os outros indicadores comparam com a mediana dos últimos 6 meses.' + (adm ? '' : ' Só administradores alteram.') + '</p>' +
     '<div class="table-wrap"><table class="data-table"><thead><tr><th>Meta mensal</th><th class="num">Verde a partir de</th><th class="num">Amarelo a partir de</th></tr></thead><tbody>' +
     linhas.map(function(l){ return '<tr><td>' + l[1] + '</td><td class="num">' + campo(l[0], 'verde', m[l[0]].verde, l[1] + ' — verde a partir de') + '</td><td class="num">' + campo(l[0], 'amarelo', m[l[0]].amarelo, l[1] + ' — amarelo a partir de') + '</td></tr>'; }).join('') +
     '</tbody></table><table class="data-table"><thead><tr><th>Prazo das filas</th><th class="num">Dias</th></tr></thead><tbody>' +
@@ -12677,7 +12758,7 @@ function npRenderMovimento(per, lista, r){
       tot.v += x.r.venda.liquido; tot.e += x.r.estorno.liquido; tot.c += x.r.contestacao.liquido; tot.res += x.r.resultado; tot.t += x.r.transferencia.liquido;
       return '<tr><td>' + V_DOW_CURTO[x.ini.getDay()] + ' ' + vDiaCurto(x.ini) + '</td><td class="num">' + fmtValor(x.r.venda.liquido) + '</td><td class="num">' + fmtValor(x.r.estorno.liquido) + '</td><td class="num">' + fmtValor(x.r.contestacao.liquido) + '</td><td class="num">' + fmtValor(x.r.resultado) + '</td><td class="num">' + fmtValor(x.r.transferencia.liquido) + '</td></tr>';
     }).join('') +
-    '<tr><td class="v-total-label">Total</td><td class="num">' + fmtValor(tot.v) + '</td><td class="num">' + fmtValor(tot.e) + '</td><td class="num">' + fmtValor(tot.c) + '</td><td class="num">' + fmtValor(tot.res) + '</td><td class="num">' + fmtValor(tot.t) + '</td></tr></tbody></table>';
+    '<tr class="total-row"><td class="v-total-label">Total</td><td class="num">' + fmtValor(tot.v) + '</td><td class="num">' + fmtValor(tot.e) + '</td><td class="num">' + fmtValor(tot.c) + '</td><td class="num">' + fmtValor(tot.res) + '</td><td class="num">' + fmtValor(tot.t) + '</td></tr></tbody></table>';
 
   var vendasMes = lista.filter(function(m){ return m.tipo === 'venda'; });
   var formas = NP_FORMAS.map(function(f){ var g = npGrupoVazio(); vendasMes.forEach(function(m){ if(m.formaGrupo === f) npSomar(g, m); }); return {forma:f, g:g}; }).filter(function(x){ return x.g.n; });
@@ -12690,13 +12771,13 @@ function npRenderMovimento(per, lista, r){
   document.getElementById('np-table-transf').innerHTML = transf.length
     ? '<table class="data-table"><thead><tr><th>Dia</th><th>Sentido</th><th>Forma</th>' + th('Valor', null, true) + th('Tarifa', null, true) + th('Líquido', null, true) + '</tr></thead><tbody>' +
       transf.map(function(m){ return '<tr><td>' + V_DOW_CURTO[m.rec.getDay()] + ' ' + fmtDate(m.rec) + '</td><td>' + escapeHtml(/sa/i.test(m.mov) ? 'Saída para o banco' : 'Entrada') + '</td><td>' + escapeHtml(m.forma) + '</td><td class="num">' + fmtValor(m.bruto) + '</td><td class="num">' + fmtValor(m.custos) + '</td><td class="num">' + fmtValor(m.liquido) + '</td></tr>'; }).join('') +
-      '<tr><td class="v-total-label" colspan="5">Total (' + fmtQtd(transf.length) + ')</td><td class="num">' + fmtValor(r.transferencia.liquido) + '</td></tr></tbody></table>'
+      '<tr class="total-row"><td class="v-total-label" colspan="5">Total (' + fmtQtd(transf.length) + ')</td><td class="num">' + fmtValor(r.transferencia.liquido) + '</td></tr></tbody></table>'
     : '<div class="empty-note">Nenhuma transferência no mês.</div>';
 }
 
 // linha de tabela de custo: vendas, bruto, taxas, juros, custo (% do bruto) e líquido
 function npLinhaCusto(rotulo, g){
-  return '<tr><td>' + rotulo + '</td><td class="num">' + fmtQtd(g.n) + '</td><td class="num">' + fmtValor(g.bruto) + '</td><td class="num">' + fmtValor(-g.taxas) + '</td><td class="num">' + fmtValor(-g.juros) + '</td>' +
+  return '<tr' + (/v-total-label/.test(rotulo) ? ' class="total-row"' : '') + '><td>' + rotulo + '</td><td class="num">' + fmtQtd(g.n) + '</td><td class="num">' + fmtValor(g.bruto) + '</td><td class="num">' + fmtValor(-g.taxas) + '</td><td class="num">' + fmtValor(-g.juros) + '</td>' +
     '<td class="num">' + fmtValor(-g.custos) + ' · ' + fmtPctOrDash(g.bruto ? -g.custos / g.bruto : null) + '</td><td class="num">' + fmtValor(g.liquido) + '</td></tr>';
 }
 
@@ -13085,7 +13166,7 @@ function npRenderConciliacao(per, lista, r){
         var marca = sc && sc.dia === k ? ' <span class="txt-muted">(informado)</span>' : '';
         return '<tr><td>' + V_DOW_CURTO[x.d.getDay()] + ' ' + vDiaCurto(x.d) + '</td><td class="num">' + fmtValor(x.ent) + '</td><td class="num">' + fmtValor(x.sai) + '</td><td class="num">' + fmtValor(x.tr) + '</td><td class="num">' + fmtValorSigned(v) + '</td><td class="num">' + (s == null ? '—' : fmtValor(s) + marca) + '</td></tr>';
       }).join('') +
-      '<tr><td class="v-total-label">Total do mês</td><td class="num">' + fmtValor(ponte.entradas) + '</td><td class="num">' + fmtValor(ponte.saidas) + '</td><td class="num">' + fmtValor(ponte.transf) + '</td><td class="num">' + fmtValorSigned(variacao) + '</td><td class="num">' + (saldoFim != null ? fmtValor(saldoFim) : '—') + '</td></tr></tbody></table>'
+      '<tr class="total-row"><td class="v-total-label">Total do mês</td><td class="num">' + fmtValor(ponte.entradas) + '</td><td class="num">' + fmtValor(ponte.saidas) + '</td><td class="num">' + fmtValor(ponte.transf) + '</td><td class="num">' + fmtValorSigned(variacao) + '</td><td class="num">' + (saldoFim != null ? fmtValor(saldoFim) : '—') + '</td></tr></tbody></table>'
     : '<div class="empty-note">Nenhum movimento no mês.</div>';
 
   document.getElementById('np-conc-resumo').innerHTML = indicatorItems(resumo);
@@ -13222,15 +13303,16 @@ var DV_PRAZOS = {
   avisoLegal:7,         // fila de prazos: faltam até 7 dias para o prazo da lei
   avisoPlataforma:15    // e até 15 dias para o limite da plataforma
 };
-var DV_POLITICA_DIAS = null; // janela da política de trocas (dias da entrega). Sem ela, nada é marcado "fora de prazo"
+// janela da política de trocas (dias da entrega). Política publicada: 7 dias (CDC art. 49), informado pelo usuário em 30/10/2026.
+// Igual ao prazo do art. 49: aberto mais de 7 dias depois da entrega, sem vício nem erro da loja, vira "Fora de prazo".
+var DV_POLITICA_DIAS = 7;
 
 var DV_ENQ = [
   {id:'arrependimento', label:'Arrependimento', def:'Sem vício e aberto em até 7 dias corridos da entrega (CDC art. 49). Frete reverso por conta da loja.'},
   {id:'vicio', label:'Vício do produto', def:'Defeito aparente ou oculto, ou peça danificada no transporte (CDC arts. 18 e 26). Frete reverso por conta da loja.'},
   {id:'erro_loja', label:'Erro da loja', def:'Peça ou tamanho errado, item faltante ou duplicado. Frete reverso por conta da loja.'},
   {id:'nao_entregue', label:'Não entregue', def:'Extravio, recusa ou devolução ao remetente. Frete reverso por conta da loja.'},
-  {id:'troca_comercial', label:'Troca comercial', def:'Mais de 7 dias da entrega e sem vício: sem direito legal, coberta pela política da loja.'},
-  {id:'fora_prazo', label:'Fora de prazo', def:'Nem a lei nem a política cobrem (precisa da janela da política, ainda não definida).'},
+  {id:'fora_prazo', label:'Fora de prazo', def:'Nem a lei nem a política cobrem: aberto depois da janela da política da loja (7 dias da entrega, a mesma do art. 49), sem vício nem erro da loja.'},
   {id:'a_classificar', label:'A classificar', def:'Falta a data de entrega, ou ela é incerta demais para decidir.'}
 ];
 var DV_FORMAS = [
@@ -13569,7 +13651,8 @@ function dvEnquadrar(o){
     var dMin = dvDiasEntre(e.max, ab); // pelo menos isto depois da entrega
     if(dMin > lim){
       if(DV_POLITICA_DIAS != null && dMin > DV_POLITICA_DIAS) return {id:'fora_prazo', regra:'aberto ' + dvDiasTxt(dMin) + ' ou mais depois da entrega: fora da política de ' + DV_POLITICA_DIAS + ' dias'};
-      return {id:'troca_comercial', regra:'aberto ' + dvDiasTxt(dMin) + ' ou mais depois da entrega: fora dos 7 dias do art. 49 (conferir a política da loja)'};
+      // a loja não trabalha com trocas (só devolução, informado em 30/10/2026): depois dos 7 dias, sem vício, é fora de prazo
+      return {id:'fora_prazo', regra:'aberto ' + dvDiasTxt(dMin) + ' ou mais depois da entrega: fora dos 7 dias do art. 49'};
     }
     return {id:'a_classificar', regra:'entrega ' + (e.min ? 'entre ' + fmtDate(e.min) + ' e ' : 'até ') + fmtDate(e.max) + ': não dá para afirmar se o pedido veio em até 7 dias'};
   }
@@ -13801,7 +13884,7 @@ function dvApplyParams(params){
 function dvJanelaTxt(){
   function jan(j){ return j === 'tudo' ? 'Janela: todo o histórico' : 'Janela: últimos ' + j + ' dias'; }
   if(devol.aba === 'casos') return jan(devol.casos.jan) + ' (abertura do caso)';
-  if(devol.aba === 'pecas') return jan(devol.pecas.janela);
+  if(devol.aba === 'pecas') return jan(devol.pecas.janela) + (dvJanelaIniMes() ? ' em meses inteiros (desde ' + fmtDate(dvJanelaIniMes()) + ')' : '');
   if(devol.aba === 'ritmo') return {dia:'Janela: últimos 30 dias', semana:'Janela: últimas 12 semanas', mes:'Janela: últimos 12 meses'}[devol.ritmo] || '';
   return '';
 }
@@ -13930,9 +14013,10 @@ function dvDevidoNaLoja(){
   };
 }
 // casos (sem repetir) nas filas críticas que dá para calcular: a contagem do menu e do Início
-function dvCasosCriticos(F){
+// soAtivos: só casos em andamento (a Saúde do mês divide pelos casos ativos; numerador e denominador no mesmo universo)
+function dvCasosCriticos(F, soAtivos){
   var ids = {};
-  DV_FILAS.forEach(function(f){ if(f.critica && !dvFilaIndisp(f)) F[f.id].forEach(function(x){ ids[x.o.id] = true; }); });
+  DV_FILAS.forEach(function(f){ if(f.critica && !dvFilaIndisp(f)) F[f.id].forEach(function(x){ if(!soAtivos || x.o.ativo) ids[x.o.id] = true; }); });
   return Object.keys(ids).length;
 }
 // contagem crítica ao lado de "Filas de trabalho" (some sem devoluções carregadas ou sem caso crítico)
@@ -14022,7 +14106,7 @@ function dvRenderEsteira(hoje){
         '<td class="num">' + (x.sla ? x.sla.dias + ' d' + (x.sla.cliente ? ' (cliente)' : '') : '—') + '</td><td class="num' + (x.fora ? ' dv-alerta' : '') + '">' + (x.fora ? fmtQtd(x.fora) : '—') + '</td>' +
         '<td class="num">' + (x.medAb != null ? dvDiasTxt(Math.round(x.medAb)) : '—') + '</td></tr>';
     }).join('') +
-    '<tr><td class="v-total-label">Em andamento</td><td class="num">' + fmtQtd(tot.n) + '</td><td class="num">' + fmtQtd(tot.pecas) + '</td><td class="num">' + fmtValor(tot.valor) + '</td>' +
+    '<tr class="total-row"><td class="v-total-label">Em andamento</td><td class="num">' + fmtQtd(tot.n) + '</td><td class="num">' + fmtQtd(tot.pecas) + '</td><td class="num">' + fmtValor(tot.valor) + '</td>' +
     DV_IDADES.map(function(_, i){ return '<td class="num">' + fmtQtd(linhas.reduce(function(a, x){ return a + x.idades[i]; }, 0)) + '</td>'; }).join('') +
     '<td></td><td class="num">' + fmtQtd(linhas.reduce(function(a, x){ return a + x.fora; }, 0)) + '</td><td></td></tr></tbody></table>' +
     '<div class="empty-note">Dias na etapa com "≈" nos casos em que a entrada na etapa não foi registrada (antes de ' + (devol.inicio ? fmtDate(devol.inicio) : 'o início do controle') + '): o painel usa um marco anterior, então o número pode ser maior que o real.</div>';
@@ -14277,6 +14361,11 @@ function dvRenderRitmo(){
 // taxa de devolução por coorte da venda (mês do pedido de origem). Numerador: casos válidos (sem cancelados), com
 // devolução e troca separadas. Denominador: pedidos de venda (ou entregues) do servidor, todos os anos da base; sem
 // ele, as vendas carregadas na página (um ano só).
+// Mês "em aberto": algum pedido dele tem menos de DV_DIAS_MATURACAO dias e ainda pode pedir devolução.
+// A mesma regra vale na tabela por mês e na Saúde do mês (que só usa mês maduro).
+var DV_DIAS_MATURACAO = 45;
+var DV_SEM_PECAS_ENTREGUE = 'taxa em peças e valor só existe na base de venda: o servidor não traz itens e faturamento dos entregues';
+function dvMesEmAberto(ano, mesN, hoje){ return new Date(ano, mesN + 1, 1) > vAddDias(hoje, -DV_DIAS_MATURACAO); }
 function dvRenderTaxaMes(){
   var el = document.getElementById('dv-table-taxa'), meta = document.getElementById('dv-taxa-meta');
   var base = devol.taxaBase, meses = {}, fonte;
@@ -14309,8 +14398,9 @@ function dvRenderTaxaMes(){
     if(!m) return;
     var conta = base !== 'entregue' || /entreg/i.test(p.statusEnvio);
     var dev = sols.filter(function(o){ return !o.troca; }), tr = sols.filter(function(o){ return o.troca; });
-    dev.forEach(function(o){ m.pecasDev += o.pecas; m.valorDev += o.valor; });
+    // peças e valor seguem a mesma base do numerador de pedidos (em "entregue", só pedidos entregues)
     if(!conta) return;
+    dev.forEach(function(o){ m.pecasDev += o.pecas; m.valorDev += o.valor; });
     if(dev.length){
       m.comDev++;
       if(dev.some(function(o){ return DV_CHEGOU.indexOf(o.etapa) >= 0; })) m.efetiv++;
@@ -14327,12 +14417,15 @@ function dvRenderTaxaMes(){
         var m = meses[k], ano = +k.slice(0, 4), mesN = +k.slice(5) - 1;
         var den = base === 'entregue' ? m.entregues : m.pedidos;
         // pedidos dos últimos ~45 dias ainda podem pedir devolução
-        var maturando = new Date(ano, mesN + 1, 1) > vAddDias(hoje, -45);
+        var maturando = dvMesEmAberto(ano, mesN, hoje);
         return '<tr><td>' + vMesNome(mesN) + ' ' + ano + (maturando ? ' <span class="badge badge-warning" title="Pedidos recentes ainda podem pedir devolução">em aberto</span>' : '') + '</td>' +
           '<td class="num">' + (den ? fmtQtd(den) : '—') + '</td><td class="num">' + fmtQtd(m.comDev) + '</td><td class="num">' + fmtPctOrDash(vPct(m.comDev, den)) + '</td>' +
           '<td class="num">' + fmtPctOrDash(vPct(m.efetiv, den)) + '</td><td class="num">' + fmtQtd(m.comTroca) + '</td><td class="num">' + fmtPctOrDash(vPct(m.comTroca, den)) + '</td>' +
-          '<td class="num">' + fmtPctOrDash(vPct(m.pecasDev, m.itens)) + '</td><td class="num">' + fmtPctOrDash(vPct(m.valorDev, m.fat)) + '</td></tr>';
+          // base entregue: o servidor não traz itens e faturamento só dos entregues, então peças e valor ficam sem taxa
+          (base === 'entregue' ? '<td class="num" title="' + DV_SEM_PECAS_ENTREGUE + '">—</td><td class="num" title="' + DV_SEM_PECAS_ENTREGUE + '">—</td></tr>'
+            : '<td class="num">' + fmtPctOrDash(vPct(m.pecasDev, m.itens)) + '</td><td class="num">' + fmtPctOrDash(vPct(m.valorDev, m.fat)) + '</td></tr>');
       }).join('') + '</tbody></table>' +
+      (base === 'entregue' ? '<div class="empty-note">Taxa (peças) e Taxa (valor): ' + DV_SEM_PECAS_ENTREGUE + '. Use a base "Pedidos de venda" para vê-las.</div>' : '') +
       (base === 'entregue' && !chaves.some(function(k){ return meses[k].entregues; }) ? '<div class="empty-note">' + dvIndisp() + ' Nenhum pedido aparece como entregue na base de vendas: use a base "Pedidos de venda".</div>' : '') +
       (semPedido ? '<div class="empty-note">' + dvSolTxt(semPedido) + ' sem o pedido de origem na base de vendas ficam fora da taxa.</div>' : '') +
       (!devol.mesesVenda && vendas.fonte === 'drive' && vendas.anos.length > 1 ? '<div class="empty-note">Ano das vendas carregado: ' + vendas.ano + ' (troque em Vendas).</div>' : '')
@@ -14391,7 +14484,7 @@ function dvRenderMix(){
       return '<tr><td>' + ir(escapeHtml(x.e.label), x.e.id) + '</td>' + x.c.map(function(n, i){ return '<td class="num">' + (n ? ir(fmtQtd(n), x.e.id, formas[i].id) : '—') + '</td>'; }).join('') +
         '<td class="num">' + ir(fmtQtd(x.n), x.e.id) + '</td><td class="num">' + fmtPct(x.n / l.length) + '</td></tr>';
     }).join('') +
-    '<tr><td class="v-total-label">Total</td>' + formas.map(function(f){ var n = l.filter(function(o){ return o.forma === f.id; }).length; return '<td class="num">' + (n ? ir(fmtQtd(n), null, f.id) : fmtQtd(n)) + '</td>'; }).join('') +
+    '<tr class="total-row"><td class="v-total-label">Total</td>' + formas.map(function(f){ var n = l.filter(function(o){ return o.forma === f.id; }).length; return '<td class="num">' + (n ? ir(fmtQtd(n), null, f.id) : fmtQtd(n)) + '</td>'; }).join('') +
     '<td class="num">' + fmtQtd(l.length) + '</td><td class="num">' + fmtPct(1) + '</td></tr></tbody></table>' +
     '<div class="empty-note">Enquadramento sugerido pelo painel e desfecho previsto pela solução pretendida: o confirmado e o executado ainda não chegam ao painel.</div>';
 }
@@ -14401,6 +14494,16 @@ function dvRenderMix(){
 function dvJanelaIni(){
   var j = devol.pecas.janela;
   return j === 'tudo' ? null : vAddDias(dvHoje(), -(Number(j) - 1));
+}
+// a janela arredondada para o 1º dia do mês em que começa: as peças devolvidas (numerador) usam os mesmos meses
+// inteiros das peças vendidas (denominador, que só existe por mês). Antes o numerador cortava no dia e a taxa saía subestimada.
+function dvJanelaIniMes(){
+  var ini = dvJanelaIni();
+  return ini ? new Date(ini.getFullYear(), ini.getMonth(), 1) : null;
+}
+function dvPecasJanelaTxt(){
+  var jan = {'30':'últimos 30 dias', '90':'últimos 90 dias', '180':'últimos 180 dias', 'tudo':'todo o histórico'}[devol.pecas.janela], iniMes = dvJanelaIniMes();
+  return jan + (iniMes ? ' em meses inteiros (desde ' + fmtDate(iniMes) + ', o mesmo recorte das peças vendidas)' : '');
 }
 // meses (AAAA-MM) cobertos pela janela, para somar as peças vendidas no mesmo recorte
 function dvMesesJanela(ini){
@@ -14429,7 +14532,7 @@ function dvGrupoCasosTitulo(){
   return 'Ver os casos deste grupo abertos ' + (j === 'tudo' ? 'em todo o histórico' : 'nos últimos ' + j + ' dias') + ' (pela data de abertura, devoluções e trocas, inclusive cancelados)';
 }
 function dvPecasJanela(){
-  var ini = dvJanelaIni(), out = [], coorte = devol.pecas.base === 'coorte', proc = devol.pecas.proc;
+  var ini = dvJanelaIniMes(), out = [], coorte = devol.pecas.base === 'coorte', proc = devol.pecas.proc;
   out.semData = 0;
   devol.sols.forEach(function(o){
     if(o.etapa === 'cancelada') return;
@@ -14471,7 +14574,7 @@ document.addEventListener('error', function(e){
 }, true);
 
 function dvAgruparModelos(pecas){
-  var meses = dvMesesJanela(dvJanelaIni()), mods = {};
+  var meses = dvMesesJanela(dvJanelaIniMes()), mods = {};
   pecas.forEach(function(x){
     var nome = x.it.modelo == null ? 'SKU ' + x.it.sku : dvNomeModelo(x.it.modelo);
     var m = mods[nome] = mods[nome] || {nome:nome, idx:{}, pecas:0, sols:{}, valor:0, motivos:{}, grupos:{}, tams:{}, cores:{}, fotoSku:{}, fotoUrl:{}};
@@ -14515,7 +14618,7 @@ function dvRenderPecas(){
   devol.ultModelos = modelos;
   var q = core.normalize(devol.pecas.busca);
   var vis = q ? modelos.filter(function(m){ return core.normalize(m.nome).indexOf(q) >= 0; }) : modelos;
-  var jan = {'30':'últimos 30 dias', '90':'últimos 90 dias', '180':'últimos 180 dias', 'tudo':'todo o histórico'}[devol.pecas.janela];
+  var jan = dvPecasJanelaTxt();
   var proc = {'':'devoluções e trocas', devolucao:'só devoluções', troca:'só trocas'}[devol.pecas.proc];
   document.getElementById('dv-modelos-meta').textContent = dvPecasTxt(total) + ' devolvidas · ' + fmtQtd(modelos.length) + ' produtos · ' + jan + ' · ' +
     (devol.pecas.base === 'coorte' ? 'pela data da venda' : 'pela data de abertura do caso') + ' · ' + proc +
@@ -14891,8 +14994,7 @@ function dvRenderRegras(){
     ['Erro da loja', 'peça ou tamanho errado, item faltante ou duplicado.'],
     ['Não entregue', 'falha na entrega, extravio ou devolução ao remetente.'],
     ['Arrependimento', 'aberto em até ' + DV_PRAZOS.arrependimento + ' dias corridos da entrega, mesmo com motivo de tamanho ou gosto e mesmo pedindo troca ou crédito.'],
-    ['Troca comercial', 'aberto depois dos ' + DV_PRAZOS.arrependimento + ' dias, sem vício' + (DV_POLITICA_DIAS != null ? ', dentro de ' + DV_POLITICA_DIAS + ' dias da política' : ' (a janela da política ainda não foi informada)') + '.'],
-    ['Fora de prazo', DV_POLITICA_DIAS != null ? 'depois da janela da política.' : 'só existe quando a janela da política for definida.'],
+    ['Fora de prazo', 'aberto depois de ' + (DV_POLITICA_DIAS || DV_PRAZOS.arrependimento) + ' dias da entrega, sem vício nem erro da loja (a loja não trabalha com trocas).'],
     ['A classificar', 'quando a data de entrega falta ou é incerta demais.']
   ].map(function(x){ return '<li><strong>' + escapeHtml(x[0]) + ':</strong> ' + escapeHtml(x[1]) + '</li>'; }).join('') +
     '<li><strong>Origem:</strong> hoje todo enquadramento é sugerido pelo painel. A confirmação por uma pessoa ainda não tem onde ser gravada.</li>';
@@ -15081,7 +15183,7 @@ function dvAbrirSolicitacao(id){
 function dvAbrirModelo(nome){
   var m = (devol.ultModelos || []).find(function(x){ return x.nome === nome; });
   if(!m) return;
-  var jan = {'30':'últimos 30 dias', '90':'últimos 90 dias', '180':'últimos 180 dias', 'tudo':'todo o histórico'}[devol.pecas.janela];
+  var jan = dvPecasJanelaTxt();
   var itens = [
     ['Peças devolvidas', fmtQtd(m.pecas) + ' · ' + dvSolTxt(m.nSols)],
     ['Peças vendidas', m.vendidas ? fmtQtd(m.vendidas) : '—', 'dv_vendidas'],
@@ -15433,10 +15535,10 @@ function dreChargebacks(){
 function r2(n){ return Math.round(n * 100) / 100; }
 
 // ---- as linhas da DRE de receitas para uma lista de pedidos (a mesma base da ponte: só situação "venda") ----
-// Linhas: 1 bruto · 2 cupom · 3 ajuste de total · 4 faturamento · 5 aguardando Nuvem Pago · 6 estornos · 7 chargebacks · 8 receita líquida ·
-// 9+10 taxa e juros (somados: no CSV da Nuvemshop "Taxas" já inclui os juros) · 11 devolução dos custos · 12 ajuste do Total líquido · 13 receita líquida de recebimento.
+// Linhas: 1 bruto · 2 cupom · 3 ajuste de total · 4 faturamento · 5 aguardando Nuvem Pago (informativa, fora da soma) · 6 estornos · 7 chargebacks · 8 receita líquida ·
+// 9+10 taxa e juros (somados: no CSV da Nuvemshop "Taxas" já inclui os juros) · 11 devolução dos custos · 12 ajuste do Total líquido · 13 líquido da venda após meio de pagamento (competência).
 // Chargeback (7): contestações de saída do extrato, no mês do PEDIDO; a reversão (entrada) soma de volta se o mesmo pedido tem a saída
-// no extrato ou se a coluna Estorno do pedido já descontou o mesmo valor. "Já contado" = chargeback líquido igual ao valor da coluna Estorno do pedido (ou ao total do pedido em "aguardando").
+// no extrato ou se a coluna Estorno do pedido já descontou o mesmo valor. "Já contado" = chargeback líquido igual ao valor da coluna Estorno do pedido.
 function dreLinhas(lista){
   var r = vResumo(lista), L = {r:r};
   L.bruto = r.subtotal + r.frete; L.cupom = r.desconto; L.aj1 = r.faturamento - (L.bruto - r.desconto); L.fat = r.faturamento;
@@ -15460,14 +15562,16 @@ function dreLinhas(lista){
       if(net > 0){
         // já contado = o chargeback líquido é igual ao que a coluna Estorno do pedido já tirou (ou ao total, no pedido em "aguardando");
         // se estorno + chargeback somam (estorno parcial e depois contestação do resto), o chargeback entra inteiro
-        // pedido em "aguardando": o total inteiro já saiu na linha 5, então o chargeback nunca desconta de novo
-        if(p.semFin || Math.abs(net - p.estorno) <= 0.01){ ja += net; } else { chb += net; }
+        // pedido em "aguardando": a linha 5 é só informativa (o pedido segue no faturamento), então o chargeback desconta na linha 7
+        if(!p.semFin && Math.abs(net - p.estorno) <= 0.01){ ja += net; } else { chb += net; }
         nChb++;
       } else if(net < 0){ chb += net; }   // reversão maior que a saída: a favor da loja
     });
   }
   L.chb = r2(chb); L.chbJa = r2(ja); L.chbRevSem = r2(revSem); L.chbN = nChb;
-  L.recLiq = L.fat - L.semfin - L.estorno - L.chb;
+  // linha 5 (aguardando o Nuvem Pago) é informativa: não é dedução e fica fora da soma (antes era subtraída, e o mês
+  // corrente parecia sempre em queda). Esses pedidos seguem pelo total nas linhas 8 e 13 até o extrato trazer a taxa.
+  L.recLiq = L.fat - L.estorno - L.chb;
   L.custo = r.custoPag; L.devCustos = r.devCustos;
   L.aj2 = r.liquido - (r.faturamento - r.fatSemFin - r.custoPag - r.estornoFin + r.devCustos);
   L.recRec = L.recLiq - L.custo + L.devCustos + L.aj2;
@@ -15515,8 +15619,11 @@ function finReceitaLiquida(ano, mes){
   if(!vCoberto(pIni)) return {cur:cur.recLiq, txt:fmtValor(cur.recLiq) + ' · sem comparação (vendas desde ' + vDiaCurto(vendas.inicio) + ')', parcial:andamento};
   var b = dreLinhas(vEntre(pIni, pFim));
   var pct = b.recLiq ? cur.recLiq / b.recLiq - 1 : null;
-  return {cur:cur.recLiq, base:b.recLiq, pct:pct, parcial:andamento,
-    txt:fmtValor(cur.recLiq) + (pct == null ? '' : ' · ' + fmtPctSigned(pct)) + ' vs ' + fmtValor(b.recLiq) + ' (' + vDiaCurto(pIni) + '–' + vDiaCurto(vAddDias(pFim, -1)) + (andamento ? ', mesmos dias' : '') + ')'};
+  // pedidos sem dado do Nuvem Pago (estorno ainda desconhecido) em qualquer dos dois meses: o comparativo é parcial
+  var semFin = cur.r.semFin + b.r.semFin;
+  var avisoSemFin = semFin ? ' · comparativo parcial: ' + vPedidosTxt(semFin) + ' (' + fmtValor(cur.r.fatSemFin + b.r.fatSemFin) + ') ainda aguardando dados do Nuvem Pago' : '';
+  return {cur:cur.recLiq, base:b.recLiq, pct:pct, parcial:andamento, semFin:semFin,
+    txt:fmtValor(cur.recLiq) + (pct == null ? '' : ' · ' + fmtPctSigned(pct)) + ' vs ' + fmtValor(b.recLiq) + ' (' + vDiaCurto(pIni) + '–' + vDiaCurto(vAddDias(pFim, -1)) + (andamento ? ', mesmos dias' : '') + ')' + avisoSemFin};
 }
 function renderFinanceiro(){
   var el = document.getElementById('fin-raiz');
@@ -15620,7 +15727,7 @@ function setupModuloFinanceiro(){
   });
 }
 /* ---- DRE de receitas (#/dre): mês a mês, por competência (mês do pedido); colunas = meses do ano de vendas carregado + total ---- */
-// Só receitas: não inclui contas a pagar, impostos (DAS) nem custo das peças. A última linha é a "Receita líquida de recebimento".
+// Só receitas: não inclui contas a pagar, impostos (DAS) nem custo das peças. A última linha é o "Líquido da venda após meio de pagamento (competência)".
 // Crédito em loja em uso = cupom cujo código traz o número da cliente (pedido), nos formatos vistos no Elora:
 // VALE-POS-12345 · VALE_TLG-12345 · VALE-STO/CANC/MIG-… · VALE-123456 · NOME + dígito + P + número (ex.: MARIA1P12345678).
 // Cupom comercial curto (VALE10, VALE99) não entra. Decisão do usuário (27/10): o crédito usado continua dentro do Cupom de
@@ -15689,15 +15796,16 @@ var DRE_LINHAS = [
   {id:'cupom', num:'2', sinal:'−', rot:'Cupom de desconto', def:'in_cupom', get:function(L){ return L.cupom; }},
   {id:'aj1', num:'3', sinal:'±', rot:'Ajuste de total', def:'in_ajuste', get:function(L){ return L.aj1; }, opcional:true},
   {id:'fat', num:'4', sinal:'=', rot:'Faturamento', def:'v_fat', get:function(L){ return L.fat; }, tipo:'total'},
-  {id:'semfin', num:'5', sinal:'−', rot:'Aguardando Nuvem Pago', def:'in_semfin', get:function(L){ return L.semfin; }},
+  {id:'semfin', num:'5', sinal:'', rot:'Aguardando dados do Nuvem Pago (não é dedução)', def:'dre_semfin', get:function(L){ return L.semfin; }, info:true},
   {id:'estorno', num:'6', sinal:'−', rot:'Estornos', def:'in_estorno', get:function(L){ return L.estorno; }},
   {id:'chb', num:'7', sinal:'−', rot:'Chargebacks', def:'dre_chb', get:function(L){ return L.chb; }},
   {id:'recliq', num:'8', sinal:'=', rot:'Receita líquida', def:'dre_recliq', get:function(L){ return L.recLiq; }, tipo:'total'},
   {id:'custo', num:'9 + 10', sinal:'−', rot:'Taxa do meio de pagamento e juros de antecipação', def:'dre_taxa', get:function(L){ return L.custo; }},
   {id:'devcustos', num:'11', sinal:'+', rot:'Devolução dos custos', def:'in_devcustos', get:function(L){ return L.devCustos; }},
   {id:'aj2', num:'12', sinal:'±', rot:'Ajuste do Total líquido da Nuvemshop', def:'in_arred', get:function(L){ return L.aj2; }, opcional:true},
-  {id:'recrec', num:'13', sinal:'=', rot:'Receita líquida de recebimento', def:'dre_recrec', get:function(L){ return L.recRec; }, tipo:'total'}
+  {id:'recrec', num:'13', sinal:'=', rot:'Líquido da venda após meio de pagamento (competência)', def:'dre_recrec', get:function(L){ return L.recRec; }, tipo:'total'}
 ];
+function dreSemFinTxt(v){ return 'inclui ' + fmtValor(v) + ' de pedidos ainda sem taxa (aguardando o Nuvem Pago)'; }
 function dreFmt(sinal, v){ return sinal === '±' ? fmtValorSigned(r2(v)) : fmtValor(v); }
 // tabela como matriz de textos (cabeçalho + linhas) para a tela e para o CSV
 function dreTabela(M){
@@ -15710,11 +15818,11 @@ function dreTabela(M){
     linhas.push({d:d, alto:d.id === 'aj2' ? vals.map(function(v){ return Math.abs(v) > 1; }) : null, num:d.num, sinal:d.sinal, rot:d.rot, tipo:d.tipo || '', cel:vals.map(function(v){ return d.opcional && Math.abs(v) < 0.01 ? '—' : dreFmt(d.sinal, v); }).concat([dreFmt(d.sinal, tot)]), vals:vals, tot:tot});
   });
   var info = [];
-  var rec = M.meses.map(function(x){ return x.L.recRec + x.L.chb; });
+  var rec = M.meses.map(function(x){ return x.L.recRec + x.L.chb - x.L.semfin; });
   var okRec = M.meses.every(function(x, i){ return Math.abs(rec[i] - x.L.liq) < 0.01; });
-  info.push({rot:'Conferência (fecha por construção; a validação é a linha 12): linha 13 + chargebacks = Líquido estimado da venda', def:'dre_reconc', cel:M.meses.map(function(x, i){ return fmtValor(rec[i]) + (Math.abs(rec[i] - x.L.liq) < 0.01 ? '' : ' ≠ ' + fmtValor(x.L.liq)); }).concat([fmtValor(soma(function(x){ return x.L.recRec + x.L.chb; })) + (okRec ? '' : ' ≠')])});
+  info.push({rot:'Conferência (fecha por construção; a validação é a linha 12): linha 13 + chargebacks − aguardando = Líquido estimado da venda', def:'dre_reconc', cel:M.meses.map(function(x, i){ return fmtValor(rec[i]) + (Math.abs(rec[i] - x.L.liq) < 0.01 ? '' : ' ≠ ' + fmtValor(x.L.liq)); }).concat([fmtValor(soma(function(x){ return x.L.recRec + x.L.chb - x.L.semfin; })) + (okRec ? '' : ' ≠')])});
   info.push({rot:'Cancelados após o pagamento (fora das vendas)', def:'dre_cancel', cel:M.meses.map(function(x){ return fmtQtd(x.canc.n) + ' · ' + fmtValor(x.canc.v); }).concat([fmtQtd(soma(function(x){ return x.canc.n; })) + ' · ' + fmtValor(soma(function(x){ return x.canc.v; }))])});
-  info.push({rot:'Chargebacks já contados em Estorno ou Aguardando (sem duplicar)', def:'dre_chb_ja', cel:M.meses.map(function(x){ return fmtValor(x.L.chbJa); }).concat([fmtValor(soma(function(x){ return x.L.chbJa; }))])});
+  info.push({rot:'Chargebacks já contados em Estorno (sem duplicar)', def:'dre_chb_ja', cel:M.meses.map(function(x){ return fmtValor(x.L.chbJa); }).concat([fmtValor(soma(function(x){ return x.L.chbJa; }))])});
   info.push({rot:'Reversões sem a contestação original no extrato (não somadas)', def:'dre_chb_rev', cel:M.meses.map(function(x){ return x.L.chbRevSem ? fmtValorSigned(x.L.chbRevSem) : '—'; }).concat([fmtValorSigned(r2(soma(function(x){ return x.L.chbRevSem; })))])});
   info.push({rot:'Chargebacks sem pedido de venda no ano (não distribuídos)', def:'dre_chb_sem', cel:M.meses.map(function(){ return '—'; }).concat([fmtValor(M.semPedido.v) + (M.semPedido.n ? ' · ' + fmtQtd(M.semPedido.n) : '')])});
   info.push({rot:'Taxa e juros separados pelo extrato (só pedidos com linha no extrato)', def:'dre_sep', cel:M.meses.map(function(x){ return x.sep.n ? 'taxa ' + fmtValor(x.sep.taxa) + ' · juros ' + fmtValor(x.sep.juros) + ' (' + fmtQtd(x.sep.n) + ' de ' + fmtQtd(x.sep.tot) + ')' : '—'; }).concat([(function(){ var t = soma(function(x){ return x.sep.taxa; }), j = soma(function(x){ return x.sep.juros; }), n = soma(function(x){ return x.sep.n; }), q = soma(function(x){ return x.sep.tot; }); return n ? 'taxa ' + fmtValor(t) + ' · juros ' + fmtValor(j) + ' (' + fmtQtd(n) + ' de ' + fmtQtd(q) + ')' : '—'; })()]), larga:true});
@@ -15734,15 +15842,23 @@ function renderDre(){
   var T = dreTabela(M);
   var th = T.cab.map(function(h, i){ return i ? '<th scope="col" class="num">' + escapeHtml(h).replace(/ \(parcial (.*)\)$/, '<span class="in-mm-parc">parcial $1</span>') + '</th>' : '<th scope="col">Linha</th>'; }).join('');
   var corpo = T.linhas.map(function(l){
-    return '<tr class="dre-l' + (l.tipo ? ' dre-tot' : '') + '" data-dre="' + l.d.id + '"><th scope="row" class="dre-rot"><span class="dre-n">' + l.num + '</span><span class="dre-s" aria-hidden="true">' + l.sinal + '</span>' + escapeHtml(l.rot) + infoTip(l.d.def) + '</th>' +
-      l.cel.map(function(c, i){ var alto = l.alto && i < l.alto.length && l.alto[i]; return '<td class="num' + (i === l.cel.length - 1 ? ' dre-total' : '') + (alto ? ' dre-aj-alto' : '') + '"' + (alto ? ' title="Ajuste acima de R$ 1: ver a explicação no ícone i da linha"' : '') + '>' + c + (alto ? '<span class="dre-aj-tag">ajuste alto</span>' : '') + '</td>'; }).join('') + '</tr>';
+    return '<tr class="dre-l' + (l.tipo ? ' dre-tot' : '') + (l.d.info ? ' dre-info dre-fora' : '') + '" data-dre="' + l.d.id + '"><th scope="row" class="dre-rot"><span class="dre-n">' + l.num + '</span><span class="dre-s" aria-hidden="true">' + (l.d.info ? 'i' : l.sinal) + '</span>' + escapeHtml(l.rot) + infoTip(l.d.def) + (l.d.info ? '<span class="sr-only"> (fora da soma)</span>' : '') + '</th>' +
+      l.cel.map(function(c, i){ var alto = l.alto && i < l.alto.length && l.alto[i]; return '<td class="num' + (i === l.cel.length - 1 ? ' dre-total' : '') + (alto ? ' dre-aj-alto' : '') + '"' + (alto ? ' title="Ajuste acima de R$ 1: ver a explicação no ícone i da linha"' : dreSemFinTitulo(l, i)) + '>' + c + (alto ? '<span class="dre-aj-tag">ajuste alto</span>' : '') + '</td>'; }).join('') + '</tr>';
   }).join('');
   var infoHtml = '<tr class="dre-sep"><th colspan="' + T.cab.length + '" scope="colgroup">Informativo (fora da soma)</th></tr>' + T.info.map(function(l){
     return '<tr class="dre-info' + (l.ok === false ? ' dre-erro' : '') + '"><th scope="row" class="dre-rot">' + escapeHtml(l.rot) + infoTip(l.def) + '</th>' +
       l.cel.map(function(c, i){ return '<td class="num' + (i === l.cel.length - 1 ? ' dre-total' : '') + (l.larga ? ' dre-larga' : '') + '">' + c + '</td>'; }).join('') + '</tr>';
   }).join('');
+  // linha 13: aviso dos pedidos que entram pelo total, ainda sem taxa (title na célula e nota abaixo da tabela)
+  var semFinTot = M.meses.reduce(function(a, x){ return a + x.L.semfin; }, 0);
+  function dreSemFinTitulo(l, i){
+    if(l.d.id !== 'recrec') return '';
+    var v = i < M.meses.length ? M.meses[i].L.semfin : semFinTot;
+    return v > 0 ? ' title="' + escapeHtml(dreSemFinTxt(v)) + '"' : '';
+  }
   var temVale = M.meses.some(function(x){ return x.vale.n; });
-  var notas = '<p class="in-nota-fixa">Competência (data do pedido). Só receitas: não inclui contas a pagar, impostos (DAS) nem custo das peças.</p>' +
+  var notas = (semFinTot > 0 ? '<p class="in-nota-fixa"><strong>Linha 13</strong> ' + escapeHtml(dreSemFinTxt(semFinTot)) + ': ' + M.meses.filter(function(x){ return x.L.semfin > 0; }).map(function(x){ return inMesCurto(x.m) + ' ' + fmtValor(x.L.semfin); }).join(' · ') + '.</p>' : '') +
+    '<p class="in-nota-fixa">Competência (data do pedido). Só receitas: não inclui contas a pagar, impostos (DAS) nem custo das peças.</p>' +
     '<p class="in-nota-fixa"><strong>Mês parcial</strong> = vendas só até o último pedido carregado (ou só desde o primeiro). A taxa do meio de pagamento e os juros de antecipação aparecem somados porque, no CSV da Nuvemshop, "Taxas" já inclui os juros; a separação pelo extrato do Nuvem Pago está na linha informativa, só dos pedidos que têm linha no extrato.</p>' +
     '<p class="in-nota-fixa"><strong>Crédito em loja</strong> (validade de ' + DRE_CREDITO_VALIDADE_MESES + ' meses): quando a cliente usa o crédito num pedido novo (cupom com o número da cliente, ex.: VALE-POS-12345, VALE_TLG-12345, NOME1P12345678), o valor fica dentro do <em>Cupom de desconto</em> (linha 2), igual a Vendas e ao Início. As linhas informativas mostram só quanto foi crédito usado, o crédito emitido, o que vence no mês e o saldo estimado em aberto; nenhuma delas entra na soma.' + (temVale ? '' : ' Nenhum cupom de crédito em loja no período.') + '</p>' +
     '<p class="in-nota-fixa"><strong>Chargebacks</strong> (linha 7): contestações de saída do extrato do Nuvem Pago, no mês do pedido; as revertidas a favor da loja somam de volta. Quando a Nuvemshop já tinha lançado o valor na coluna Estorno do pedido, só entra o que passar disso (sem duplicar).</p>';
@@ -15760,7 +15876,7 @@ function dreCsvLinhas(){
   var esc = function(v){ var s = v == null ? '' : String(v); return /[";\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   var num = function(n){ return csvNum(r2(n), 2); };
   var out = [T.cab.map(esc).join(';')];
-  T.linhas.forEach(function(l){ out.push([l.num + ' ' + l.sinal + ' ' + l.rot].concat(l.vals.map(function(v){ return num(v); }), [num(l.tot)]).map(esc).join(';')); });
+  T.linhas.forEach(function(l){ out.push([l.num + ' ' + (l.d.info ? '(informativo, fora da soma)' : l.sinal) + ' ' + l.rot].concat(l.vals.map(function(v){ return num(v); }), [num(l.tot)]).map(esc).join(';')); });
   T.info.forEach(function(l){ out.push(['(informativo) ' + l.rot].concat(l.cel).map(esc).join(';')); });
   out.push(esc('Competência (data do pedido). Só receitas: não inclui contas a pagar, impostos (DAS) nem custo das peças.'));
   return {linhas:out, ano:M.ano};
@@ -15884,7 +16000,7 @@ function fxPrevisaoHtml(){
   var tab = ordem.length
     ? '<div class="table-wrap"><table class="data-table fx-prev"><thead><tr><th>Data esperada</th>' + th('Pedidos', null, true) + th('Pix', null, true) + th('Cartão', null, true) + th('Total dos pedidos', null, true) + th('Líquido previsto', 'fx_prev', true) + '</tr></thead><tbody>' +
       ordem.map(function(k){ var d = dias[k]; return '<tr><td>' + V_DOW_CURTO[d.data.getDay()] + ' ' + fmtDate(d.data) + '</td><td class="num">' + fmtQtd(d.n) + '</td><td class="num">' + fmtQtd(d.pix) + '</td><td class="num">' + fmtQtd(d.cartao) + '</td><td class="num">' + fmtValor(d.bruto) + '</td><td class="num">' + fmtValor(d.liq) + '</td></tr>'; }).join('') +
-      '<tr class="dre-tot"><td class="v-total-label">Total a liberar</td><td class="num">' + fmtQtd(totN) + '</td><td class="num"></td><td class="num"></td><td class="num">' + fmtValor(totB) + '</td><td class="num">' + fmtValor(totL) + '</td></tr></tbody></table></div>'
+      '<tr class="dre-tot total-row"><td class="v-total-label">Total a liberar</td><td class="num">' + fmtQtd(totN) + '</td><td class="num"></td><td class="num"></td><td class="num">' + fmtValor(totB) + '</td><td class="num">' + fmtValor(totL) + '</td></tr></tbody></table></div>'
     : '<div class="empty-note">Nenhuma venda aguardando liberação dentro do prazo.</div>';
   return '<div class="panel in-pos"><div class="panel-header"><div class="panel-title">A liberar, por data esperada</div><div class="panel-meta">premissa do painel: Pix ' + NP_PRAZO.pix + ' dia, cartão ' + NP_PRAZO.cartao + ' dias depois do pagamento</div><span class="in-selo">previsão</span></div>' + tab +
     '<p class="in-nota-fixa">Líquido previsto = total do pedido × (1 − custo efetivo de ' + vMesNome(taxa.base.getMonth()) + ' por forma de pagamento: Pix ' + fmtPctOrDash(taxa.Pix != null ? taxa.Pix : null) + ', cartão à vista ' + fmtPctOrDash(taxa['Cartão à vista'] != null ? taxa['Cartão à vista'] : null) + ', parcelado ' + fmtPctOrDash(taxa['Cartão parcelado'] != null ? taxa['Cartão parcelado'] : null) + '). É estimativa: a data real é a do extrato. ' +
@@ -15921,7 +16037,7 @@ function renderFluxo(){
     try{
       var D = dreLinhas(vEntre(new Date(np.ano, np.mes, 1), new Date(np.ano, np.mes + 1, 1)));
       var rMes = npResumo(npEntre(new Date(np.ano, np.mes, 1), new Date(np.ano, np.mes + 1, 1)));
-      timing = '<p class="in-nota-fixa"><strong>Diferença de timing com a DRE de receitas (' + vMesNome(np.mes) + '):</strong> a DRE mostra receita líquida de recebimento de <strong>' + fmtValor(D.recRec) + '</strong> (pedidos do mês, por competência); este fluxo mostra resultado de <strong>' + fmtValorSigned(r2(rMes.resultado)) + '</strong> (dinheiro que ficou disponível no mês, pelo recebimento). A diferença nasce de vendas do fim do mês liberadas no mês seguinte, de vendas do mês anterior liberadas neste, e de estornos e chargebacks de pedidos de outros meses. Texto informativo: nenhum dos dois números é ajustado pelo outro. <a class="text-link" href="#/dre">Ver a DRE</a></p>';
+      timing = '<p class="in-nota-fixa"><strong>Diferença de timing com a DRE de receitas (' + vMesNome(np.mes) + '):</strong> a DRE mostra líquido da venda após meio de pagamento de <strong>' + fmtValor(D.recRec) + '</strong> (pedidos do mês, por competência)' + (D.semfin > 0 ? ', que ' + dreSemFinTxt(D.semfin) : '') + '; este fluxo mostra resultado de <strong>' + fmtValorSigned(r2(rMes.resultado)) + '</strong> (dinheiro que ficou disponível no mês, pelo recebimento). A diferença nasce de vendas do fim do mês liberadas no mês seguinte, de vendas do mês anterior liberadas neste, e de estornos e chargebacks de pedidos de outros meses. Texto informativo: nenhum dos dois números é ajustado pelo outro. <a class="text-link" href="#/dre">Ver a DRE</a></p>';
     } catch(e){ timing = ''; }
   }
   el.innerHTML = barra + '<div class="in-dados-ate">' + inDadosAte() + '</div>' +
@@ -16370,7 +16486,7 @@ function inBlocoTopo(C){
       var N = inCalcNp(C);
       lib = inKpiRel('kpi-repr', 'Líquido liberado', 'np_vendas', fmtValor(N.r.venda.liquido),
         '<span class="in-sub-linha">' + fmtQtd(N.r.venda.n) + (N.r.venda.n === 1 ? ' venda' : ' vendas') + (N.atrasado ? ' · <span class="txt-crit">extrato até ' + vDiaCurto(np.fim) + '</span>' : '') + '</span>' +
-        (N.b ? inDelta(N.r.venda.liquido, N.b.venda.liquido, N.ctx, false) : inSemBase(N.motivo)), 'pelo recebimento', '', [inLinkFinanceiro(P), 'Financeiro']);
+        (N.b ? inDelta(N.r.venda.liquido, N.b.venda.liquido, N.ctx, false) : inSemBase(N.motivo)), 'pelo recebimento', '', [inLinkFinanceiro(P), 'Recebimentos']);
     }
   }
   return head + '<div class="kpi-grid in-relance' + (fin ? ' in-rel-5' : '') + '">' + fat + '<div class="in-rel-sec">' + ped + tk + '</div>' + liq + cup + reemb + lib + '</div>' +
@@ -16420,7 +16536,7 @@ var IN_MM_SERIES = [
 function inMesCurto(m){ return vMesNome(m).slice(0, 3); }
 function inBlocoMeses(C){
   var P = C.P, D = inMesesDados();
-  var cab = inHead('Resumo mês a mês · ' + D.ano, 'venda pelo pedido · devolvido pelo lançamento', 'clique num mês para ver o período', inTemNp() ? '<a class="text-link" href="#/dre">Ver DRE de receitas</a>' : '');
+  var cab = inHead('Resumo mês a mês · ' + D.ano, 'venda pelo pedido · devolvido pelo lançamento', 'clique num mês para ver o período', '');   // etapa 35: link da DRE saiu
   if(!D.linhas.length) return cab + inVazio('Sem meses para mostrar', '');
   var sel = P.tipo === 'mes' && P.ano === D.ano ? P.mes : null;
   function celula(x, s){
@@ -16484,7 +16600,6 @@ function inGraficosMeses(C){
     cfg.options.plugins.tooltip.callbacks.title = function(items){ var x = items.length ? D.linhas[items[0].dataIndex] : null; return x ? vMesNome(x.m) + ' ' + x.ano + (x.parcial ? ' (parcial)' : '') : ''; };
     cfg.options.onClick = clique;
     cfg.options.onHover = function(evt, els){ var t = evt.native && evt.native.target; if(t) t.style.cursor = els && els.length ? 'pointer' : 'default'; };
-    cfg.options.scales.y.ticks.callback = function(v){ return v >= 1e6 ? 'R$ ' + nfDec1.format(v / 1e6) + ' mi' : v >= 1e3 ? 'R$ ' + fmtQtd(v / 1e3) + ' mil' : 'R$ ' + fmtQtd(v); };
     return cfg;
   };
   var cv = {type:'bar', data:{labels:labels, datasets:[
@@ -16535,12 +16650,12 @@ function inBlocoPonte(C){
   // uma linha: Faturamento → Líquido estimado (x %). A tabela em cascata está em Vendas (painel do período) e, mês a mês, na DRE de receitas.
   var fatComFin = r.faturamento - r.fatSemFin;
   var pct = fatComFin ? fmtPct(r.liquido / fatComFin) + ' do faturamento' : 'sem dado financeiro ainda';
-  var links = '<a class="text-link" href="' + inLinkVendas(P) + '">Ver a ponte completa em Vendas</a>' + (inTemNp() ? ' · <a class="text-link" href="#/dre">Ver DRE de receitas</a>' : '');
+  var links = '<a class="text-link" href="' + inLinkVendas(P) + '">Ver a ponte completa em Vendas</a>';   // etapa 35: link da DRE saiu
   return cab + '<p class="in-ponte-linha"><span>Faturamento <strong>' + fmtValor(r.faturamento) + '</strong></span><span class="in-seta" aria-hidden="true">→</span><span>Líquido estimado da venda <strong>' + fmtValor(r.liquido) + '</strong> <span class="txt-muted">(' + pct + ')</span></span></p>' +
     '<p class="in-links">' + links + '</p>';
 }
-// link do Início para a Visão financeira no mês do recorte
-function inLinkFinanceiro(P){ return '#/financeiro?mes=' + MONTH_DEFS[P.ini.getMonth()].key + '&ano=' + P.ini.getFullYear(); }
+// link do Início para Recebimentos (Nuvem Pago) no mês do recorte (etapa 35: antes ia para a Visão financeira, que saiu)
+function inLinkFinanceiro(P){ return '#/nuvem-pago?mes=' + MONTH_DEFS[P.ini.getMonth()].key + '&ano=' + P.ini.getFullYear(); }
 
 /* ---- Cartões de módulo: 2 ou 3 números de cada módulo, cada um com o caminho para ele (o do Financeiro só para o perfil financeiro) ---- */
 function inModCartao(id, titulo, href, nums, links){
@@ -16580,7 +16695,7 @@ function inBlocoModulos(C){
     }
     linksCom.push(['Pago e não faturado', '#/pedidos?aba=pago']);
   }
-  cards.push(inModCartao('comercial', 'Comercial e Operação', inLinkVendas(P), nums, linksCom));
+  cards.push(inModCartao('comercial', 'Vendas', inLinkVendas(P), nums, linksCom));
   // Reembolsos e Devoluções: total reembolsado (planilha), crédito em loja e casos nas filas críticas
   var RE = inCalcReemb(C), crit = '—', critSub = '';
   if(IS_APPS_SCRIPT && rotaLiberadaId('devolucoes')){
@@ -16590,7 +16705,7 @@ function inBlocoModulos(C){
   var numsR = RE.semCobertura ? [['Total reembolsado', '—', RE.foraAno ? 'fora do ano da planilha' : 'planilha até ' + RE.refTxt]]
     : [['Total reembolsado', fmtValor(RE.r.valor), 'pelo lançamento' + (RE.atrasado ? ' · planilha até ' + RE.refTxt : '')], ['Crédito em loja', fmtValor(RE.r.tipos.Cupom.valor), 'tipo Cupom da planilha']];
   if(IS_APPS_SCRIPT && rotaLiberadaId('devolucoes')) numsR.push(['Filas críticas', crit, critSub]);
-  cards.push(inModCartao('reembolsos', 'Reembolsos e Devoluções', inLinkReembolsos(P), numsR, [['Reembolsos · Resumo', inLinkReembolsos(P)]].concat(IS_APPS_SCRIPT && rotaLiberadaId('devolucoes') ? [['Filas de trabalho', '#/devolucoes']] : [])));
+  cards.push(inModCartao('reembolsos', 'Devoluções e logística reversa', inLinkReembolsos(P), numsR, [['Reembolsos · Resumo', inLinkReembolsos(P)]].concat(IS_APPS_SCRIPT && rotaLiberadaId('devolucoes') ? [['Filas de trabalho', '#/devolucoes']] : [])));
   // Financeiro (só perfil financeiro): líquido liberado, a liberar e fora do prazo
   if(inTemNp()){
     var estN = inEstadoNp(), numsF;
@@ -16604,7 +16719,7 @@ function inBlocoModulos(C){
         numsF.push(['Fora do prazo', '<span class="' + (l.faltando.length ? 'txt-crit' : '') + '">' + fmtQtd(l.faltando.length) + '</span>', l.faltando.length ? fmtValor(soma(l.faltando)) + ' sem linha no extrato' : 'tudo no prazo']);
       }
     }
-    cards.push(inModCartao('financeiro', 'Financeiro', inLinkFinanceiro(P), numsF, [['Visão financeira', inLinkFinanceiro(P)], ['DRE de receitas', '#/dre'], ['Fluxo de caixa', '#/fluxo']]));
+    cards.push(inModCartao('financeiro', 'Contas a receber', inLinkFinanceiro(P), numsF, [['Recebimentos Nuvem Pago', inLinkFinanceiro(P)], ['Conciliação', '#/nuvem-pago?aba=conciliacao']]));
   }
   return cab + '<div class="in-mod-grid' + (cards.length === 2 ? ' is-2' : '') + '">' + cards.join('') + '</div>';
 }
@@ -16973,7 +17088,11 @@ function apxRecorrentes(C, est){
     serie.push({m:mi, v:v});
   }
   C.spark = serie;
-  return '<article class="panel apx-card apx-rec" aria-labelledby="apx-rec-t">' + cab + vsSemHtml(sem) + '</div>' +
+  // mesmo aviso de base parcial de Vendas (vs_recorr): com anos anteriores na base, o histórico de compras é só o do ano carregado
+  var anoBase = vendas.anoServidor || vendas.ano;
+  var basePar = (vendas.anos || []).some(function(a){ return a < anoBase; })
+    ? '<p class="apx-aviso">Considera só as compras de ' + anoBase + (vendas.inicio ? ' (histórico só desde ' + fmtDate(vInicioDia(vendas.inicio)) + ')' : '') + ': quem comprou antes conta como nova.</p>' : '';
+  return '<article class="panel apx-card apx-rec" aria-labelledby="apx-rec-t">' + cab + vsSemHtml(sem) + '</div>' + basePar +
     '<div class="apx-rec-corpo"><div><span class="apx-eyebrow">No período</span>' +
       '<div class="apx-rec-num"><span class="kpi-value">' + (pct == null ? '—' : fmtPct(pct)) + '</span>' + (meta ? '<small>meta ' + apxNum(0, 0).format(meta.verde) + '%</small>' : '') + '</div>' +
       '<span class="apx-rec-sub">' + fmtQtd(cli.recorrentes.n) + ' de ' + fmtQtd(cli.clientes) + (cli.clientes === 1 ? ' cliente' : ' clientes') + infoTip('vs_recorr') + '</span></div>' +
@@ -17011,25 +17130,32 @@ function apxSaudeCalc(C){
       }
     }
   }
-  // 2. devolução: pedidos do MÊS ANTERIOR ao focado, que já passaram do prazo de devolução (o mês atual ainda pode subir)
-  var aIni = new Date(ano, mes - 1, 1), aNome = vMesNome(aIni.getMonth()).toLowerCase();
+  // 2. devolução: último mês MADURO antes do focado (todos os pedidos com DV_DIAS_MATURACAO dias ou mais, mesma regra
+  // de "em aberto" da tabela por mês). Em geral é o mês anterior; se ele ainda estiver em aberto, recua até um maduro.
+  var hojeDv = dvHoje(), recuo = 1, aIni = new Date(ano, mes - 1, 1);
+  while(recuo < 13 && dvMesEmAberto(aIni.getFullYear(), aIni.getMonth(), hojeDv)){ recuo++; aIni = new Date(ano, mes - recuo, 1); }
+  var aFim = new Date(aIni.getFullYear(), aIni.getMonth() + 1, 1);
+  var aNome = vMesNome(aIni.getMonth()).toLowerCase() + (aIni.getFullYear() !== ano ? ' de ' + aIni.getFullYear() : '');
+  var antNome = vMesNome(new Date(ano, mes - 1, 1).getMonth()).toLowerCase();
+  var aPorque = recuo > 1 ? ' (último mês maduro; ' + antNome + ' ainda está em aberto, com pedidos de menos de ' + DV_DIAS_MATURACAO + ' dias)' : '';
   if(!devol.sols || !vendas.pedidos) cd.falta = 'sem dados de devolução';
-  else if(!vCoberto(aIni)) cd.falta = 'vendas de ' + aNome + ' incompletas';
+  else if(dvMesEmAberto(aIni.getFullYear(), aIni.getMonth(), hojeDv)) cd.falta = 'nenhum mês maduro (todos com pedidos de menos de ' + DV_DIAS_MATURACAO + ' dias)';
+  else if(!vCoberto(aIni)) cd.falta = 'vendas de ' + aNome + ' incompletas' + aPorque;
   else {
-    var c = dvPedidosComDevolucao(vEntre(aIni, mIni)), tx = dvTaxa(c.com, c.vendas), m = IN_SAUDE_META_TAXA_DEV;
+    var c = dvPedidosComDevolucao(vEntre(aIni, aFim)), tx = dvTaxa(c.com, c.vendas), m = IN_SAUDE_META_TAXA_DEV;
     if(tx == null || !(m > 0)) cd.falta = tx == null ? 'sem pedidos de venda em ' + aNome : 'sem meta da taxa de devolução';
     else {
       cd.pts = tx <= m ? cd.peso : cd.peso * Math.max(0, 1 - (tx - m) / m);
-      cd.txt = fmtPct(tx) + ' dos pedidos de ' + aNome + ', já fora do prazo de devolução (' + fmtQtd(c.com) + ' de ' + fmtQtd(c.vendas) + ') · meta ' + fmtPct(m) + '; zera no dobro da meta.';
+      cd.txt = fmtPct(tx) + ' dos pedidos de ' + aNome + aPorque + ', mês maduro: todos os pedidos com ' + DV_DIAS_MATURACAO + ' dias ou mais (' + fmtQtd(c.com) + ' de ' + fmtQtd(c.vendas) + ') · meta ' + fmtPct(m) + '; zera no dobro da meta.';
     }
   }
   // 3. filas de devolução (posição de hoje)
   if(!devol.sols) cq.falta = 'sem dados das filas';
   else {
     dvDerivar();
-    var atraso = dvCasosCriticos(dvMontarFilas(dvHoje())), abertas = devol.sols.filter(function(o){ return o.ativo; }).length;
+    var atraso = dvCasosCriticos(dvMontarFilas(dvHoje()), true), abertas = devol.sols.filter(function(o){ return o.ativo; }).length;
     cq.pts = abertas ? cq.peso * (1 - Math.min(1, atraso / abertas)) : cq.peso;
-    cq.txt = fmtQtd(atraso) + ' em fila crítica de ' + fmtQtd(abertas) + (abertas === 1 ? ' caso' : ' casos') + ' em andamento (posição de hoje)';
+    cq.txt = fmtQtd(atraso) + ' em fila crítica de ' + fmtQtd(abertas) + (abertas === 1 ? ' caso' : ' casos') + ' em andamento (posição de hoje). Só casos em andamento; divergências e chargebacks já encerrados não entram (por isso o número difere do menu)';
     var indisp = DV_FILAS.filter(function(f){ return f.critica && dvFilaIndisp(f); });
     if(indisp.length) cq.aviso = 'fila sem dado: ' + indisp.map(function(f){ return f.label; }).join(', ') + ' (fora da contagem)';
   }
@@ -17700,7 +17826,9 @@ function setupTopo(){
   var user = document.getElementById('user-menu'), sino = document.getElementById('sino-pop'), marca = document.getElementById('marca-menu');
   document.getElementById('btn-user').addEventListener('click', function(){ syncExportMenu(); apxAbrirPop(user, this); });
   document.getElementById('btn-sino').addEventListener('click', function(){ sinoAtualizar(); sinoRender(); apxAbrirPop(sino, this, '.sino-item, #sino-lidas'); });
-  document.getElementById('btn-marca').addEventListener('click', function(){ apxAbrirPop(marca, this, '[role=menuitem]'); });
+  // seletor de painel: saiu na etapa 35 (sem #btn-marca/#marca-menu no HTML); fica protegido caso volte
+  var btnMarca = document.getElementById('btn-marca');
+  if(btnMarca && marca) btnMarca.addEventListener('click', function(){ apxAbrirPop(marca, this, '[role=menuitem]'); });
   document.getElementById('sino-lidas').addEventListener('click', function(){
     try{ localStorage.setItem(SINO_LIDAS_KEY, JSON.stringify((sinoCache || sinoItens()).map(function(x){ return x.id; }))); } catch(e){}
     sinoAtualizar(); sinoRender();
@@ -17713,7 +17841,7 @@ function setupTopo(){
     apxFecharPop(!it.matches('a'));
   });
   sino.addEventListener('click', function(e){ if(e.target.closest('.sino-item')) apxFecharPop(false); });
-  marca.addEventListener('click', function(e){ var it = e.target.closest('[role=menuitem]'); if(it && it.getAttribute('aria-disabled') !== 'true') apxFecharPop(false); });
+  if(marca) marca.addEventListener('click', function(e){ var it = e.target.closest('[role=menuitem]'); if(it && it.getAttribute('aria-disabled') !== 'true') apxFecharPop(false); });
   var cartao = document.getElementById('apx-menu');
   cartao.addEventListener('click', function(e){
     var it = e.target.closest('[role=menuitem]');
@@ -17721,7 +17849,7 @@ function setupTopo(){
     if(it.dataset.apxMi === 'copiar') apxCopiar(cartao.dataset.copia || '');
     apxFecharPop(!it.matches('a'));
   });
-  [user, sino, marca, cartao].forEach(function(p){ p.addEventListener('keydown', apxMenuTeclas); });
+  [user, sino, marca, cartao].forEach(function(p){ if(p) p.addEventListener('keydown', apxMenuTeclas); });
   document.addEventListener('pointerdown', function(e){
     if(apxPop.el && !apxPop.el.contains(e.target) && !apxPop.btn.contains(e.target)) apxFecharPop(false);
   });
@@ -18006,6 +18134,9 @@ function boot(){
   Chart.defaults.elements.point.hoverRadius = 5;
   Chart.defaults.elements.point.hoverBorderWidth = 2;
   Chart.defaults.elements.line.borderCapStyle = 'round';
+  // curvas monótonas em todas as linhas e sparklines: a curva não passa acima/abaixo dos pontos (antes, a
+  // suavização por tensão desenhava picos e vales que não existem nos dados)
+  Chart.defaults.elements.line.cubicInterpolationMode = 'monotone';
   Chart.defaults.elements.line.borderJoinStyle = 'round';
   var tt = Chart.defaults.plugins.tooltip;
   tt.borderWidth = 1;
@@ -18096,7 +18227,22 @@ function boot(){
 
   // busca global
   var fabCmdk = document.getElementById('btn-fab-cmdk');
-  if(fabCmdk) fabCmdk.addEventListener('click', openCmdk);
+  if(fabCmdk){
+    fabCmdk.addEventListener('click', openCmdk);
+    // esconde ao rolar para baixo; mostra ao rolar para cima ou 700 ms depois de parar
+    var fabY = 0, fabParou = null;
+    var fabPos = function(t){ return t && t !== document && t.scrollTop != null && t.scrollHeight > t.clientHeight + 1 && getComputedStyle(t).overflowY !== 'visible' ? t.scrollTop : (window.pageYOffset || document.documentElement.scrollTop || 0); };
+    document.addEventListener('scroll', function(e){
+      var t = e.target;
+      if(t && t.classList && t.classList.contains('table-wrap')) return;   // rolagem lateral de tabela não conta
+      var y = fabPos(t);
+      if(Math.abs(y - fabY) < 4) return;
+      fabCmdk.classList.toggle('is-oculto', y > fabY && y > 80);
+      fabY = y;
+      clearTimeout(fabParou);
+      fabParou = setTimeout(function(){ fabCmdk.classList.remove('is-oculto'); }, 700);
+    }, true);
+  }
   var cmdkInput = document.getElementById('cmdk-input');
   var cmdkTimer = null;
   cmdkInput.addEventListener('input', function(){ clearTimeout(cmdkTimer); cmdkTimer = setTimeout(function(){ renderCmdk(cmdkInput.value); }, 120); });

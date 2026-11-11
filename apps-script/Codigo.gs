@@ -2367,7 +2367,7 @@ var VENDAS_METAS_PROP = 'VENDAS_METAS';
 var VENDAS_METAS_PADRAO = {
   faturamento:{verde:2180000, amarelo:1490000},
   pedidos:{verde:5000, amarelo:3500},
-  ticket:{verde:400, amarelo:340},
+  ticket:{verde:436, amarelo:370},   // 30/10/2026: 2,18 mi ÷ 5.000 pedidos = R$ 436; amarelo na mesma proporção de 340/400
   recorrentes:{verde:38, amarelo:30},
   prazos:{pendente:2, boleto:4, cancelPago:5, topProblema:3, recusadoRecorrente:1, emRisco:90}
 };
