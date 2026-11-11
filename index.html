@@ -24,6 +24,49 @@
 </script>
 <style>
 /* =====================================================================
+   MINI DESIGN SYSTEM (etapa 36, item B6 do diagnóstico)
+   Um padrão por componente nas telas ativas. Os tokens ficam no :root logo abaixo; os componentes,
+   no bloco "Mini design system" perto do fim desta folha (vem depois das camadas antigas e as unifica).
+   Cores: nada de paleta paralela; os tokens semânticos apontam para as variáveis do tema Aurora.
+
+   TOKENS
+   Tipografia (6 tamanhos)
+     --fs-1  11px    rótulo em caixa alta, selo, metadado, legenda, cabeçalho de tabela, eixo de gráfico
+     --fs-2  12,5px  texto auxiliar, célula de tabela, nota, aviso, segmento, botão pequeno, campo
+     --fs-3  14px    corpo, título de painel, botão, aba
+     --fs-4  16px    título de bloco, número do stat tile compacto (grade de meses), número de módulo
+     --fs-5  20px    número do stat tile e do KPI compacto
+     --fs-6  28px    número do KPI card
+   Raios (3)   --r-sm 6px (selo, botão de segmento, aba interna) · --r-ctl 9px (botão, campo, trilho de
+               abas/segmento, stat tile, faixa do cabeçalho de tabela) · --r-card 12px (cartão, painel, aviso,
+               estado vazio). Pílula (999px) não é raio: é forma, só em chip de filtro e selo de cabeçalho.
+   Espaço (base 4)  --sp-1 4 · --sp-2 8 · --sp-3 12 · --sp-4 16 · --sp-5 20 · --sp-6 24 · --sp-7 32
+   Semântica   ok / atenção / crítico / neutro, cada um com três papéis:
+               --ok | --warn | --crit | --neutral          preenchimento e borda sólida (barra, ponto, filete)
+               --ok-text | --warn-text | --crit-text ...   texto colorido (AA ≥ 4,5:1 sobre o cartão e o tint)
+               --ok-bg / --ok-border (idem warn, crit, neutral)  fundo e contorno translúcidos de selo e aviso
+   Gráficos    --chart-ink (série principal, grafite) · --chart-ink-2 / --chart-ink-3 (séries de apoio) ·
+               --chart-accent (a única cor de destaque) · --chart-grid (grade) · eixo em --text-muted, Inter 11px
+
+   COMPONENTES (classe padrão · aliases mantidos por compatibilidade)
+   KPI card      .kpi-card > .kpi-label / .kpi-value / .kpi-sub   (variantes: .vs-mini, .in-mini, .apx-kpi)
+   Stat tile     .dv-fila (rótulo .dv-fila-t, número .dv-fila-n, linha .dv-fila-s) · mesmo desenho em
+                 .dv-passo, .summary-card, .kpi-month-card (compacto, número em --fs-4)
+   Tabela        table.data-table: cabeçalho em faixa (--thead, --fs-1 caixa alta), divisória + hover,
+                 td.num / th.num à direita com tabular-nums, 1ª coluna fixa nas tabelas largas, td.cell-acoes
+   Selo          .v-sit (+ .is-* de status) · aliases .vs-sem, .sev-pill, .in-selo, .in-mm-tag, .dv-indisp,
+                 .apx-pill, .mc-pill, .delta
+   Abas/segmento .page-tabs > .page-tab (navegação) · .segmented > button e .vs-seg > .btn (filtro, compacto):
+                 mesmo trilho (--bg-raised, --r-ctl) e mesmo indicador cinza (--bg-active)
+   Estado vazio  em caixa: .in-vazio / .apx-vazio (título --fs-3, texto --fs-2) · em linha: .empty-note,
+                 td.empty-cell, .apx-tab-vazia
+   Aviso         .alert-info / .alert-warning / .alert-critical / .alert-good (com ou sem .alert, também em
+                 .drive-status) e .vs-alerta: fundo translúcido, contorno e filete de 3px à esquerda; o texto
+                 fica na cor do corpo (a cor nunca é o único sinal)
+   Botão         .btn (secundário) · .btn-primary (grafite invertido: o único botão "cheio") ·
+                 .btn-ghost (sem fundo nem borda até o hover) · .btn-sm (compacto)
+   ===================================================================== */
+/* =====================================================================
    Tema único (etapa 31, protótipo aprovado "vendas-dark"): escuro (padrão) e claro.
    Paleta quase monocromática; o azul aparece só em brilhos, links, foco e no acento das séries.
    Os nomes antigos (--bg-page, --kpi-ticket, --metric-valor...) continuam: o CSS e os gráficos os leem.
@@ -63,7 +106,7 @@
   --metric-qtd:#9aa6ba;
   --metric-valor:#e3e9f4;
   --series-highlight:#8fb3ff;
-  --series-avg:#6f7889;
+  --series-avg:var(--chart-ink-3);   /* linha de média = grafite de apoio dos gráficos (etapa 36) */
   --series-cum:#8fb3ff;
   --spark:#dfe6f3;
   /* semântica: bom / atenção / ruim (preenchimento e texto) */
@@ -111,6 +154,21 @@
   --ease-emph:cubic-bezier(.2,0,0,1);
   --r-card:12px;
   --r-ctl:9px;
+  /* mini design system (etapa 36): escala de tipo, raio pequeno, espaço e semântica (ver o comentário no topo) */
+  --fs-1:11px; --fs-2:12.5px; --fs-3:14px; --fs-4:16px; --fs-5:20px; --fs-6:28px;
+  --r-sm:6px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px; --sp-7:32px;
+  --ok:var(--status-good);       --ok-bg:color-mix(in srgb, var(--status-good) 12%, transparent);       --ok-border:color-mix(in srgb, var(--status-good) 38%, transparent);
+  --warn:var(--status-warning);  --warn-bg:color-mix(in srgb, var(--status-warning) 12%, transparent);  --warn-border:color-mix(in srgb, var(--status-warning) 40%, transparent);
+  --crit:var(--status-critical); --crit-bg:color-mix(in srgb, var(--status-critical) 12%, transparent); --crit-border:color-mix(in srgb, var(--status-critical) 40%, transparent);
+  --neutral:var(--text-muted);   --neutral-bg:color-mix(in srgb, var(--text-muted) 14%, transparent);   --neutral-border:var(--border-strong);
+  --ok-text:var(--good-text); --neutral-text:var(--text-secondary);
+  /* gráficos: grafite + um destaque */
+  --chart-ink:var(--metric-valor);
+  --chart-ink-2:var(--metric-qtd);
+  --chart-ink-3:#7a8496;         /* 4,8:1 sobre o cartão escuro */
+  --chart-accent:var(--kpi-ticket);
+  --chart-grid:var(--divider);
   color-scheme:dark;
 }
 :root[data-theme="light"]{
@@ -144,7 +202,8 @@
   --metric-qtd:#64748b;
   --metric-valor:#1e293b;
   --series-highlight:#2f54c8;
-  --series-avg:#94a3b8;
+  /* --series-avg segue --chart-ink-3: 3,7:1 sobre branco (antes #94a3b8, 2,6:1, abaixo do mínimo de 3:1) */
+  --chart-ink-3:#7c8698;
   --series-cum:#2f54c8;
   --spark:#1e293b;
   --status-good:#15803d;
@@ -1398,7 +1457,7 @@ html{ -webkit-tap-highlight-color:transparent; text-rendering:optimizeLegibility
 
 /* =====================================================================
    Fluidez: entradas curtas, seleção que desliza, retorno de clique e foco
-   Só transform/opacity nas animações; tokens --dur-*/--ease-*; hover que desloca só com mouse;
+   Só transform/opacity nas animações; tokens --dur-* e --ease-*; hover que desloca só com mouse;
    desliga com prefers-reduced-motion (regra global acima) e na impressão.
    ===================================================================== */
 /* foco padrão para qualquer controle sem regra própria (especificidade zero: as regras específicas vencem) */
@@ -2611,6 +2670,153 @@ th[aria-sort="ascending"] .apx-ord, th[aria-sort="descending"] .apx-ord{ color:v
 @media print{
   .apx-pop, .apx-kebab, .apx-filtros, .apx-acoes, .apx-busca, .apx-ver, .side-search, .top-sino-wrap, .top-user-wrap{ display:none!important; }
 }
+/* =====================================================================
+   Mini design system (etapa 36, B6). Documentação completa no comentário do topo desta folha.
+   Este bloco só unifica a aparência: não muda largura de coluna, ordem de seção, texto nem classe usada
+   pelo JS. Repete os seletores antigos (mesma especificidade, vem depois) em vez de renomear classes.
+   Não redefine min-height, padding lateral de aba nem fonte de campo: as regras de toque (44px) e a fonte
+   de 16px dos campos no celular continuam valendo.
+   ===================================================================== */
+
+/* ---------- KPI card ---------- */
+.kpi-card{ border-radius:var(--r-card); padding:var(--sp-4) var(--sp-5); }
+.kpi-label{ font-size:var(--fs-1); font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); line-height:1.4; }
+.kpi-value{ font-size:clamp(var(--fs-5), 9.6cqi, var(--fs-6)); font-weight:600; line-height:1.15; margin-top:var(--sp-2); }
+.kpi-sub{ font-size:var(--fs-2); line-height:1.45; margin-top:var(--sp-1); }
+.kpi-card.vs-mini .kpi-value, .in-relance .in-mini .kpi-value{ font-size:var(--fs-5); }
+.in-relance .kpi-card.in-mini{ padding:var(--sp-2) var(--sp-5); }
+.apx-kpi .kpi-value, .apx-rec-num .kpi-value, .apx-big{ font-size:var(--fs-6); }
+.apx-kpi{ padding:var(--sp-4) var(--sp-5); }
+.apx-card{ padding:var(--sp-5); }
+@media (max-width:700px){ .apx-card, .apx-kpi{ padding:var(--sp-4); } }
+@media (max-width:420px){ .apx-big, .apx-rec-num .kpi-value{ font-size:26px; } }   /* "Faturamento total" no celular estreito: cabe sem cortar */
+
+/* ---------- Stat tile (mini-número): rótulo · número · linha de apoio ---------- */
+.dv-fila, .dv-passo, .summary-card, .kpi-month-card, .month-chip{ border-radius:var(--r-ctl); }
+.dv-fila, .summary-card{ padding:var(--sp-3); }
+.kpi-month-card{ padding:var(--sp-3); }
+.dv-passo, .dv-esteira > .dv-passo{ padding:var(--sp-3) var(--sp-3) var(--sp-3) calc(var(--sp-3) + 2px); }   /* +2px: filete de 3px à esquerda */
+.dv-fila-t, .dv-passo-n, .summary-card .lbl, .kpi-month-card .mc-month{
+  font-size:var(--fs-1); font-weight:600; letter-spacing:.06em; text-transform:uppercase; line-height:1.4; color:var(--text-muted);
+}
+.dv-fila-n, .dv-passo-v, .summary-card .num{ font-size:var(--fs-5); font-weight:600; letter-spacing:-.02em; line-height:1.2; font-variant-numeric:tabular-nums; }
+.kpi-month-card .mc-valor{ font-size:var(--fs-4); }
+.dv-fila-s, .dv-passo-s, .dv-passo-a, .kpi-month-card .mc-meta, .kpi-month-card .mc-qtd, .kpi-month-card .mc-ticket, .kpi-month-card .mc-empty-label{ font-size:var(--fs-1); line-height:1.45; }
+.in-mod-card{ padding:var(--sp-4) var(--sp-5); }
+.in-mod-titulo{ font-size:var(--fs-3); }
+.in-mod-rot{ font-size:var(--fs-2); }
+.in-mod-val{ font-size:var(--fs-4); }
+.in-mod-sub{ font-size:var(--fs-1); }
+.apx-mini4 dt{ font-size:var(--fs-2); }
+.apx-mini4 dd{ font-size:var(--fs-3); }
+
+/* ---------- Títulos, rótulos e textos de apoio: só tamanhos da escala ---------- */
+.panel-title, .apx-titulo{ font-size:var(--fs-3); }
+.in-title, .drawer-title{ font-size:var(--fs-4); }
+.filter-label, .form-field label, .month-grid-section-title, .panel-sub-title, .conta-dados dt, .in-dados-tit, .apx-eyebrow{ font-size:var(--fs-1); }
+.panel-meta, .panel-hint, .vs-legenda, .in-nota, .in-nota-fixa, .in-dados-ate, .dv-muted, .apx-mini-nota, .apx-meta-txt, .apx-vis-unid, .in-mm-base{ font-size:var(--fs-1); }
+.vendas-periodo, .apx-janela, .empty-note, .in-info, .dv-fila-desc, .v-meta, .vs-subt, .apx-cmp, .apx-sub, .apx-tab-sub, .apx-tab-pe, .pager, .fonte-link, .in-links{ font-size:var(--fs-2); }
+
+/* ---------- Tabela ---------- */
+table.data-table{ font-size:var(--fs-2); }
+table.data-table th{ font-size:var(--fs-1); font-weight:600; letter-spacing:.06em; }
+table.data-table thead tr:only-child th:first-child{ border-radius:var(--r-ctl) 0 0 var(--r-ctl); }
+table.data-table thead tr:only-child th:last-child{ border-radius:0 var(--r-ctl) var(--r-ctl) 0; }
+table.data-table td.num, table.data-table th.num{ text-align:right; font-variant-numeric:tabular-nums; }
+table.data-table td.cell-acoes{ text-align:right; }
+/* colunas secundárias das tabelas largas (Casos, NF, Pedidos): rótulo da escala em vez de 11,5px */
+#dv-table-casos :is(th, td):is(:nth-child(2), :nth-child(7), :nth-child(8)),
+#dv-table-nf table.data-table :is(th, td):is(:nth-child(4), :nth-child(6)),
+.ped-table :is(td, th):is(.ped-desc, .ped-taxas, .ped-estorno, .ped-cupom), .ped-table td.ped-ajd{ font-size:var(--fs-1); }
+
+/* ---------- Selo ---------- */
+.v-sit, .vs-sem, .sev-pill, .in-selo, .in-mm-tag, .dv-indisp, .delta{
+  border-radius:var(--r-sm); font-size:var(--fs-1); font-weight:600; line-height:1.5; padding:1px var(--sp-2); white-space:nowrap; font-variant-numeric:tabular-nums;
+}
+.apx-pill{ border-radius:var(--r-sm); font-size:var(--fs-1); font-weight:600; padding:0 var(--sp-2); }
+.mc-pill{ border-radius:var(--r-sm); font-size:var(--fs-1); font-weight:600; line-height:1.4; padding:1px 6px; }
+table.data-table .badge{ border-radius:var(--r-sm); font-size:var(--fs-1); padding:1px var(--sp-2); }
+/* neutro */
+.v-sit, .sev-pill.info, .delta-flat, .mc-pill, .apx-pill{ color:var(--neutral-text); background:var(--neutral-bg); }
+/* ok */
+.v-sit.is-venda, .v-sit.vs-abc-A, .v-sit.dv-etapa.is-encerrada, .v-sit.dv-sit.is-concluido, .vs-sem-verde, .apx-pill.is-bom, .delta-good{
+  color:var(--ok-text); background:var(--ok-bg);
+}
+/* atenção */
+.v-sit.is-pendente, .v-sit.dv-etapa.is-solicitada, .v-sit.dv-etapa.is-autorizada, .v-sit.dv-sit.is-devido, .v-sit.dv-sit.is-solicitado,
+.v-sit.dv-al.is-warn, .vs-sem-amarelo, .sev-pill.warning{
+  color:var(--warn-text); background:var(--warn-bg);
+}
+/* crítico */
+.v-sit.is-cancelado, .v-sit.is-recusado, .v-sit.dv-etapa.is-outra, .v-sit.dv-sit.is-divergente, .v-sit.dv-al.is-crit,
+.vs-sem-vermelho, .sev-pill.error, .apx-pill.is-ruim, .delta-bad, .mc-pill.is-flag{
+  color:var(--crit-text); background:var(--crit-bg);
+}
+/* fases intermediárias da devolução: neutras, sem matiz próprio (o texto da etapa é o sinal) */
+.v-sit.dv-etapa.is-transito, .v-sit.dv-etapa.is-recebida, .v-sit.dv-etapa.is-conferida{ color:var(--text-primary); background:var(--neutral-bg); }
+.v-sit.dv-etapa.is-conferida{ box-shadow:inset 0 0 0 1px var(--neutral-border); }
+.v-sit.dv-etapa.is-cancelada, .v-sit.dv-sit.is-sem, .v-sit.dv-sit.is-nao_devido{ color:var(--text-muted); }
+/* selos de contorno (sem fundo): enquadramento, indisponível, data-base, parcial */
+.v-sit.dv-enq, .dv-indisp, .in-selo, .in-mm-tag{ background:transparent; border:1px solid var(--neutral-border); color:var(--text-secondary); }
+.v-sit.dv-enq.is-a_classificar, .dv-indisp, .in-mm-tag{ border-style:dashed; }
+.dv-indisp, .v-sit.dv-enq.is-a_classificar{ color:var(--text-muted); }
+
+/* ---------- Abas (navegação) e segmento (filtro): mesmo trilho, mesmo indicador ---------- */
+.page-tabs, .segmented, .vs-seg{ border-radius:var(--r-ctl); }
+.page-tab, .segmented button, .seg-thumb, .tab-thumb{ border-radius:var(--r-sm); }
+.page-tab{ font-size:var(--fs-3); }
+.page-tab:focus-visible{ border-radius:var(--r-sm); }
+/* .vs-seg (Vendas: ordenar, quantidade, tipo de cupom): eram botões soltos; agora o mesmo trilho do segmento */
+.vs-seg{ gap:2px; padding:3px; border:1px solid var(--border); background:var(--bg-raised); align-items:stretch; }
+.vs-seg .btn{
+  border-color:transparent; background:transparent; box-shadow:none; color:var(--text-muted); font-weight:500;
+  border-radius:var(--r-sm); padding:5px var(--sp-3);
+}
+.vs-seg .btn:hover:not(:disabled){ background:transparent; border-color:transparent; color:var(--text-primary); }
+.vs-seg .btn.active, .vs-seg .btn.active:hover:not(:disabled){
+  background:var(--bg-active); border-color:var(--border-strong); color:var(--text-primary); font-weight:500; box-shadow:inset 0 1px 0 var(--highlight);
+}
+
+/* ---------- Estado vazio ---------- */
+.in-vazio, .apx-vazio{ display:flex; flex-direction:column; gap:var(--sp-1); padding:var(--sp-4) var(--sp-5); border:1px dashed var(--border-strong); border-radius:var(--r-card); }
+.in-vazio-tit, .apx-vazio strong{ font-size:var(--fs-3); font-weight:600; color:var(--text-primary); }
+.in-vazio-txt, .apx-vazio{ font-size:var(--fs-2); line-height:1.5; color:var(--text-secondary); }
+.empty-note, td.empty-cell, .apx-tab-vazia td{ font-size:var(--fs-2); line-height:1.5; color:var(--text-muted); }
+
+/* ---------- Aviso (info / atenção / erro / sucesso) ---------- */
+.alert, .alert-info, .alert-warning, .alert-critical, .alert-good, .vs-alerta{
+  --al-bg:var(--bg-surface); --al-bd:var(--border); --al-edge:var(--neutral);
+  background:var(--al-bg); border:1px solid var(--al-bd); border-left:3px solid var(--al-edge);
+  border-radius:var(--r-card); color:var(--text-primary); font-size:var(--fs-2); line-height:1.55;
+}
+.alert{ padding:var(--sp-3) var(--sp-4); }
+.alert-warning, .vs-alerta{ --al-bg:var(--warn-bg); --al-bd:var(--warn-border); --al-edge:var(--warn); }
+.alert-critical, .vs-alerta-vermelho{ --al-bg:var(--crit-bg); --al-bd:var(--crit-border); --al-edge:var(--crit); }
+.alert-good{ --al-bg:var(--ok-bg); --al-bd:var(--ok-border); --al-edge:var(--ok); }
+.alert-info{ --al-bg:var(--bg-surface); --al-bd:var(--border); --al-edge:var(--neutral); }
+.home-alerts .alert{ padding:var(--sp-2) var(--sp-3); }
+.vs-alerta{ padding:var(--sp-2) var(--sp-3); }
+/* caixa de status (carregando, erro, sucesso): mesmo aviso, versão compacta */
+.drive-status{ font-size:var(--fs-2); border-radius:var(--r-ctl); padding:var(--sp-2) var(--sp-3); }
+
+/* ---------- Botões: secundário (.btn), primário, fantasma, pequeno ---------- */
+/* tamanho só no conteúdo, gaveta, importação e login: o menu lateral e o topo (parte 2) ficam como estão */
+:where(.site-content, .drawer, .diagnostics-panel, .upload-card) .btn{ font-size:var(--fs-3); }
+:where(.site-content, .drawer, .diagnostics-panel, .upload-card) .btn-sm{ font-size:var(--fs-2); }
+/* primário: o único botão "cheio" (grafite invertido); distingue a ação principal sem usar matiz */
+.btn-primary{
+  background:var(--text-primary); border-color:var(--text-primary); color:var(--bg-page); font-weight:600;
+  box-shadow:0 6px 16px -10px rgba(0,0,0,.6);
+}
+.btn-primary:hover:not(:disabled){
+  background:color-mix(in srgb, var(--text-primary) 86%, var(--bg-page)); border-color:color-mix(in srgb, var(--text-primary) 86%, var(--bg-page));
+  box-shadow:0 8px 20px -10px rgba(0,0,0,.6);
+}
+.btn-primary:disabled:hover{ border-color:var(--text-primary); }
+/* fantasma: sem fundo e sem borda até o hover (no conteúdo; o menu lateral fica como está) */
+:where(.site-content, .drawer, .diagnostics-panel, .upload-card) .btn-ghost{ border-color:transparent; box-shadow:none; }
+:where(.site-content, .drawer, .diagnostics-panel, .upload-card) .btn-ghost:hover:not(:disabled){ background:var(--bg-hover); border-color:var(--border); }
+
 /* Alvos de toque de 44px (etapa 34): fica no fim para vencer as regras de 32–40px acima (abas, segmentos do Início,
    kebab, setas do dia, campo de datas). A área de toque de 44 × 44 do ⓘ está no bloco "Alvos de toque de 44px" acima. */
 @media (pointer:coarse), (max-width:700px){
@@ -5925,7 +6131,7 @@ function comboBaseOptions(valueFormatter){
     interaction:{ mode:'index', intersect:false },
     scales:{
       x:{ grid:{ display:false }, ticks:{ maxRotation:0, autoSkip:true, color:getCss('--text-muted') } },
-      y:{ grid:{ color: getCss('--border') }, ticks:yTicks(valueFormatter), beginAtZero:true }
+      y:{ grid:{ color: getCss('--chart-grid') }, ticks:yTicks(valueFormatter), beginAtZero:true }
     },
     plugins:{
       legend:{ display:true, position:'bottom', labels:{ usePointStyle:true, boxWidth:8, boxHeight:8, color:getCss('--text-secondary') } },
@@ -5989,7 +6195,7 @@ function buildAreaConfig(labels, data, color, valueFormatter, label, compare, pa
     options:{
       responsive:true, maintainAspectRatio:false,
       interaction:{mode:'index', intersect:false},
-      scales:{ x:{ grid:{display:false}, ticks:{maxRotation:0, autoSkip:true, color:getCss('--text-muted')} }, y:{ grid:{color:getCss('--border')}, ticks:yTicks(valueFormatter), beginAtZero:true } },
+      scales:{ x:{ grid:{display:false}, ticks:{maxRotation:0, autoSkip:true, color:getCss('--text-muted')} }, y:{ grid:{color:getCss('--chart-grid')}, ticks:yTicks(valueFormatter), beginAtZero:true } },
       plugins:{
         legend:{ display:!!compare, position:'bottom', labels:{ usePointStyle:true, boxWidth:8, boxHeight:8, color:getCss('--text-secondary') } },
         tooltip:{ callbacks:{ label:function(ctx){ return ctx.dataset.label+': '+valueFormatter(ctx.parsed.y); } } }
@@ -6401,7 +6607,7 @@ function renderAcesso(lista){
     html += '<tr><td>' + escapeHtml(u.email) + (u.admin ? ' · administrador' : '') + (proprio ? ' (você)' : '') + '</td>' +
       '<td>' + (u.situacao === 'ativo' ? 'Senha criada' : 'Aguardando o primeiro acesso') + '</td>' +
       '<td>' + (u.desde ? fmtDateTime(new Date(u.desde)) : '—') + '</td>' +
-      '<td style="text-align:right;">' + acoes + '</td></tr>';
+      '<td class="cell-acoes">' + acoes + '</td></tr>';
   });
   document.getElementById('table-acesso').innerHTML = html + '</tbody>';
 }
@@ -6938,7 +7144,7 @@ function applyTheme(theme, persist){
   document.documentElement.setAttribute('data-theme', theme);
   if(persist){ try{ localStorage.setItem(THEME_KEY, theme); } catch(e){} }
   Chart.defaults.color = getCss('--text-secondary');
-  Chart.defaults.borderColor = getCss('--border');
+  Chart.defaults.borderColor = getCss('--chart-grid');   // grade e eixos discretos (mini design system, etapa 36)
   chartInk.crosshair = getCss('--crosshair');
   chartInk.primary = getCss('--text-primary');
   chartInk.muted = getCss('--text-muted');
@@ -14339,7 +14545,7 @@ function dvRenderRitmo(){
   });
   cfg.data.datasets.push(
     {type:'line', label:'Recebidas na loja', data:baldes.map(function(x){ return x.r.recebidas; }), borderColor:getCss('--kpi-ticket'), backgroundColor:'transparent', borderWidth:2, pointRadius:2, tension:0.3, order:0},
-    {type:'line', label:'Encerradas', data:baldes.map(function(x){ return devol.inicio && x.fim > vAddDias(devol.inicio, 1) ? x.r.encerradas : null; }), borderColor:getCss('--kpi-repr'), backgroundColor:'transparent', borderWidth:2, pointRadius:2, tension:0.3, order:0, spanGaps:false}
+    {type:'line', label:'Encerradas', data:baldes.map(function(x){ return devol.inicio && x.fim > vAddDias(devol.inicio, 1) ? x.r.encerradas : null; }), borderColor:getCss('--chart-ink'), backgroundColor:'transparent', borderWidth:2, borderDash:[6, 3], pointRadius:2, tension:0.3, order:0, spanGaps:false}
   );
   cfg.options.plugins.tooltip.callbacks.title = function(items){ return items.length ? baldes[items[0].dataIndex].nome : ''; };
   cfg.options.plugins.tooltip.filter = function(item){ return item.parsed.y != null; };
@@ -16589,7 +16795,9 @@ function inGraficosMeses(C){
   var labels = D.linhas.map(function(x){ return inMesCurto(x.m) + (x.parcial ? '*' : ''); });
   var serie = function(s){ return D.linhas.map(function(x){ return (s.fonte === 'v' ? x.v : x.p) != null ? Math.round(s.val(x) * 100) / 100 : null; }); };
   var S = {}; IN_MM_SERIES.forEach(function(s){ S[s.k] = serie(s); });
-  var cFat = getCss('--metric-valor'), cLiq = getCss('--kpi-ticket'), cCup = getCss('--kpi-volume'), cCred = getCss('--cat-cupom'), cRe = getCss('--kpi-impacto');
+  // paleta grafite + um destaque (etapa 36): a série-chave de cada gráfico no destaque; as de apoio em grafite,
+  // diferenciadas também pelo marcador e pelo tracejado (a cor não é o único sinal)
+  var cFat = getCss('--chart-ink'), cLiq = getCss('--chart-accent'), cCup = getCss('--chart-ink-2'), cCred = getCss('--chart-ink'), cRe = getCss('--chart-accent');
   var alfa = function(c, a){ return /^#[0-9a-f]{6}$/i.test(c) ? c + a : c; };
   var linha = function(label, data, cor, ponto, tracejado){
     return {type:'line', label:label, data:data, borderColor:cor, backgroundColor:cor, borderWidth:2.25, borderDash:tracejado || [], pointStyle:ponto, pointRadius:4, pointHoverRadius:6, pointBackgroundColor:cor, pointBorderColor:getCss('--bg-surface'), pointBorderWidth:1.5, tension:0.25, spanGaps:false, fill:false, order:0};
@@ -16609,7 +16817,7 @@ function inGraficosMeses(C){
   upsertChart('in-chart-mm-venda', tip(cv));
   var cd = {type:'line', data:{labels:labels, datasets:[
     linha('Cupom de desconto', S.cupom, cCup, 'triangle', [6, 3]),
-    linha('Crédito em loja', S.credito, cCred, 'rect'),
+    linha('Crédito em loja', S.credito, cCred, 'rect', [2,2]),
     linha('Total reembolsado', S.reemb, cRe, 'circle')
   ]}, options:comboBaseOptions(fmtValor)};
   upsertChart('in-chart-mm-dev', tip(cd));
