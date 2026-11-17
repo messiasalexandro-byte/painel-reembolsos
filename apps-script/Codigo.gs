@@ -41,6 +41,12 @@ function doGet(e){
       .setTitle('Protótipo · Vendas · Talgui')
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   }
+  // Talgui Studio (BI novo), aberto com ?p=studio
+  if(e && e.parameter && e.parameter.p === 'studio'){
+    return HtmlService.createHtmlOutputFromFile('Studio')
+      .setTitle('Talgui Studio')
+      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  }
   return HtmlService.createHtmlOutputFromFile('Index')
     .setTitle('Painel Financeiro · Talgui')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1.0');
@@ -2557,6 +2563,7 @@ function atCaixaDasLinhas_(dir, din){
   dir.forEach(function(r){ if(r[0]) q[String(r[0]).trim().toUpperCase()] = atNum_(r[1]); });
   var v = function(k){ return k in q ? q[k] : null; };
   return {walletsReceber:v('WALLETS - A RECEBER'), chequesDisponivel:v('CHEQUES DISPONÍVEL'), chequesProcessando:v('CHEQUES PROCESSANDO'),
+    chequesDevolvidos:v('CHEQUES DEVOLVIDOS'), saldoAReceber:v('SALDO A RECEBER'),
     dinheiro: din[0] && /dinheiro/i.test(din[0][0]) ? atNum_(din[0][1]) : null};
 }
 
@@ -2785,4 +2792,32 @@ function salvarDiasAtacado(token, resultados){
     gravarJsonBase_(pastaBase, AT_BASE_ARQ, base);
     return {ok:ok, divergentes:divergentes, falhas:falhas};
   } finally { lock.releaseLock(); }
+}
+
+// ============ DIAGNÓSTICO DO "A RECEBER" (S8.0, só leitura) ============
+// Rode no editor (sem argumento) ou chame do cliente com o token de um administrador. Não grava nada.
+// Devolve o lado ATACADO do a receber como a planilha financeira o conta (Caixa Total) e o que o Studio soma, por status de cheque.
+// O lado Nuvem Pago (agendado no extrato, aguardando no prazo, fora do prazo por idade do pedido) depende de cruzar o extrato com os pedidos da Nuvemshop:
+// esse cálculo roda no navegador (Studio: Ctrl K, "Diagnóstico do a receber"), com os mesmos dados que a tela Dinheiro usa.
+function diagnosticoAReceber(token){
+  if(token !== undefined && !contaAdmin_(token)) return {erro:'sem_permissao'};
+  var r = atRecebiveis_(true), porStatus = {}, linhas = r.cheques || [];
+  linhas.forEach(function(l){
+    var st = String(l[5] || '').toUpperCase(), v = Number(l[6]) || 0;
+    var g = porStatus[st] = porStatus[st] || {n:0, valor:0};
+    g.n++; g.valor = Math.round((g.valor + v) * 100) / 100;
+  });
+  var cx = r.caixa || {};
+  var soma = (cx.walletsReceber || 0) + (cx.chequesDisponivel || 0) + (cx.chequesProcessando || 0) + (cx.chequesDevolvidos || 0);
+  var out = {
+    lidoEm: r.lidoEm,
+    caixaTotal: cx,
+    atacadoPelaRegraNova: {walletsReceber:cx.walletsReceber, chequesDisponivel:cx.chequesDisponivel, chequesProcessando:cx.chequesProcessando, chequesDevolvidos:cx.chequesDevolvidos,
+      total:Math.round(soma * 100) / 100, saldoAReceberDaPlanilha:cx.saldoAReceber, diferenca:cx.saldoAReceber != null ? Math.round((soma - cx.saldoAReceber) * 100) / 100 : null},
+    chequesPorStatusLinhasBrutas: porStatus,
+    pendentesForaDoTotal: porStatus['PENDENTE'] || {n:0, valor:0},
+    observacao: 'Linhas brutas: um cheque reapresentado aparece em mais de uma linha; o Studio usa o status mais recente de cada cheque. O Nuvem Pago é calculado no navegador.'
+  };
+  Logger.log(JSON.stringify(out, null, 2));
+  return out;
 }

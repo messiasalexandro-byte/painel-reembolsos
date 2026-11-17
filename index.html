@@ -48,8 +48,29 @@
    Gráficos    --chart-ink (série principal, grafite) · --chart-ink-2 / --chart-ink-3 (séries de apoio) ·
                --chart-accent (a única cor de destaque) · --chart-grid (grade) · eixo em --text-muted, Inter 11px
 
+   NOTAÇÃO IBCS DOS DADOS (etapa 40) — vale só para dados (gráficos, KPI, variação); o tema Aurora segue igual.
+   Cada papel tem cor E forma: a cor nunca é o único sinal. Contraste medido sobre o cartão (escuro #12161f · claro #fff).
+     Token          Papel                         Escuro            Claro             Forma
+     --dv-ac        realizado (AC)                #e3e9f4 14,9:1    #1e293b 14,6:1    preenchimento sólido
+     --dv-py        período anterior (PY/PP)      #5d6577  3,1:1    #868e9b  3,3:1    sólido cinza, ATRÁS e mais largo
+     --dv-pl        meta / plano (PL)             = --dv-ac         = --dv-ac         contorno 1,5px ou traço vertical
+     --dv-fc        previsão / projeção (FC)      = --dv-ac         = --dv-ac         hachura 45° (CSS .ibcs-fc · canvas
+                                                                                      ibcsHachura())
+     --dv-good      Δ favorável                   #4ade80 10,4:1    #15803d  5,0:1    ▲/▼ + sinal (+/−) + valor
+     --dv-bad       Δ desfavorável                #f87171  6,5:1    #b91c1c  6,5:1    ▲/▼ + sinal (+/−) + valor
+     --dv-hl        destaque (um por gráfico)     #8fb3ff  8,7:1    #2f54c8  6,5:1    sempre com borda ou rótulo
+                                                                                      (contra --dv-ac dá só 1,7–2,3:1)
+     --dv-neutral   categoria sem significado,    #7a8496  4,8:1    #7c8698  3,7:1    linha fina tracejada (média)
+                    média
+   Polaridade por KPI (ibcsPolaridade): "sobe-bom" (faturamento, pedidos, ticket, líquido) · "sobe-ruim" (devolução,
+   reembolso, custo, taxa, estorno, chargeback, cheque devolvido, atraso, vencido) · "neutro" (fluxo sem juízo:
+   recebidas, encerradas, transferido). Variação = seta + Δ absoluto · Δ% (ibcsDeltaHtml), cor pela polaridade.
+   Cor de status (verde/âmbar/vermelho) nunca é cor de categoria: categorias usam --dv-ac numa cor só, ordenadas.
+
    COMPONENTES (classe padrão · aliases mantidos por compatibilidade)
    KPI card      .kpi-card > .kpi-label / .kpi-value / .kpi-sub   (variantes: .vs-mini, .in-mini, .apx-kpi)
+   KPI IBCS      .ibcs-kpi (ibcsKpiHtml): rótulo · valor · .ibcs-deltas (linhas .ibcs-d "vs meta" e "vs {comparação}")
+                 · .ibcs-bullet 8px (AC sólido, PL traço, FC hachura) · .ibcs-spark (último ponto marcado e rotulado)
    Stat tile     .dv-fila (rótulo .dv-fila-t, número .dv-fila-n, linha .dv-fila-s) · mesmo desenho em
                  .dv-passo, .summary-card, .kpi-month-card (compacto, número em --fs-4)
    Tabela        table.data-table: cabeçalho em faixa (--thead, --fs-1 caixa alta), divisória + hover,
@@ -169,6 +190,18 @@
   --chart-ink-3:#7a8496;         /* 4,8:1 sobre o cartão escuro */
   --chart-accent:var(--kpi-ticket);
   --chart-grid:var(--divider);
+  /* notação IBCS dos dados (etapa 40): aliases dos tokens acima, sem paleta paralela (tabela no comentário do topo) */
+  --dv-ac:var(--chart-ink);          /* realizado: sólido · 14,9:1 sobre o cartão */
+  --dv-py:#5d6577;                   /* período anterior: cinza sólido, atrás · 3,1:1 sobre o cartão, 4,8:1 contra o realizado */
+  --dv-pl:var(--chart-ink);          /* meta: contorno ou traço (nunca preenchimento) */
+  --dv-fc:var(--chart-ink);          /* previsão: hachura 45° desta cor */
+  --dv-good:var(--status-good);      /* Δ favorável · 10,4:1 */
+  --dv-bad:var(--status-critical);   /* Δ desfavorável · 6,5:1 */
+  --dv-good-text:var(--good-text);
+  --dv-bad-text:var(--crit-text);
+  --dv-hl:var(--chart-accent);       /* destaque: um elemento por gráfico, sempre com borda ou rótulo · 8,7:1 */
+  --dv-neutral:var(--chart-ink-3);   /* categoria sem significado, média · 4,8:1 */
+  --dv-track:color-mix(in srgb, var(--text-muted) 18%, transparent);   /* trilho do bullet */
   color-scheme:dark;
 }
 :root[data-theme="light"]{
@@ -236,6 +269,7 @@
   --scrim:rgba(15,23,42,.35);
   --fab-bg:#111827;
   --fab-fg:#f8fafc;
+  --dv-py:#868e9b;                   /* IBCS período anterior no claro: 3,3:1 sobre branco, 4,4:1 contra o realizado */
   color-scheme:light;
 }
 *{box-sizing:border-box;}
@@ -523,6 +557,32 @@ details.table-toggle summary{ cursor:pointer; font-size:11.5px; color:var(--kpi-
   padding:14px 32px; background:var(--bg-page); border-bottom:1px solid var(--border);
 }
 .topbar-titles{ flex:1; min-width:180px; }
+/* etapa 41 (B): barra do recorte global. Desktop: tudo numa linha; celular: um botão "Recorte" abre os controles */
+.recorte-bar{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; padding:8px 32px; border-bottom:1px solid var(--border); font-size:12.5px; }
+.recorte-bar[hidden]{ display:none; }
+.recorte-ctl{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 16px; }
+.rc-item{ display:inline-flex; align-items:center; gap:6px; margin:0; }
+.rc-lbl{ color:var(--text-secondary); font-size:12px; white-space:nowrap; }
+.rc-per{ min-width:0; width:auto; padding:4px 8px; font-size:12.5px; }
+.recorte-bar .segmented button{ padding:3px 10px; font-size:12px; white-space:nowrap; }
+.recorte-bar .segmented button[aria-disabled="true"]{ opacity:.55; cursor:not-allowed; }
+.recorte-bar [hidden]{ display:none!important; }
+.recorte-toggle{ display:none; }
+.recorte-chips{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-width:0; }
+.recorte-chips .v-sit{ white-space:normal; }
+@media (max-width:640px){
+  .recorte-bar{ padding:8px 14px; }
+  .recorte-toggle{ display:inline-flex; max-width:100%; text-align:left; white-space:normal; min-height:40px; }
+  .recorte-ctl{ display:none; flex-direction:column; align-items:stretch; width:100%; }
+  .recorte-bar.is-open .recorte-ctl{ display:flex; }
+  .recorte-bar:not(.is-open) .recorte-chips{ display:none; }   /* recolhida: os chips aparecem ao abrir */
+  .recorte-toggle{ padding-right:18px; gap:6px; }
+  .rc-item{ flex-wrap:wrap; }
+  .rc-per{ min-height:44px; flex:1 1 auto; }
+  .recorte-bar .segmented{ max-width:100%; flex-wrap:wrap; }
+  .recorte-bar .segmented button{ min-height:40px; }
+}
+@media print{ .recorte-bar{ display:none!important; } }
 .page-title{ font-size:20px; font-weight:800; letter-spacing:.01em; }
 .page-sub{ font-size:12.5px; color:var(--text-secondary); margin-top:3px; }
 .menu-btn{
@@ -1581,6 +1641,7 @@ html{ -webkit-tap-highlight-color:transparent; text-rendering:optimizeLegibility
 #tabs-vsec .nav-count{ margin-left:6px; }
 #v-chave, .vs-chave-grid{ grid-template-columns:repeat(6, minmax(0, 1fr)); }
 #v-chave{ margin-top:12px; }
+.vs-ref-c{ display:none; }
 @media (max-width:1180px){ #v-chave, .vs-chave-grid{ grid-template-columns:repeat(3, minmax(0, 1fr)); } }
 @media (max-width:700px){ #v-chave, .vs-chave-grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); } }
 .kpi-card.vs-mini .kpi-value{ font-size:22px; }
@@ -1637,7 +1698,7 @@ html{ -webkit-tap-highlight-color:transparent; text-rendering:optimizeLegibility
 .v-lado-a-lado.v-meio{ grid-template-columns:minmax(220px, 1fr) 2fr; align-items:center; }
 /* Formas de pagamento (Vendas): rosca limitada, a tabela de 7 colunas fica com o resto */
 .v-lado-a-lado.v-meio.v-meio-pag{ grid-template-columns:minmax(260px, 340px) minmax(0, 1fr); align-items:center; }
-.v-meio-pag .chart-box{ height:300px; }
+.v-meio-pag .chart-box{ height:220px; }   /* etapa 40: barras ordenadas (5 formas) no lugar da rosca */
 @media (max-width:1180px){ .v-lado-a-lado.v-meio.v-meio-pag{ grid-template-columns:1fr; } }
 @media (max-width:960px){ .v-lado-a-lado, .v-lado-a-lado.v-meio{ grid-template-columns:1fr; } }
 /* Devoluções (AfterClick): etapa, enquadramento, situação e alertas usam a mesma pílula .v-sit das Vendas */
@@ -1761,6 +1822,9 @@ table.mt-table tr.mt-sel td{ background:var(--row-hover); }
   .page-filters .select, .page-filters .text-input, .page-filters .date-input{ width:100%; min-width:0; }
   .page-filters > .btn:last-child{ margin-left:0; }
 }
+/* Devoluções no celular (correção etapa 40): as opções são longas ("Pedidos de venda", "Últimos 90 dias em meses
+   inteiros"); cada filtro ocupa a largura toda em vez de dividir a linha e cortar o texto do select */
+@media (max-width:560px){ .tab-panel[data-dvaba] > .page-filters .form-field{ flex-basis:100%; } }
 
 /* Cabeçalho de painel: link de ação ("Ajustar meta") à direita, como os demais controles */
 .panel-action{ font-size:12px; white-space:nowrap; }
@@ -2318,6 +2382,9 @@ body.sidebar-open .fab-cmdk{ display:none!important; }
 }
 .nav-grupo-btn:hover{ background:var(--bg-hover); color:var(--text-primary); }
 .nav-grupo-btn:focus-visible{ outline:2px solid var(--focus); outline-offset:-2px; }
+/* Para agir (etapa 41): título fixo, sem botão nem seta (o grupo não entra no acordeão) */
+.nav-grupo-tit{ display:flex; align-items:center; gap:8px; min-height:32px; margin-top:8px; padding:6px 8px; color:var(--text-muted); font:600 10.5px var(--font-body); letter-spacing:.09em; text-transform:uppercase; }
+.nav-count.pa-count.is-zero, .nav-count.pa-count.is-desconhecido{ background:transparent; color:var(--text-muted); font-weight:600; animation:none; }
 .nav-grupo-nome{ flex:1; min-width:0; }
 .nav-grupo-n{ flex:none; font-size:10.5px; letter-spacing:0; text-transform:none; font-weight:700; padding:1px 6px; border-radius:6px; background:rgba(250,178,25,.16); color:var(--warn-text); font-variant-numeric:tabular-nums; }
 .nav-grupo-chev{ flex:none; width:7px; height:7px; margin:0 4px 3px 0; border-right:1.6px solid currentColor; border-bottom:1.6px solid currentColor; transform:rotate(45deg); transition:transform var(--dur-3) var(--ease-out); }
@@ -2333,7 +2400,7 @@ body.sidebar-open .fab-cmdk{ display:none!important; }
 @media (min-width:961px){
   body.sidebar-recolhido .brand-switch, body.sidebar-recolhido #marca-menu, body.sidebar-recolhido .side-search-label, body.sidebar-recolhido .side-search-kbd{ display:none!important; }
   body.sidebar-recolhido .side-search{ justify-content:center; padding:0; }
-  body.sidebar-recolhido .nav-grupo-btn{ display:none; }
+  body.sidebar-recolhido .nav-grupo-btn, body.sidebar-recolhido .nav-grupo-tit, body.sidebar-recolhido .nav-count.pa-count.is-zero, body.sidebar-recolhido .nav-count.pa-count.is-desconhecido{ display:none; }
   body.sidebar-recolhido .nav-grupo{ border-top:1px solid var(--border); margin-top:10px; padding-top:8px; }
   body.sidebar-recolhido .nav-grupo.is-fechado .nav-grupo-itens{ grid-template-rows:1fr; }
   body.sidebar-recolhido .nav-grupo.is-fechado .nav-grupo-dentro{ visibility:visible; }
@@ -2480,7 +2547,8 @@ body.sidebar-open .fab-cmdk{ display:none!important; }
 .apx-mini4 dt{ font-size:12px; color:var(--text-muted); }
 .apx-mini4 dd{ margin:4px 0 0; font-size:14px; letter-spacing:-.01em; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .apx-fat{ container-type:inline-size; }
-@container (max-width:290px){ .apx-mini4{ grid-template-columns:repeat(2, minmax(0, 1fr)); row-gap:12px; } }
+/* 4 colunas só quando cabem "R$ 161,5 mil" inteiros (correção etapa 40: em 1440 o cartão tem ~330px e cortava com …) */
+@container (max-width:400px){ .apx-mini4{ grid-template-columns:repeat(2, minmax(0, 1fr)); row-gap:12px; } }
 .apx-mini-nota{ margin:10px 0 0; font-size:11.5px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
 .apx-acoes{ padding-top:16px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .apx-acoes .btn{ display:inline-flex; align-items:center; justify-content:center; gap:8px; text-decoration:none; text-align:center; }
@@ -2818,10 +2886,31 @@ table.data-table .badge{ border-radius:var(--r-sm); font-size:var(--fs-1); paddi
 :where(.site-content, .drawer, .diagnostics-panel, .upload-card) .btn-ghost:hover:not(:disabled){ background:var(--bg-hover); border-color:var(--border); }
 
 /* ---------- Exportar para Excel (etapa 38): botão em cada quadro com tabela + "Exportar tela" no topo ---------- */
+/* correção etapa 40: sempre no canto superior direito, na linha do título (fantasma, ícone discreto), sem linha própria */
+.exp-btn{ display:inline-flex; align-items:center; gap:6px; flex:none; white-space:nowrap; color:var(--text-secondary); }
+.exp-btn svg{ flex:none; opacity:.75; }
+.exp-btn:hover:not(:disabled){ color:var(--text-primary); }
 .panel-header:has(> .exp-btn){ grid-template-columns:minmax(0,1fr) auto auto; }
 .panel-header:has(> .exp-btn) > .exp-btn{ grid-column:3; grid-row:1 / span 2; justify-self:end; }
-.exp-barra{ display:flex; justify-content:flex-end; margin-bottom:var(--sp-2); }
-@media (max-width:560px){ .panel-header:has(> .exp-btn){ grid-template-columns:minmax(0,1fr); } .panel-header:has(> .exp-btn) > .exp-btn{ grid-column:1; grid-row:auto; justify-self:start; margin-top:8px; } }
+.in-head > .exp-btn{ margin-left:auto; }
+/* Clientes do Início: no celular a busca ocupa a linha toda; o botão fica na linha do título e a busca desce */
+@media (max-width:767px){ .apx-tab-cab > .exp-btn{ margin-left:auto; } .apx-tab-cab:has(> .exp-btn) > .apx-tab-sub{ order:1; flex-basis:100%; } .apx-tab-cab > .apx-busca{ order:2; } }
+.apx-cab:has(> .exp-btn) > .apx-titulo{ margin-right:auto; }
+/* quadro sem cabeçalho nenhum: o botão flutua no canto e o primeiro bloco abre espaço para ele */
+.panel:has(> .exp-barra){ position:relative; }
+.exp-barra{ position:absolute; top:10px; right:12px; z-index:1; display:flex; margin:0; }
+.panel > .exp-barra + :not(details):not(.table-wrap), .panel > .exp-barra + details > summary{ padding-right:112px; }
+.panel > .exp-barra + .table-wrap{ margin-top:40px; }
+.panel > .exp-barra:has(+ details.table-toggle){ top:27px; }   /* quadro que abre recolhido (Metas e prazos): na altura do resumo */
+@media (max-width:560px){
+  /* o botão continua na linha do título; os outros controles do cabeçalho descem para a largura toda */
+  .panel-header:has(> .exp-btn){ grid-template-columns:minmax(0,1fr) auto; }
+  .panel-header:has(> .exp-btn) > :not(.panel-title):not(.panel-meta):not(.exp-btn){ grid-column:1 / -1; }
+  .panel-header:has(> .exp-btn) > .exp-btn{ grid-column:2; grid-row:1; justify-self:end; align-self:start; margin-top:-8px; }
+  .exp-barra{ top:4px; right:8px; }
+  .panel > .exp-barra:has(+ details.table-toggle){ top:29px; }
+  .panel > .exp-barra + :not(details):not(.table-wrap), .panel > .exp-barra + details > summary{ padding-right:104px; }
+}
 @media print{ .exp-btn, .exp-barra, #btn-exp-tela{ display:none !important; } }
 /* ---------- Atacado (etapa 37): ajustes escopados em #at-root, só com tokens do sistema ---------- */
 /* cabeçalho de período: segmento quebra linha (Todo o período + meses) e o Atualizar fica alinhado, sem margem de formulário */
@@ -2847,6 +2936,61 @@ table.data-table .badge{ border-radius:var(--r-sm); font-size:var(--fs-1); paddi
 }
 @media (pointer:coarse), (max-width:700px){ #at-root .home-scope-head .segmented button{ min-height:44px; } }
 @media print{ #at-root .at-fila .table-wrap{ max-height:none; overflow:visible; } }
+
+/* ---------- Notação IBCS (etapa 40): variação, KPI card, bullet, sparkline, previsão. Documentação no topo. ---------- */
+/* previsão (FC): hachura 45° na cor do realizado; a forma (listras) distingue do realizado sólido sem depender da cor */
+.ibcs-fc{ background-image:repeating-linear-gradient(135deg, color-mix(in srgb, var(--dv-fc) 60%, transparent) 0 2px, transparent 2px 5px); }
+.ibcs-delta{ gap:3px; }
+.ibcs-deltas{ display:flex; flex-direction:column; gap:var(--sp-1); margin-top:var(--sp-2); }
+.ibcs-d{ display:flex; flex-wrap:wrap; align-items:center; gap:var(--sp-1) var(--sp-2); font-size:var(--fs-2); line-height:1.4; color:var(--text-secondary); min-width:0; }
+.ibcs-d-rot{ font-size:var(--fs-1); color:var(--text-muted); }
+.ibcs-d-sem, .ibcs-d-meta{ font-size:var(--fs-1); color:var(--text-muted); font-variant-numeric:tabular-nums; }
+/* bullet de 8px: trilho neutro, realizado sólido, projeção hachurada depois dele e a meta como traço que passa do trilho */
+.ibcs-bullet{ position:relative; height:8px; margin-top:var(--sp-3); border-radius:2px; background:var(--dv-track); }
+.ibcs-bullet-ac, .ibcs-bullet-fc{ position:absolute; top:0; bottom:0; left:0; }
+.ibcs-bullet-ac{ background:var(--dv-ac); border-radius:2px 0 0 2px; }
+.ibcs-bullet-fc{ box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--dv-fc) 55%, transparent); }
+.ibcs-bullet-pl{ position:absolute; top:-4px; bottom:-4px; width:2px; margin-left:-1px; background:var(--dv-pl); border-radius:1px; box-shadow:0 0 0 1.5px var(--bg-surface); }
+.ibcs-bullet-leg{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:0 var(--sp-2); margin-top:var(--sp-1); font-size:var(--fs-1); line-height:1.5; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+.ibcs-bullet-leg i{ display:inline-block; width:10px; height:8px; margin-right:4px; vertical-align:-1px; border-radius:1px; }
+.ibcs-bullet-leg i.is-ac{ background:var(--dv-ac); }
+.ibcs-bullet-leg i.is-fc{ box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--dv-fc) 55%, transparent); }
+.ibcs-bullet-leg i.is-pl{ width:2px; height:12px; vertical-align:-3px; background:var(--dv-pl); }
+/* sparkline em SVG: linha fina no realizado, último ponto marcado e o valor dele escrito ao lado */
+.ibcs-spark{ display:flex; align-items:center; gap:var(--sp-2); margin-top:auto; padding-top:var(--sp-3); }
+.ibcs-spark-area{ position:relative; flex:1 1 auto; min-width:0; height:28px; padding-right:3px; }   /* 3px: metade do ponto final, que fica dentro da caixa */
+.ibcs-spark svg{ display:block; width:100%; height:100%; overflow:visible; }
+.ibcs-spark polyline{ fill:none; stroke:var(--dv-ac); stroke-width:1.5; stroke-linejoin:round; stroke-linecap:round; vector-effect:non-scaling-stroke; opacity:.8; }
+.ibcs-spark-pt{ position:absolute; right:0; width:6px; height:6px; margin-top:-3px; border-radius:50%; background:var(--dv-ac); box-shadow:0 0 0 2px var(--bg-surface); }
+.ibcs-spark-rot{ flex:none; font-size:var(--fs-1); font-weight:600; color:var(--text-primary); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.ibcs-kpi-cab{ display:flex; align-items:center; gap:6px; min-height:20px; }
+.ibcs-kpi .kpi-label, .ibcs-kpi .apx-kpi-t{ margin:0; }
+.ibcs-kpi-pe{ display:flex; align-items:center; justify-content:space-between; gap:var(--sp-2); margin-top:var(--sp-2); }
+.ibcs-kpi .kpi-sub:empty{ display:none; }
+.kpi-sub > .ibcs-d + span{ display:inline-block; margin-top:var(--sp-1); }   /* Líquido de Vendas: comparação e, embaixo, a fração do faturamento */
+.v-meta > .ibcs-d, .v-meta > .v-meta-bullet{ flex-basis:100%; }
+.v-meta-bullet .ibcs-bullet{ margin-top:var(--sp-2); }
+.ibcs-spark-slot{ margin-top:auto; }
+.ibcs-spark-slot:empty{ display:none; }
+@media (max-width:560px){
+  .ibcs-spark-area{ height:24px; }
+  /* Vendas no celular: a referência ("MoM · vs. dias 1–11 de Outubro") ganha linha própria e o Δ vem embaixo, igual em
+     todos os cartões, sem estourar a caixa */
+  #vendas-kpis .kpi-sub .ibcs-d-rot{ flex-basis:100%; }
+  /* indicadores-chave menores (#v-chave, etapa 41): mesma leitura — referência numa linha, Δ (e semáforo) na de baixo,
+     outras notas do cartão em linha própria depois */
+  #v-chave .kpi-sub{ display:flex; flex-wrap:wrap; align-items:center; gap:2px var(--sp-2); }
+  #v-chave .kpi-sub > .delta-ctx{ flex-basis:100%; margin-left:0; }
+  #v-chave .kpi-sub > .vs-ref{ order:-1; }
+  #v-chave .vs-ref-l{ display:none; }
+  #v-chave .vs-ref-c{ display:inline; }
+}
+/* Nuvem Pago: o detalhe do cartão ("bruto R$ …", "taxas R$ … · juros R$ …") em linha própria, sem emendar na frase de cima */
+:is(#npk-vendas-sub, #npk-custo-sub, #npk-saidas-sub, #npk-transf-sub) > .delta-ctx{ display:block; margin-left:0; }
+/* cabeçalho único (etapa 40): "Dados até" da fonte da tela, embaixo do subtítulo */
+.page-dados{ font-size:var(--fs-1); color:var(--text-muted); margin-top:2px; font-variant-numeric:tabular-nums; }
+.page-dados:empty{ display:none; }
+.page-dados strong{ color:var(--text-secondary); font-weight:600; }
 
 /* Alvos de toque de 44px (etapa 34): fica no fim para vencer as regras de 32–40px acima (abas, segmentos do Início,
    kebab, setas do dia, campo de datas). A área de toque de 44 × 44 do ⓘ está no bloco "Alvos de toque de 44px" acima. */
@@ -2984,6 +3128,19 @@ table.data-table .badge{ border-radius:var(--r-sm); font-size:var(--fs-1); paddi
     <nav class="sidebar-nav" aria-label="Páginas">
       <div class="nav-group-label nav-principal">Principal</div>
         <a class="side-link" href="#/inicio" data-route="inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg><span>Início</span></a>
+      <!-- Para agir (etapa 41): atalhos para as filas de trabalho, sempre aberto (fora do acordeão). Contagens por paraAgirAtualizar();
+           sem dado carregado a contagem some; zero fica cinza; maior que zero em destaque. Os itens antigos nos grupos continuam. -->
+      <div class="nav-grupo nav-grupo-fixo" data-grupo="agir">
+        <div class="nav-grupo-tit" id="ngb-agir"><span class="nav-grupo-nome">Para agir</span></div>
+        <div class="nav-grupo-itens" role="group" aria-labelledby="ngb-agir"><div class="nav-grupo-dentro">
+        <a class="side-link" href="#/vendas?sec=filas" data-route="vendas" data-nav-aba="filas" data-tip="Para agir · Filas de vendas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h14l-1.2 12H6.2z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span>Filas de vendas</span><span class="nav-count pa-count" id="pa-n-vendas" hidden></span></a>
+        <a class="side-link" href="#/pedidos?aba=pago" data-route="pedidos" data-nav-aba="pago" data-tip="Para agir · Pago e não faturado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M12 12.5v3M12 18.5h.01"/></svg><span>Pago e não faturado</span><span class="nav-count pa-count" id="pa-n-pago" hidden></span></a>
+        <a class="side-link" href="#/devolucoes" data-route="devolucoes" data-nav-aba="fila" data-tip="Para agir · Filas de devolução"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg><span>Filas de devolução</span><span class="nav-count pa-count" id="pa-n-devol" hidden></span></a>
+        <a class="side-link" href="#/devolucoes?f=nf" data-route="devolucoes" data-nav-aba="fila" data-nav-fila="nf" data-tip="Para agir · NF de devolução"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M9 14l2 2 4-4"/></svg><span>NF de devolução</span><span class="nav-count pa-count" id="pa-n-nf" hidden></span></a>
+        <a class="side-link" href="#/nuvem-pago?aba=liberar" data-route="nuvem-pago" data-nav-aba="liberar" data-financeiro hidden data-tip="Para agir · A liberar (Nuvem Pago)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="13" rx="2"/><path d="M2.5 10h19"/><path d="M6.5 15h4"/></svg><span>A liberar <span class="nav-pre">· Nuvem Pago</span></span><span class="nav-count pa-count" id="pa-n-liberar" hidden></span></a>
+        <a class="side-link" href="#/atacado?aba=filas" data-route="atacado" data-nav-aba="filas" data-financeiro hidden data-tip="Para agir · Filas do atacado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg><span>Filas do atacado</span><span class="nav-count pa-count" id="pa-n-atacado" hidden></span></a>
+        </div></div>
+      </div>
       <div class="nav-grupo" data-grupo="comercial">
         <button class="nav-grupo-btn" id="ngb-comercial" type="button" aria-expanded="true" aria-controls="ng-comercial"><span class="nav-grupo-nome">Vendas</span><span class="nav-grupo-n" hidden></span><span class="nav-grupo-chev" aria-hidden="true"></span></button>
         <div class="nav-grupo-itens" id="ng-comercial" role="group" aria-labelledby="ngb-comercial"><div class="nav-grupo-dentro">
@@ -3052,6 +3209,7 @@ table.data-table .badge{ border-radius:var(--r-sm); font-size:var(--fs-1); paddi
       <div class="topbar-titles">
         <h1 class="page-title" id="page-title">Início</h1>
         <div class="page-sub" id="page-sub"></div>
+        <div class="page-dados" id="page-dados"></div>
       </div>
       <!-- etapa 32: o topo guarda o tema, o sino (avisos e pendências) e a conta. Busca foi para o menu; Exportar, Copiar link,
            Atualizar e Sair ficam no menu da conta (os ids e as funções de antes continuam: syncExportMenu, copyViewLink, loadFromDrive) -->
@@ -3091,6 +3249,28 @@ table.data-table .badge{ border-radius:var(--r-sm); font-size:var(--fs-1); paddi
         </div>
       </div>
     </header>
+
+    <!-- etapa 41 (B): recorte global (período, comparação e canal) -->
+    <div class="recorte-bar" id="recorte-bar" role="group" aria-label="Recorte: período, comparação e canal" hidden>
+      <button class="btn btn-sm recorte-toggle" id="rc-toggle" type="button" aria-expanded="false" aria-controls="rc-ctl"><span id="rc-resumo">Recorte</span> <span aria-hidden="true">▾</span></button>
+      <div class="recorte-ctl" id="rc-ctl">
+        <label class="rc-item"><span class="rc-lbl">Período</span>
+          <select class="select rc-per" id="rc-per" aria-label="Período de trabalho"></select></label>
+        <div class="rc-item" role="group" aria-label="Comparar com"><span class="rc-lbl" id="rc-cmp-lbl">Comparar com</span>
+          <div class="segmented" id="rc-cmp">
+            <button type="button" data-rc="cmp" data-v="meta">Meta</button>
+            <button type="button" data-rc="cmp" data-v="anterior">Anterior</button>
+            <button type="button" data-rc="cmp" data-v="ano" aria-disabled="true" title="Disponível a partir de fev/2027 (a loja abriu em fev/2026)">Ano anterior</button>
+          </div></div>
+        <div class="rc-item" id="rc-canal-grupo" role="group" aria-label="Canal" hidden><span class="rc-lbl">Canal</span>
+          <div class="segmented" id="rc-canal">
+            <button type="button" data-rc="canal" data-v="varejo">Varejo</button>
+            <button type="button" data-rc="canal" data-v="atacado" data-fin>Atacado</button>
+            <button type="button" data-rc="canal" data-v="todos" data-fin>Todos</button>
+          </div></div>
+      </div>
+      <div class="recorte-chips" id="rc-chips" aria-live="polite"></div>
+    </div>
 
     <main class="site-content" id="site-content">
       <!-- abas da página Dia a dia e metas (a aba vai para o endereço: #/dia-a-dia?aba=metas) -->
@@ -3380,27 +3560,27 @@ table.data-table .badge{ border-radius:var(--r-sm); font-size:var(--fs-1); paddi
               <div class="kpi-value" id="vk-fat-value">–</div>
               <div class="kpi-sub" id="vk-fat-sub"></div>
               <div class="v-meta" id="vk-fat-meta"></div>
-              <div class="kpi-spark"><canvas id="vk-fat-spark"></canvas></div>
+              <div class="ibcs-spark-slot" id="vk-fat-spark"></div>
             </div>
             <div class="kpi-card" style="--kpi-accent:var(--kpi-volume)">
               <div class="kpi-label" id="vk-ped-label">Pedidos</div>
               <div class="kpi-value" id="vk-ped-value">–</div>
               <div class="kpi-sub" id="vk-ped-sub"></div>
               <div class="v-meta" id="vk-ped-meta"></div>
-              <div class="kpi-spark"><canvas id="vk-ped-spark"></canvas></div>
+              <div class="ibcs-spark-slot" id="vk-ped-spark"></div>
             </div>
             <div class="kpi-card" style="--kpi-accent:var(--kpi-ticket)">
               <div class="kpi-label" id="vk-ticket-label">Ticket médio de venda</div>
               <div class="kpi-value" id="vk-ticket-value">–</div>
               <div class="kpi-sub" id="vk-ticket-sub"></div>
               <div class="v-meta" id="vk-ticket-meta"></div>
-              <div class="kpi-spark"><canvas id="vk-ticket-spark"></canvas></div>
+              <div class="ibcs-spark-slot" id="vk-ticket-spark"></div>
             </div>
             <div class="kpi-card" style="--kpi-accent:var(--kpi-repr)">
               <div class="kpi-label" id="vk-liq-label">Líquido estimado da venda (R$)</div>
               <div class="kpi-value" id="vk-liq-value">–</div>
               <div class="kpi-sub" id="vk-liq-sub"></div>
-              <div class="kpi-spark"><canvas id="vk-liq-spark"></canvas></div>
+              <div class="ibcs-spark-slot" id="vk-liq-spark"></div>
             </div>
           </div>
 
@@ -3754,7 +3934,7 @@ table.data-table .badge{ border-radius:var(--r-sm); font-size:var(--fs-1); paddi
       <section class="page" data-page="devolucoes" hidden>
         <div class="page-tabs" id="tabs-devol" role="tablist" aria-label="Devoluções">
           <button type="button" class="page-tab" role="tab" id="dvtab-btn-fila" data-dvaba="fila" aria-controls="dvtab-fila" aria-selected="true">Filas de trabalho</button>
-          <button type="button" class="page-tab" role="tab" id="dvtab-btn-casos" data-dvaba="casos" aria-controls="dvtab-casos" aria-selected="false" tabindex="-1">Casos</button>
+          <button type="button" class="page-tab" role="tab" id="dvtab-btn-casos" data-dvaba="casos" aria-controls="dvtab-casos" aria-selected="false" tabindex="-1">Casos de devolução</button>
           <button type="button" class="page-tab" role="tab" id="dvtab-btn-ritmo" data-dvaba="ritmo" aria-controls="dvtab-ritmo" aria-selected="false" tabindex="-1">Ritmo e taxas</button>
           <button type="button" class="page-tab" role="tab" id="dvtab-btn-pecas" data-dvaba="pecas" aria-controls="dvtab-pecas" aria-selected="false" tabindex="-1">Produtos devolvidos</button>
           <button type="button" class="page-tab" role="tab" id="dvtab-btn-regras" data-dvaba="regras" aria-controls="dvtab-regras" aria-selected="false" tabindex="-1">Regras e prazos</button>
@@ -5275,7 +5455,7 @@ var ROUTES = [
   {id:'mensal', title:'Mês a mês', filtros:['metrica','categoria']},
   {id:'canais', title:'Canais e status', filtros:['mes','metrica','categoria']},
   // Motivos dos reembolsos: data própria no conteúdo (dia=AAAA-MM-DD no endereço), sem a barra de filtros
-  {id:'motivos', title:'Motivos dos reembolsos', filtros:[]},
+  {id:'motivos', title:'Motivos', filtros:[]},   // etapa 40: título = nome do item do menu
   // Vendas da Nuvemshop: período e filtros próprios (ficam no conteúdo, não na barra)
   {id:'vendas', title:'Vendas', filtros:[]},
   {id:'pedidos', title:'Pedidos', filtros:[]},
@@ -5285,7 +5465,7 @@ var ROUTES = [
   {id:'dre', title:'DRE de receitas', filtros:[], financeiro:true},
   {id:'fluxo', title:'Fluxo de caixa de recebimentos', filtros:[], financeiro:true},
   // Recebimentos do Nuvem Pago: mês de recebimento e abas próprios (no conteúdo)
-  {id:'nuvem-pago', title:'Recebimentos (Nuvem Pago)', filtros:[], financeiro:true},
+  {id:'nuvem-pago', title:'Recebimentos Nuvem Pago', filtros:[], financeiro:true},   // etapa 40: = item do menu
   // Atacado (etapa 37): caixa do atacado (PDFs do Sisplan) e cheques da planilha financeira; abas e período próprios
   {id:'atacado', title:'Atacado (caixa e cheques)', filtros:[], financeiro:true},
   // Devoluções da AfterClick: abas e filtros próprios (no conteúdo)
@@ -5379,9 +5559,12 @@ function renderPageSub(){
   } else if(route.id === 'inicio'){
     parts.push(inSubtitulo());
   } else if(route.id === 'motivos'){
+    // cabeçalho único (etapa 40): o quê · de onde · período
+    parts.push('Motivos dos reembolsos · planilha de reembolsos (Observação)' + (devol.sols ? ' e AfterClick (detalhe das devoluções)' : ''));
     parts.push(devol.motivos.dia ? 'Dia ' + fmtDate(core.parseDateCell(devol.motivos.dia)) + ' e o mês até ele' : 'Último dia com lançamento e o mês até ele');
-    parts.push('Todas as categorias · motivo lido da Observação' + (devol.sols ? ', detalhe das devoluções pela AfterClick' : ''));
+    parts.push('todas as categorias');
   } else {
+    parts.push('Reembolsos lançados · planilha de reembolsos');
     if(route.id === 'lancamentos' && state.lanc.anoTodo){
       parts.push('Exercício ' + year + ' · ano todo');
     } else if(route.id === 'lancamentos' && state.lanc.dia){
@@ -5398,6 +5581,34 @@ function renderPageSub(){
   var aviso = route.id === 'pedidos' && oper.aba !== 'lista' ? '' : periodoAviso(route.id);   // as visões da AJD não seguem o período de Vendas
   if(aviso) parts.push(aviso);
   document.getElementById('page-sub').textContent = parts.join(' · ');
+  recorteRender();
+  var dados = document.getElementById('page-dados');
+  if(dados) dados.innerHTML = pageDadosAte(route);
+}
+// "Dados até" da fonte da tela (cabeçalho único, etapa 40). Vazio quando a tela não tem fonte com data e no Início, que
+// já mostra a data de cada fonte no próprio conteúdo.
+function pageDadosAte(route){
+  // frase natural por fonte (correção etapa 40): "Dados até …" quando a fonte é uma data de corte; Devoluções e Atacado
+  // dizem o que foi lido e quando ("Lido da AfterClick em …", "Caixa até … · cheques lidos em …")
+  var id = route.id, partes = [], abre = 'Dados até ';
+  var item = function(nome, quando){ if(quando) partes.push((nome ? escapeHtml(nome) + ' ' : '') + '<strong>' + escapeHtml(quando) + '</strong>'); };
+  try{
+    if(V_ROTAS.indexOf(id) >= 0){
+      if(!(id === 'pedidos' && oper.aba !== 'lista') && vendas.pedidos && vendas.ref) item('', fmtDate(vendas.ref) + ' ' + vHora(vendas.ref));
+    } else if(id === 'devolucoes'){
+      if(devol.checkedAt){ abre = ''; item('Lido da AfterClick em', fmtDateTime(devol.checkedAt)); }
+    } else if(id === 'nuvem-pago'){
+      if(np.linhas && np.fim) item('', fmtDate(np.fim));
+    } else if(id === 'atacado'){
+      var cob = at.dados ? atCobertura() : null;
+      abre = '';
+      if(cob) item('Caixa até', fmtDate(cob.fim));
+      if(at.dados && at.dados.lidoEm) item(cob ? 'cheques lidos em' : 'Cheques lidos em', fmtDateTime(at.dados.lidoEm));
+    } else if(grupoPeriodo(id) === 'reemb' || id === 'motivos'){
+      if(state.referenceDate) item('', fmtDate(state.referenceDate));
+    }
+  } catch(e){ partes = []; }
+  return partes.length ? abre + partes.join(' · ') : '';
 }
 
 /* ---- Período de trabalho (ano + mês) compartilhado entre as páginas ----
@@ -5409,12 +5620,13 @@ var periodo = null;            // {ano, mes (0–11), origem:'reemb'|'vendas'|'m
 var periodoEntrada = null;     // {grupo, per}: período da página ao entrar (o que mudar depois é escolha da pessoa)
 var periodoFixado = false;     // navegação programática com período já definido (drill, abrir dia, ir para pedidos)
 var periodoVendasPendente = false; // entrou em Vendas/Pedidos antes de as vendas chegarem
-var PERIODO_ORIGEM = {reemb:'Reembolsos', vendas:'Vendas', motivos:'Motivos', nuvempago:'Recebimentos'};
+var PERIODO_ORIGEM = {reemb:'Reembolsos', vendas:'Vendas', motivos:'Motivos', nuvempago:'Recebimentos', atacado:'Atacado', recorte:'Recorte'};
 function grupoPeriodo(id){
   if(['reembolsos', 'lancamentos', 'dia-a-dia', 'mensal', 'canais'].indexOf(id) >= 0) return 'reemb';
   if(id === 'vendas' || id === 'pedidos') return 'vendas';
   if(id === 'motivos') return 'motivos';
   if(id === 'nuvem-pago' || id === 'financeiro' || id === 'fluxo') return 'nuvempago';
+  if(id === 'atacado') return 'atacado';   // etapa 41 (B): só registra o mês escolhido; não adota o de fora (o padrão é "todo o período")
   return null;
 }
 function periodoTxt(p){ return MONTH_DEFS[p.mes].key + '/' + p.ano; }
@@ -5443,6 +5655,7 @@ function periodoDaPagina(id){
     return d ? {ano:d.getFullYear(), mes:d.getMonth()} : null;
   }
   if(g === 'nuvempago') return np.linhas && np.ano != null ? {ano:np.ano, mes:np.mes} : null;
+  if(g === 'atacado'){ var am = /^(\d{4})-(\d{2})$/.exec(at.per || ''); return am ? {ano:+am[1], mes:+am[2] - 1} : null; }
   return null;
 }
 // o endereço já traz o período da página? (então ele vale)
@@ -5451,6 +5664,7 @@ function hashTemPeriodo(g, params){
   if(g === 'vendas') return 'mes' in params || 'dia' in params || 'sem' in params || 'ano' in params;
   if(g === 'motivos') return 'dia' in params;
   if(g === 'nuvempago') return 'mes' in params || 'ano' in params;
+  if(g === 'atacado') return 'per' in params;
   return false;
 }
 // tenta levar o período de trabalho para a página; devolve true se mudou algo
@@ -5485,7 +5699,7 @@ function adotarPeriodo(g){
     if(!np.linhas){ npPeriodoPendente = true; return false; }
     return npAdotarPeriodo();
   }
-  return false;
+  return false;   // atacado: não adota (o chip do recorte explica)
 }
 // Vendas/Pedidos: só um ano já carregado (no painel online, o ano que veio do servidor); nunca busca outro ano
 function vAdotarPeriodo(){
@@ -5500,7 +5714,7 @@ function vAdotarPeriodo(){
 function periodoAviso(id){
   var g = grupoPeriodo(id);
   if(id === 'devolucoes') return periodo && dvJanelaTxt() ? 'o período de trabalho (' + periodoTxt(periodo) + ') não filtra esta aba' : '';
-  if(!g || !periodo || periodo.origem === g) return '';
+  if(!g || g === 'atacado' || !periodo || periodo.origem === g) return '';
   var p = periodoDaPagina(id);
   if(!p || mesmoPeriodo(p, periodo)) return '';
   var de = 'Período de ' + PERIODO_ORIGEM[periodo.origem] + ' (' + periodoTxt(periodo) + ')';
@@ -5531,14 +5745,183 @@ function entrarPeriodo(route, params){
   var mudou = false;
   if(g){
     var doHash = hashTemPeriodo(g, params);
-    if(!doHash && !fix && periodoEntrada && periodoEntrada.grupo !== g) mudou = adotarPeriodo(g);
+    // recorte (barra, endereço rper= ou sessão): vale sobre o que a própria página trouxe
+    if(recorteForca && g !== 'atacado'){ mudou = adotarPeriodo(g); doHash = false; }
+    else if(!doHash && !fix && ((periodoEntrada && periodoEntrada.grupo !== g) || recorteSessao)) mudou = adotarPeriodo(g);
     var p = periodoDaPagina(route.id);
     // período escolhido de forma explícita (link com período, drill-down): vira o período de trabalho
     if((doHash || fix) && p) periodo = {ano:p.ano, mes:p.mes, origem:g};
     periodoEntrada = {grupo:g, per:p};
   } else periodoEntrada = {grupo:null, per:null};
+  // o recorte só continua pendente se a página ainda não tinha os dados para adotar (vendas/Nuvem Pago chegando)
+  if(g && g !== 'atacado' && !(g === 'vendas' && periodoVendasPendente) && !(g === 'nuvempago' && npPeriodoPendente)) recorteForca = recorteSessao = false;
   return mudou;
 }
+
+/* ---- Recorte global (etapa 41, parte B): período + comparação + canal ----
+   O período É o `periodo` acima (um único estado); aqui entram a comparação e o canal, a barra, os chips e a persistência.
+   Endereço: rper=AAAA-MM, cmp=anterior|ano, rcanal=atacado|todos (só o que não é padrão). Os nomes têm prefixo "r" porque
+   per= e canal= já pertencem aos filtros de Vendas, Devoluções, Atacado, Fluxo, Início e Lançamentos. Sessão: sessionStorage.
+   Por ora nenhuma tela recalcula a comparação nem filtra por canal: a barra mostra a escolha e cada tela diz o que usa. */
+var RECORTE_CHAVE = 'bi-recorte-v1';
+var recorte = {cmp:'meta', canal:'varejo'};   // o período fica em `periodo`
+var recorteSessao = false;                     // período vindo da sessão: vale só se a tela não trouxe o dela no endereço
+var recorteDaBarra = false;                    // applyRoute chamado pela barra: o rper= do endereço (antigo) não vale
+var recorteForca = false;                      // o período do recorte (barra/endereço/sessão) vale sobre o que a página trouxe
+var recorteSig = '', recorteOpcoesSig = '';
+var RECORTE_ROTAS_SEM_BARRA = ['planilha', 'acesso', 'minha-conta', 'sem-permissao'];
+// comparação que cada tela faz HOJE, só para a dica (title) de "Comparar com". Só entra o que foi confirmado nas telas; o resto fica sem dica.
+var RECORTE_CMP_TELA = {inicio:'o período anterior', vendas:'o mês anterior (MoM)', reembolsos:'o mês anterior', 'dia-a-dia':'o mês anterior', mensal:'o mês anterior', financeiro:'o mês anterior'};
+function recorteAnoLiberado(){ return new Date() >= new Date(2027, 1, 1); }   // a loja abriu em fev/2026: 12 meses depois
+function recorteCmpValido(v){ return v === 'meta' || v === 'anterior' || (v === 'ano' && recorteAnoLiberado()); }
+function recorteCanalEf(){ return financeiroConferido && !acessoFinanceiro ? 'varejo' : recorte.canal; }
+// só aceita de fev/2026 (a loja abriu) até 2 meses à frente do mês atual; o resto (rper=9999-12) é descartado
+function recorteSetPeriodo(per, sessao){
+  var m = /^(\d{4})-(\d{2})$/.exec(per || '');
+  if(!m || +m[2] < 1 || +m[2] > 12) return false;
+  var v = +m[1] * 12 + (+m[2] - 1), hoje = new Date();
+  if(v < 2026 * 12 + 1 || v > hoje.getFullYear() * 12 + hoje.getMonth() + 2) return false;
+  if(periodo && periodo.ano === +m[1] && periodo.mes === +m[2] - 1) return false;
+  if(sessao && periodo) return false;
+  periodo = {ano:+m[1], mes:+m[2] - 1, origem:'recorte'};
+  if(sessao) recorteSessao = true; else recorteForca = true;
+  return true;
+}
+function recorteGuardar(){
+  if(financeiroConferido && !acessoFinanceiro) recorte.canal = 'varejo';   // sem acesso financeiro nunca guarda atacado/todos
+  try{ sessionStorage.setItem(RECORTE_CHAVE, JSON.stringify({per: periodo ? periodo.ano + '-' + pad2(periodo.mes + 1) : '', cmp:recorte.cmp, canal:recorte.canal})); }
+  catch(e){ /* sessionStorage bloqueado (iframe/privado): o endereço continua levando o recorte */ }
+}
+function recorteCarregar(){
+  try{
+    var j = JSON.parse(sessionStorage.getItem(RECORTE_CHAVE) || 'null');
+    if(!j) return;
+    if(recorteCmpValido(j.cmp)) recorte.cmp = j.cmp;
+    if(j.canal === 'atacado' || j.canal === 'todos') recorte.canal = j.canal;
+    recorteSetPeriodo(j.per, true);
+  } catch(e){}
+}
+// parâmetros do endereço (já separados por parseHash); os ausentes mantêm o estado
+function recorteDoEndereco(rec){
+  if(!rec) return;
+  if(rec.rper) recorteSetPeriodo(rec.rper);
+  if(rec.cmp && recorteCmpValido(rec.cmp)) recorte.cmp = rec.cmp;
+  if(rec.rcanal === 'atacado' || rec.rcanal === 'todos') recorte.canal = rec.rcanal;
+}
+function recorteEnderecoPendente(route){
+  if(V_ROTAS.indexOf(route.id) >= 0) return !(route.id === 'pedidos' && oper.aba !== 'lista') && !vendas.pedidos;
+  if(route.id === 'nuvem-pago' || route.id === 'financeiro') return !np.linhas && !!(np.paramsPendentes || npPeriodoPendente || recorteForca);
+  return false;
+}
+function recorteQuery(h){
+  var q = [];
+  if(periodo) q.push('rper=' + periodo.ano + '-' + pad2(periodo.mes + 1));
+  if(recorte.cmp !== 'meta') q.push('cmp=' + recorte.cmp);
+  if(recorteCanalEf() !== 'varejo') q.push('rcanal=' + recorteCanalEf());
+  return q.length ? (String(h).indexOf('?') >= 0 ? '&' : '?') + q.join('&') : '';
+}
+// chips curtos que explicam como a tela adapta o recorte
+function recorteChips(route){
+  var id = route.id, g = grupoPeriodo(id), out = [], p;
+  try{
+    if(id === 'inicio') out.push('janela móvel própria: ' + inPeriodo().titulo);
+    else if(id === 'pedidos' && oper.aba !== 'lista') out.push('posição de hoje');
+    else if(id === 'vendas' && vendas.sec === 'filas') out.push('posição de hoje');
+    else if(id === 'devolucoes'){
+      if(devol.aba === 'fila') out.push('posição de hoje');
+      else out.push(String(dvJanelaTxt() || 'Janela própria').replace(/^Janela:/, 'janela própria:').replace(/^J/, 'j'));
+    } else if(id === 'atacado'){
+      if(at.aba === 'filas') out.push('posição de hoje');
+      else if(at.per === 'tudo') out.push('esta tela mostra todo o período do atacado');
+      else if(periodo && (p = periodoDaPagina(id)) && !mesmoPeriodo(p, periodo)) out.push('atacado mostra ' + periodoTxt(p));
+    } else if(g === 'reemb' || g === 'nuvempago'){
+      p = periodoDaPagina(id);
+      if(periodo && p && !mesmoPeriodo(p, periodo)) out.push('esta tela usa mês contábil: ' + periodoTxt(p));
+    }
+    // canal: só quando o pedido da barra difere do que a tela mostra (nenhuma tela soma os canais ainda)
+    var cn = recorteCanalEf();
+    if(id === 'atacado'){ if(cn !== 'atacado') out.push('esta tela é só do atacado'); }
+    else if(cn !== 'varejo') out.push('esta tela é só do varejo');
+  } catch(e){}
+  return out;
+}
+function recorteOpcoesPeriodo(){
+  var hoje = new Date(), fim = hoje.getFullYear() * 12 + hoje.getMonth(), ini = 2026 * 12 + 1, lista = [];
+  if(periodo){ var pv = periodo.ano * 12 + periodo.mes; if(pv > fim) fim = pv; if(pv < ini) ini = pv; }
+  for(var v = fim; v >= ini; v--) lista.push({ano:Math.floor(v / 12), mes:v % 12});
+  return lista;
+}
+function recorteRender(){
+  var bar = document.getElementById('recorte-bar');
+  if(!bar) return;
+  var route = currentRoute();
+  var oculta = RECORTE_ROTAS_SEM_BARRA.indexOf(route.id) >= 0 || !isDashboardVisible();
+  var canal = recorteCanalEf(), perVal = periodo ? periodo.ano + '-' + pad2(periodo.mes + 1) : '';
+  var chips = oculta ? [] : recorteChips(route);
+  var sig = [oculta, route.id, (typeof devol !== 'undefined' && devol ? devol.aba : ''), perVal, recorte.cmp, canal, acessoFinanceiro, recorteAnoLiberado(), chips.join('|')].join('#');
+  if(sig === recorteSig) return;
+  recorteSig = sig;
+  bar.hidden = oculta;
+  if(oculta) return;
+  // período
+  var sel = document.getElementById('rc-per'), osig = (periodo ? 'p' : '') + recorteOpcoesPeriodo().length + perVal;
+  if(osig !== recorteOpcoesSig){
+    recorteOpcoesSig = osig;
+    var html = '<option value="">Automático (cada tela)</option>';
+    recorteOpcoesPeriodo().forEach(function(o){ html += '<option value="' + o.ano + '-' + pad2(o.mes + 1) + '">' + escapeHtml(periodoTxt(o)) + '</option>'; });
+    sel.innerHTML = html;
+  }
+  sel.value = perVal;
+  // comparação e canal
+  Array.prototype.forEach.call(bar.querySelectorAll('button[data-rc]'), function(b){
+    var tipo = b.dataset.rc, v = b.dataset.v, ativo = tipo === 'cmp' ? recorte.cmp === v : canal === v;
+    b.classList.toggle('active', ativo);
+    b.setAttribute('aria-pressed', ativo ? 'true' : 'false');
+    if(tipo === 'canal' && 'fin' in b.dataset) b.hidden = !acessoFinanceiro;
+    if(tipo === 'cmp' && v === 'ano'){
+      if(recorteAnoLiberado()){ b.removeAttribute('aria-disabled'); b.removeAttribute('title'); }
+      else { b.setAttribute('aria-disabled', 'true'); b.title = 'Disponível a partir de fev/2027 (a loja abriu em fev/2026)'; }
+    }
+  });
+  var lblCmp = document.getElementById('rc-cmp-lbl'), cmpTela = RECORTE_CMP_TELA[route.id] || (route.id === 'devolucoes' && devol.aba === 'ritmo' ? 'o mês anterior' : '');
+  lblCmp.title = cmpTela ? 'Esta tela compara com ' + cmpTela + '. A escolha da barra será aplicada quando a tela passar a obedecer.' : 'A escolha da barra será aplicada às telas que tiverem comparação.';
+  document.getElementById('rc-canal-grupo').hidden = !acessoFinanceiro;
+  document.getElementById('rc-resumo').textContent = 'Recorte · ' + (perVal ? periodoTxt(periodo) : 'automático') + ' · ' +
+    {meta:'Meta', anterior:'Anterior', ano:'Ano anterior'}[recorte.cmp] + ' · ' + {varejo:'Varejo', atacado:'Atacado', todos:'Todos'}[canal];
+  document.getElementById('rc-chips').innerHTML = chips.map(function(c){ return '<span class="v-sit">' + escapeHtml(c) + '</span>'; }).join('');
+}
+function recorteMudou(){
+  recorteGuardar();
+  syncUrl();
+  recorteRender();
+}
+(function recorteIniciar(){
+  recorteCarregar();
+  var bar = document.getElementById('recorte-bar');
+  if(!bar) return;
+  bar.addEventListener('click', function(ev){
+    var t = ev.target;
+    if(t.closest && t.closest('#rc-toggle')){
+      var aberto = !bar.classList.contains('is-open');
+      bar.classList.toggle('is-open', aberto);
+      document.getElementById('rc-toggle').setAttribute('aria-expanded', aberto ? 'true' : 'false');
+      return;
+    }
+    var b = t.closest ? t.closest('button[data-rc]') : null;
+    if(!b || b.getAttribute('aria-disabled') === 'true') return;
+    if(b.dataset.rc === 'cmp') recorte.cmp = b.dataset.v;
+    else if(b.dataset.rc === 'canal') recorte.canal = b.dataset.v;
+    recorteMudou();
+  });
+  document.getElementById('rc-per').addEventListener('change', function(ev){
+    var v = ev.target.value;
+    if(!v){ periodo = null; recorteForca = false; recorteMudou(); return; }
+    recorteSetPeriodo(v);
+    recorteGuardar();
+    recorteDaBarra = true;
+    applyRoute();   // reaplica a tela atual: ela converte o período à sua maneira e o endereço é regravado
+  });
+})();
 
 /* ---- Endereço (hash) com página + filtros: "#/lancamentos?mes=set&cat=Estorno&q=123" ---- */
 
@@ -5557,9 +5940,12 @@ function parseHash(h){
       params[k] = v;
     });
   }
+  // etapa 41 (B): os parâmetros do recorte global saem daqui para não se misturar com os filtros de cada tela (per= e canal= já existem nelas)
+  var rec = {};
+  ['rper', 'cmp', 'rcanal'].forEach(function(k){ if(k in params){ rec[k] = params[k]; delete params[k]; } });
   var ap = aliasComParametro(id, params);
-  if(ap) return {id:id, alias:ap.para, params:ap.params};
-  return {id:id, alias: ROUTE_ALIASES[id] || null, params:params};
+  if(ap) return {id:id, alias:ap.para, params:ap.params, rec:rec};
+  return {id:id, alias: ROUTE_ALIASES[id] || null, params:params, rec:rec};
 }
 
 // página que o endereço pede, mesmo sem permissão (para avisar em vez de cair no Início sem dizer nada)
@@ -5583,6 +5969,13 @@ function currentRoute(){
 // só entram no endereço os parâmetros que valem para a página aberta
 function buildHash(route){
   route = route || currentRoute();
+  var h = buildHashBase(route);
+  if(route.id === 'sem-permissao') return h;
+  h += recorteQuery(h);
+  if(route.id === 'inicio') inicio.escrito = h;   // o Início compara com o último endereço que ele mesmo gravou
+  return h;
+}
+function buildHashBase(route){
   if(V_ROTAS.indexOf(route.id) >= 0) return vBuildHash(route.id);
   if(route.id === 'devolucoes') return dvBuildHash();
   if(route.id === 'nuvem-pago') return npBuildHash();
@@ -5668,6 +6061,8 @@ function syncUrl(){
   var route = currentRoute();
   // toda mudança de estado passa por aqui: uma troca de mês feita na página vira o período de trabalho
   registrarPeriodo(route);
+  recorteGuardar();
+  if(recorteEnderecoPendente(route)) { recorteRender(); return; }   // o endereço pedido ainda não foi aplicado (dados chegando): não apaga o que veio no link
   var h = buildHash(route);
   if(location.hash !== h){
     try{ history.replaceState(history.state, '', location.pathname + location.search + h); }
@@ -5808,6 +6203,8 @@ function applyRoute(){
   else if(route.id === 'motivos') motApplyParams(parsed.params);
   else if(route.id === 'sem-permissao') renderSemPermissao();
   else if(applyHashParams(parsed.params, route.id)) renderAll();
+  recorteDoEndereco(recorteDaBarra ? null : parsed.rec);
+  recorteDaBarra = false;
   // período de trabalho: a página de outro grupo adota o mês escolhido antes (se o endereço não trouxer o dela)
   if(entrarPeriodo(route, parsed.params) && grupoPeriodo(route.id) === 'reemb') renderAll();
   // destino de rolagem dentro de uma aba (ex.: Resumo do dia vindo da aba Metas): abre essa aba
@@ -5867,7 +6264,10 @@ function syncNavAtivo(){
   var route = currentRoute();
   // abas que acendem item próprio: Devoluções (devol.aba), Recebimentos (np.aba: Conciliação tem o seu item, as outras acendem
   // Recebimentos) e Dia a dia e metas. Na fila NF (f=nf) acende o item NF, e não Filas de trabalho.
-  var aba = route.id === 'devolucoes' ? (devol ? devol.aba : null) : route.id === 'nuvem-pago' ? np.aba : route.id === 'pedidos' ? (oper ? oper.aba : null) : (routeAba(route) ? routeAba(route).id : null);
+  // Etapa 41: Vendas › Filas (vendas.sec) e Atacado › Filas (at.aba) acendem o item do Para agir. Itens repetidos (Para agir e grupo
+  // antigo com a mesma rota/aba): acende só o primeiro no menu, que é o do Para agir (o find abaixo pega o primeiro).
+  var aba = route.id === 'devolucoes' ? (devol ? devol.aba : null) : route.id === 'nuvem-pago' ? np.aba : route.id === 'pedidos' ? (oper ? oper.aba : null)
+    : route.id === 'vendas' && vendas.sec === 'filas' ? 'filas' : route.id === 'atacado' ? (at ? at.aba : null) : (routeAba(route) ? routeAba(route).id : null);
   var fila = route.id === 'devolucoes' && aba === 'fila' && devol.fila ? devol.fila : '';
   var links = Array.prototype.slice.call(document.querySelectorAll('.side-link'));
   var daRota = links.filter(function(a){ return a.dataset.route === route.id; });
@@ -5886,6 +6286,7 @@ function tituloPagina(route){
   route = route || currentRoute();
   if(route.id === 'devolucoes') return (devol && devol.aba === 'fila' && devol.fila === 'nf') ? 'NF de devolução' : (devol && DV_ABA_TITULOS[devol.aba]) || route.title;
   if(route.id === 'pedidos' && oper && oper.aba === 'pago') return 'Pago e não faturado';   // o nome do item do menu
+  if(route.id === 'nuvem-pago' && np && np.aba === 'conciliacao') return 'Conciliação';      // idem (etapa 40)
   var aba = routeAba(route);
   return aba ? aba.title : route.title;
 }
@@ -6103,7 +6504,7 @@ function fadeFill(color, topAlpha){
 }
 
 // cores usadas pelos plugins de desenho (atualizadas a cada troca de tema)
-var chartInk = { crosshair:'rgba(185,167,196,.45)', primary:'#FFFFFF', muted:'#8A7897' };
+var chartInk = { crosshair:'rgba(185,167,196,.45)', primary:'#FFFFFF', muted:'#8A7897', bg:'#12161f' };
 
 // linha vertical tracejada acompanhando o ponto sob o cursor nos gráficos de linha
 var crosshairPlugin = {
@@ -6192,17 +6593,30 @@ function buildComboConfig(opts){
   var datasets = [
     { type:'bar', label:opts.barLabel, data:opts.barData, backgroundColor:marca(opts.highlightColor, opts.barColor),
       borderColor:marca(getCss('--text-primary'), 'transparent'), borderWidth:marca(2, 0),
-      borderRadius:6, borderSkipped:false, order:2, maxBarThickness:26, corLegenda:opts.barColor }
+      borderRadius:6, borderSkipped:false, order:2, maxBarThickness:26, corLegenda:opts.barColor,
+      // com período de comparação atrás (IBCS), o realizado fica mais estreito para a coluna cinza aparecer dos dois lados
+      barPercentage: opts.compareData ? 0.62 : 0.9 }
   ];
   if(temHl){
     // série vazia, só para a legenda explicar a cor do destaque (grouped:false: não reserva espaço ao lado da barra)
     datasets.push({ type:'bar', label:opts.highlightLabel, data:opts.labels.map(function(){ return null; }), backgroundColor:opts.highlightColor, grouped:false, soLegenda:true, order:1 });
   }
-  if(opts.avgValue != null){
-    datasets.push({ type:'line', label:opts.avgLabel, data:opts.labels.map(function(){return opts.avgValue;}), borderColor:getCss('--series-avg'), borderDash:[4,4], borderWidth:1.5, pointRadius:0, fill:false, order:0, tension:0 });
+  // IBCS (etapa 40): previsão (FC) como barra hachurada nos pontos ainda sem realizado (ex.: dias que faltam no mês)
+  if(opts.fcData && opts.fcData.some(function(v){ return v != null; })){
+    datasets.push({ type:'bar', label:opts.fcLabel || 'Projeção', data:opts.fcData, backgroundColor:ibcsHachura(), borderColor:getCss('--dv-fc'), borderWidth:1,
+      borderRadius:6, borderSkipped:false, grouped:false, order:2, maxBarThickness:26, corLegenda:ibcsHachura() });
   }
+  if(opts.avgValue != null){
+    datasets.push({ type:'line', label:opts.avgLabel, data:opts.labels.map(function(){return opts.avgValue;}), borderColor:getCss('--dv-neutral'), borderDash:[4,4], borderWidth:1.5, pointRadius:0, fill:false, order:0, tension:0 });
+  }
+  // IBCS: meta (PL) como linha de referência fina e contínua na cor do realizado (a média é a tracejada cinza)
+  if(opts.metaValue != null && opts.metaValue > 0){
+    datasets.push({ type:'line', label:opts.metaLabel || 'Meta', data:opts.labels.map(function(){ return opts.metaValue; }), borderColor:getCss('--dv-pl'), borderWidth:1.5, pointRadius:0, fill:false, order:0, tension:0, pointStyle:'line' });
+  }
+  // IBCS: período de comparação (PY/PP) como coluna cinza ATRÁS da barra do realizado, mais larga (antes era linha tracejada)
   if(opts.compareData){
-    datasets.push({ type:'line', label:opts.compareLabel, data:opts.compareData, borderColor:getCss('--text-secondary'), borderDash:[6,3], borderWidth:1.5, pointRadius:0, fill:false, order:0, tension:0.25 });
+    datasets.push({ type:'bar', label:opts.compareLabel, data:opts.compareData, backgroundColor:getCss('--dv-py'), borderWidth:0, borderRadius:4, borderSkipped:false,
+      grouped:false, order:3, maxBarThickness:34, barPercentage:1, categoryPercentage:0.94, corLegenda:getCss('--dv-py') });
   }
   var options = comboBaseOptions(opts.valueFormatter);
   // tooltip sem itens vazios (série só de legenda, comparação sem dia correspondente)
@@ -6231,7 +6645,8 @@ function buildAreaConfig(labels, data, color, valueFormatter, label, compare, pa
       segment:{ borderDash:function(ctx){ return parcial[ctx.p1DataIndex] ? [5, 4] : undefined; } } });
   }
   if(compare){
-    datasets.push({ label:compare.label, data:compare.data, borderColor:getCss('--text-secondary'), borderDash:[6,3], backgroundColor:'transparent', fill:false, borderWidth:1.5, pointRadius:0, tension:0.25 });
+    // IBCS (etapa 40): período anterior em cinza sólido (antes, tracejado no tom do texto)
+    datasets.push({ label:compare.label, data:compare.data, borderColor:getCss('--dv-py'), backgroundColor:'transparent', fill:false, borderWidth:2, pointRadius:0, tension:0.25 });
   }
   return {
     type:'line', fmtAria: valueFormatter,
@@ -6286,16 +6701,225 @@ function buildMonthlyLineConfig(labels, data, avgValue, color, valueFormatter, o
   return { type:'line', data:{ labels:labels, datasets:datasets }, options: options, fmtAria: valueFormatter };
 }
 
-function buildSparklineConfig(data, color){
+// fmt (opcional, etapa 40): marca e rotula o último ponto com o valor (IBCS: rótulo direto, sem depender de tooltip)
+function buildSparklineConfig(data, color, fmt){
   color = getCss('--spark') || color;
   return {
     type:'line', sparkline:true,
     data:{ labels:data.map(function(_,i){return i;}), datasets:[{ data:data, borderColor:color, backgroundColor:fadeFill(color, '40'), fill:true, borderWidth:2, pointRadius:0, tension:0.35 }] },
     options:{
       responsive:true, maintainAspectRatio:false,
+      layout:{ padding: fmt ? { top:12, right:4, bottom:2 } : 0 },
       scales:{ x:{display:false}, y:{display:false} },
-      plugins:{ legend:{display:false}, tooltip:{enabled:false} },
+      plugins:{ legend:{display:false}, tooltip:{enabled:false}, ibcsRotulo: fmt ? { ultimo:true, fmt:fmt } : false },
       elements:{ point:{ radius:0 } }
+    }
+  };
+}
+
+/* ===================== Notação IBCS (etapa 40) =====================
+   Funções únicas de variação, KPI card, bullet, sparkline, hachura de previsão e barras ordenadas. Só desenham:
+   recebem os números já calculados pelas telas (nenhuma regra de cálculo nova). Tokens --dv-* documentados no topo do <style>. */
+
+// polaridade por KPI: o que é "bom" quando o número sobe. true/false aceitos por compatibilidade (ruimSobe).
+var IBCS_POLARIDADE = {
+  faturamento:'sobe-bom', pedidos:'sobe-bom', ticket:'sobe-bom', liquido:'sobe-bom', recorrentes:'sobe-bom',
+  devolucao:'sobe-ruim', reembolso:'sobe-ruim', custo:'sobe-ruim', taxa:'sobe-ruim', estorno:'sobe-ruim', chargeback:'sobe-ruim',
+  chequeDevolvido:'sobe-ruim', atraso:'sobe-ruim', vencido:'sobe-ruim',
+  recebidas:'neutro', encerradas:'neutro', transferido:'neutro'
+};
+function ibcsPolaridade(p){
+  if(p === true) return 'sobe-ruim';
+  if(p === false || p == null) return 'sobe-bom';
+  if(p === 'sobe-bom' || p === 'sobe-ruim' || p === 'neutro') return p;
+  return IBCS_POLARIDADE[p] || 'sobe-bom';
+}
+function ibcsMoeda(fmt){ try{ return !!fmt && /R\$/.test(fmt(1000)); } catch(e){ return false; } }
+// valor curto, sem sinal: moeda a partir de mil vira "R$ 12,3 mil"; o resto usa o formatador da tela
+function ibcsFmtCurto(v, fmt){
+  var a = Math.abs(v || 0);
+  if(ibcsMoeda(fmt)) return a >= 1e3 ? apxMoedaCurta(a) : fmtValor(a);
+  return fmt ? fmt(a) : fmtQtd(a);
+}
+// variação IBCS: seta + sinal + Δ absoluto · Δ%, cor pela polaridade (neutro = cinza). o = {fmt, polaridade, soPct, cls}
+function ibcsDeltaHtml(cur, base, o){
+  o = o || {};
+  if(cur == null || base == null || !isFinite(cur) || !isFinite(base)) return '';
+  var pol = ibcsPolaridade(o.polaridade);
+  var abs = cur - base, pct = base !== 0 ? abs / Math.abs(base) : null;   // base negativa: o % segue o sinal da melhora/piora
+  if(pct != null ? Math.abs(pct) < 0.0005 : Math.abs(abs) < 1e-9){ abs = 0; if(pct != null) pct = 0; }   // −0,0% vira "="
+  var dir = abs > 0 ? 1 : abs < 0 ? -1 : 0;
+  var bom = pol === 'sobe-ruim' ? dir < 0 : dir > 0;
+  var cls = !dir || pol === 'neutro' ? 'delta-flat' : bom ? 'delta-good' : 'delta-bad';
+  var partes = [];
+  if(dir && (!o.soPct || pct == null)) partes.push((dir > 0 ? '+' : '−') + ibcsFmtCurto(abs, o.fmt));
+  if(dir && pct != null) partes.push(fmtPctSigned(pct).replace('-', '−'));
+  var txt = dir ? partes.join(' · ') : 'sem variação';
+  var juizo = cls === 'delta-good' ? ' (favorável)' : cls === 'delta-bad' ? ' (desfavorável)' : '';
+  return '<span class="delta ibcs-delta ' + cls + (o.cls ? ' ' + o.cls : '') + '"><span aria-hidden="true">' + (dir > 0 ? '▲' : dir < 0 ? '▼' : '=') + '</span>' +
+    '<span class="sr-only">' + (dir > 0 ? 'alta: ' : dir < 0 ? 'queda: ' : '') + '</span>' + txt + (juizo ? '<span class="sr-only">' + juizo + '</span>' : '') + '</span>';
+}
+// uma linha de variação do cartão: rótulo da referência ("vs meta", "vs mês anterior") + o Δ ou o motivo de não haver
+function ibcsLinha(rotulo, corpo){ return '<div class="ibcs-d"><span class="ibcs-d-rot">' + escapeHtml(rotulo) + '</span>' + corpo + '</div>'; }
+function ibcsSemCmp(motivo){ return '<span class="ibcs-d-sem">' + escapeHtml(motivo || 'sem base para comparar') + '</span>'; }
+// bullet de 8px: realizado (sólido), projeção (hachura, depois do realizado) e meta (traço). o = {ac, pl, fc, fmt, rotuloAc, rotuloFc, rotuloPl, legenda}
+function ibcsBulletHtml(o){
+  if(!o || o.ac == null || o.pl == null || !(o.pl > 0)) return '';
+  var ac = Math.max(0, o.ac), fc = o.fc != null && o.fc > ac ? o.fc : null, fmt = o.fmt || fmtValor;
+  var max = Math.max(ac, o.pl, fc || 0) * 1.08;   // 8% de folga: o traço da meta não encosta na borda
+  var p = function(v){ return Math.max(0, Math.min(100, v / max * 100)); };
+  var ref = fc != null ? fc : ac;
+  var aria = (o.rotuloAc || 'Realizado') + ' ' + fmt(ac) + (fc != null ? ', ' + (o.rotuloFc || 'projeção') + ' ' + fmt(fc) : '') + ', ' + (o.rotuloPl || 'meta') + ' ' + fmt(o.pl) + ' (' + fmtPct(ref / o.pl) + ' da meta)';
+  return '<div class="ibcs-bullet" role="img" aria-label="' + escapeHtml(aria) + '">' +
+    '<span class="ibcs-bullet-ac" style="width:' + p(ac).toFixed(2) + '%"></span>' +
+    (fc != null ? '<span class="ibcs-bullet-fc ibcs-fc" style="left:' + p(ac).toFixed(2) + '%;width:' + (p(fc) - p(ac)).toFixed(2) + '%"></span>' : '') +
+    '<span class="ibcs-bullet-pl" style="left:' + p(o.pl).toFixed(2) + '%"></span></div>' +
+    (o.legenda === false ? '' : '<div class="ibcs-bullet-leg" aria-hidden="true"><span><i class="is-ac"></i>' + escapeHtml(o.rotuloAc || 'realizado') +
+      (fc != null ? ' &nbsp;<i class="is-fc ibcs-fc"></i>' + escapeHtml(o.rotuloFc || 'projeção') : '') + '</span><span><i class="is-pl"></i>' + escapeHtml(o.rotuloPl || 'meta') + ' ' + ibcsFmtCurto(o.pl, fmt) + '</span></div>');
+}
+// sparkline em SVG: linha fina, último ponto marcado e o valor dele escrito ao lado (decorativa para leitor de tela:
+// o número está no cartão). Pontos nulos no fim (meses futuros) ficam de fora, para o último ponto encostar na borda.
+function ibcsSparkHtml(serie, fmt, titulo){
+  var pts = [];
+  (serie || []).forEach(function(v, i){ if(v != null && isFinite(v)) pts.push({i:i, v:v}); });
+  if(pts.length < 2) return '';
+  var i0 = pts[0].i, n = (pts[pts.length - 1].i - i0) || 1;
+  var vs = pts.map(function(q){ return q.v; }), min = Math.min.apply(null, vs), max = Math.max.apply(null, vs);
+  if(max === min){ max += 1; min -= 1; }
+  var y = function(v){ return 3 + (1 - (v - min) / (max - min)) * 22; };   // viewBox 100 × 28, 3px de folga
+  var ult = pts[pts.length - 1], rot = (ult.v < 0 ? '−' : '') + ibcsFmtCurto(ult.v, fmt);
+  return '<div class="ibcs-spark" aria-hidden="true"' + (titulo ? ' title="' + escapeHtml(titulo + ' · último ponto: ' + rot) + '"' : '') + '><div class="ibcs-spark-area">' +
+    '<svg viewBox="0 0 100 28" preserveAspectRatio="none" focusable="false"><polyline points="' + pts.map(function(q){ return ((q.i - i0) / n * 100).toFixed(2) + ',' + y(q.v).toFixed(2); }).join(' ') + '"/></svg>' +
+    '<span class="ibcs-spark-pt" style="top:' + (y(ult.v) / 28 * 100).toFixed(1) + '%"></span></div><span class="ibcs-spark-rot">' + rot + '</span></div>';
+}
+// linhas "vs meta" e "vs {comparação}" do cartão. meta: {atual, valor, rotulo, semaforo} · meta === null → "sem meta";
+// cmp: {atual, base, rotulo, motivo} (base null → motivo)
+function ibcsDeltasHtml(o){
+  var h = '', d = {fmt:o.fmt, polaridade:o.polaridade};
+  if(o.meta && o.meta.valor != null) h += ibcsLinha(o.meta.rotulo || 'vs meta', (o.meta.semaforo || '') + ibcsDeltaHtml(o.meta.atual, o.meta.valor, d) + (o.meta.nota ? '<span class="ibcs-d-meta">' + o.meta.nota + '</span>' : ''));
+  else if(o.meta === null) h += ibcsLinha('vs meta', ibcsSemCmp('sem meta'));
+  if(o.cmp) h += ibcsLinha(o.cmp.rotulo || 'vs comparação', o.cmp.base != null ? ibcsDeltaHtml(o.cmp.atual, o.cmp.base, d) : ibcsSemCmp(o.cmp.motivo));
+  return h ? '<div class="ibcs-deltas">' + h + '</div>' : '';
+}
+// KPI card IBCS. o = {id, rotulo, def, valor (html já formatado), valorTitulo, fmt, polaridade, sub (html), cls, tituloCls,
+//   meta {atual, valor, ac, fc, rotulo, semaforo, nota} | null, cmp {atual, base, rotulo, motivo}, serie [números], serieTitulo, pe (html)}
+function ibcsKpiHtml(o){
+  var tid = o.id ? 'ibcs-' + o.id + '-t' : '';
+  return '<article class="kpi-card ibcs-kpi' + (o.cls ? ' ' + o.cls : '') + '"' + (tid ? ' aria-labelledby="' + tid + '"' : '') + '>' +
+    '<div class="ibcs-kpi-cab"><h3 class="' + (o.tituloCls || 'kpi-label') + '"' + (tid ? ' id="' + tid + '"' : '') + '>' + escapeHtml(o.rotulo) + '</h3>' + (o.def ? infoTip(o.def) : '') + '</div>' +
+    '<div class="kpi-value"' + (o.valorTitulo ? ' title="' + escapeHtml(o.valorTitulo) + '"' : '') + '>' + o.valor + '</div>' +
+    (o.sub ? '<div class="kpi-sub">' + o.sub + '</div>' : '') +
+    ibcsDeltasHtml(o) +
+    (o.meta && o.meta.valor != null ? ibcsBulletHtml({ac:o.meta.ac != null ? o.meta.ac : o.meta.atual, pl:o.meta.valor, fc:o.meta.fc, fmt:o.fmt}) : '') +
+    ibcsSparkHtml(o.serie, o.fmt, o.serieTitulo) +
+    (o.pe ? '<div class="ibcs-kpi-pe">' + o.pe + '</div>' : '') + '</article>';
+}
+// cartões estáticos do HTML (Devoluções, Nuvem Pago): põe/atualiza a sparkline IBCS no fim do cartão do id dado
+function ibcsSparkNoCartao(idValor, serie, fmt, titulo){
+  var v = document.getElementById(idValor), card = v && v.closest('.kpi-card');
+  if(!card) return;
+  var el = card.querySelector(':scope > .ibcs-spark-slot');
+  if(!el){ el = document.createElement('div'); el.className = 'ibcs-spark-slot'; card.appendChild(el); card.classList.add('ibcs-kpi'); }
+  el.innerHTML = ibcsSparkHtml(serie, fmt, titulo);
+}
+// hachura de previsão para o canvas (CanvasPattern criado uma vez por cor; a cor muda com o tema)
+var ibcsHachuraCache = {};
+function ibcsHachura(cor){
+  cor = cor || getCss('--dv-fc');
+  if(ibcsHachuraCache[cor]) return ibcsHachuraCache[cor];
+  var c = document.createElement('canvas'); c.width = 6; c.height = 6;
+  var x = c.getContext('2d');
+  if(!x) return cor;
+  x.strokeStyle = cor; x.globalAlpha = 0.65; x.lineWidth = 1.4;
+  x.beginPath(); x.moveTo(-1, 7); x.lineTo(7, -1); x.moveTo(-1, 1); x.lineTo(1, -1); x.moveTo(5, 7); x.lineTo(7, 5); x.stroke();
+  return (ibcsHachuraCache[cor] = x.createPattern(c, 'repeat') || cor);
+}
+// rótulo direto (IBCS, sem plugin externo): no fim de cada barra horizontal (ds.rotulos, com ds.rotulosCurtos quando não
+// cabe) e no último ponto da sparkline. Liga por options.plugins.ibcsRotulo = {fim:true} ou {ultimo:true, fmt}.
+var ibcsRotuloPlugin = {
+  id:'ibcsRotulo',
+  afterDatasetsDraw:function(chart, args, opts){
+    if(!opts || (!opts.fim && !opts.ultimo)) return;
+    var ctx = chart.ctx, ds = chart.data.datasets[0], meta = chart.getDatasetMeta(0);
+    if(!ds || !meta || meta.hidden) return;
+    ctx.save();
+    ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+    if(opts.fim){
+      ctx.font = "600 11px 'Inter', system-ui, sans-serif";
+      ctx.fillStyle = chartInk.primary; ctx.textAlign = 'left';
+      meta.data.forEach(function(bar, i){
+        var cheio = ds.rotulos && ds.rotulos[i], curto = ds.rotulosCurtos && ds.rotulosCurtos[i];
+        if(!cheio || bar.x == null) return;
+        var x = bar.x + 6, livre = chart.width - x - 2;
+        var t = ctx.measureText(cheio).width <= livre ? cheio : (curto || cheio);
+        ctx.fillText(t, x, bar.y);
+      });
+    }
+    if(opts.ultimo){
+      var d = ds.data || [], i = d.length - 1;
+      while(i >= 0 && d[i] == null) i--;
+      var p = i >= 0 ? meta.data[i] : null;
+      if(p && p.x != null){
+        ctx.fillStyle = chartInk.primary;
+        ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2); ctx.fill();
+        var txt = opts.fmt ? opts.fmt(d[i]) : String(d[i]);
+        ctx.font = "600 10px 'Inter', system-ui, sans-serif"; ctx.textAlign = 'right';
+        var ty = p.y - 8 < 6 ? p.y + 9 : p.y - 8;
+        ctx.strokeStyle = chartInk.bg; ctx.lineWidth = 3; ctx.strokeText(txt, p.x - 4, ty);
+        ctx.fillText(txt, p.x - 4, ty);
+      }
+    }
+    ctx.restore();
+  }
+};
+// barras horizontais ordenadas (substituem as roscas, etapa 40): uma cor só (--dv-ac), categoria "sem informação" em
+// --dv-neutral e no fim, rótulo direto "valor · % do total" (+ "acum." no Pareto). cfg.ordem = índices originais na ordem
+// desenhada, para o clique (drill) achar a categoria. opts = {label, pareto, neutro(label) → bool}
+function buildRankBarConfig(labels, data, valueFormatter, opts){
+  opts = opts || {};
+  var neutro = opts.neutro || function(){ return false; };
+  var idx = labels.map(function(_, i){ return i; }).sort(function(a, b){
+    var na = neutro(labels[a]) ? 1 : 0, nb = neutro(labels[b]) ? 1 : 0;
+    return na - nb || (data[b] || 0) - (data[a] || 0);
+  });
+  var L = idx.map(function(i){ return labels[i]; }), D = idx.map(function(i){ return data[i] || 0; });
+  var total = D.reduce(function(a, v){ return a + v; }, 0), acum = 0;
+  var curtos = D.map(function(v){ return valueFormatter(v) + ' · ' + fmtPct(total ? v / total : 0); });
+  var cheios = D.map(function(v, k){ acum += v; return curtos[k] + (opts.pareto ? ' · acum. ' + fmtPct(total ? acum / total : 0) : ''); });
+  var maisLongo = cheios.reduce(function(m, s){ return Math.max(m, s.length); }, 0);
+  var maisCurto = curtos.reduce(function(m, s){ return Math.max(m, s.length); }, 0);
+  // espaço à direita para o rótulo direto: até 42% da largura; abaixo de 420px reserva só o rótulo curto (é ele que
+  // entra no celular), para sobrar largura ao eixo das categorias
+  var padDir = function(w){ w = w || 320; return Math.min(Math.round((w < 420 ? maisCurto : maisLongo) * 6.4) + 10, Math.round(w * 0.42)); };
+  // rótulo do eixo Y que cabe na largura que o Chart.js dá ao eixo (metade da área sem o padding): quebra em 2 linhas
+  // na palavra; palavra longa demais é abreviada com "…" (o nome completo aparece no tooltip)
+  var tickY = function(s, w){
+    var max = Math.max(8, Math.floor(((w || 320) - padDir(w)) / 2 / 6.2) - 2);
+    var corta = function(t){ return t.length > max ? t.slice(0, max - 1) + '…' : t; };
+    if(s.length <= max) return s;
+    var pal = s.split(' '), l1 = '';
+    while(pal.length && (l1 ? l1 + ' ' + pal[0] : pal[0]).length <= max) l1 = l1 ? l1 + ' ' + pal.shift() : pal.shift();
+    if(!l1) return corta(s);
+    return pal.length ? [l1, corta(pal.join(' '))] : l1;
+  };
+  return {
+    type:'bar', fmtAria:valueFormatter, ordem:idx,
+    data:{ labels:L, datasets:[{ label:opts.label || 'Valor', data:D, backgroundColor:L.map(function(l){ return getCss(neutro(l) ? '--dv-neutral' : '--dv-ac'); }),
+      borderRadius:4, borderSkipped:false, maxBarThickness:22, rotulos:cheios, rotulosCurtos:curtos }] },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      layout:{ padding:function(c){ return {top:0, bottom:0, left:0, right:padDir(c && c.chart && c.chart.width)}; } },
+      scales:{
+        x:{ display:false, beginAtZero:true },
+        y:{ grid:{ display:false }, border:{ display:false }, ticks:{ color:getCss('--text-secondary'), autoSkip:false,
+          callback:function(v){ var s = String(this.getLabelForValue(v)); return tickY(s.length > 28 ? s.slice(0, 27) + '…' : s, this.chart && this.chart.width); } } }
+      },
+      plugins:{
+        legend:{ display:false },
+        ibcsRotulo:{ fim:true },
+        tooltip:{ callbacks:{ title:function(it){ return it.length ? String(L[it[0].dataIndex]) : ''; }, label:function(c){ return cheios[c.dataIndex]; } } }
+      }
     }
   };
 }
@@ -6496,6 +7120,7 @@ function setFinanceiro(sim){
   document.getElementById('fonte-np-bloco').hidden = !acessoFinanceiro;
   if(!acessoFinanceiro){ npLimpar(); npSaldo.srv = null; npSaldo.carregado = false; npSaldo.hist = []; }
   inicio.sig = null; renderInicioSeVisivel();
+  recorteRender();
   var h = hashFinanceiroPendente;
   hashFinanceiroPendente = null;
   // quem tem acesso reabre a página do Financeiro pedida no link; quem não tem vê o aviso (e não o Início sem explicação)
@@ -7192,6 +7817,7 @@ function applyTheme(theme, persist){
   chartInk.crosshair = getCss('--crosshair');
   chartInk.primary = getCss('--text-primary');
   chartInk.muted = getCss('--text-muted');
+  chartInk.bg = getCss('--bg-surface');   // halo do rótulo direto (etapa 40)
   var tt = Chart.defaults.plugins.tooltip;
   tt.backgroundColor = getCss('--tooltip-bg');
   tt.titleColor = getCss('--text-primary');
@@ -7303,6 +7929,13 @@ function enterDashboard(keepView){
     if(parsed.id === 'metas') parsed.params.aba = 'metas';
     guardarHashFinanceiro();
     var rotaIni = currentRoute().id;
+    // recorte global (etapa 41B): o primeiro desenho já reescreve o endereço, então o rper= do link e o período da sessão são lidos
+    // aqui. Precedência: rper do endereço > parâmetro próprio da tela (mes=, ano=…) > sessão.
+    recorteDoEndereco(parsed.rec);
+    if(recorteSessao && !recorteForca){
+      var gIni = grupoPeriodo(rotaIni);
+      if(gIni && gIni !== 'atacado' && !hashTemPeriodo(gIni, parsed.params)){ recorteForca = true; recorteSessao = false; }
+    }
     // Devoluções guarda os parâmetros antes do primeiro desenho (que já reescreve o endereço)
     if(rotaIni === 'devolucoes') dvApplyParams(parsed.params);
     else if(rotaIni === 'inicio') inApplyParams(parsed.params);
@@ -8182,12 +8815,12 @@ function renderCanais(){
   } else {
     empty.hidden = true;
     box.hidden = false;
-    var palette = [getCss('--cat-estorno'), getCss('--cat-cupom'), getCss('--cat-chargeback'), getCss('--kpi-ticket'), getCss('--kpi-volume')];
-    var pi = 0;
-    var colors = canais.map(function(c){ return c.chave === agg.NAO_INFORMADO ? getCss('--text-muted') : palette[(pi++) % palette.length]; });
-    var canaisCfg = buildDoughnutConfig(canais.map(function(c){ return c.chave; }), canais.map(function(c){ return c[metric]; }), colors, function(v){ return fmtMetric(v, metric); });
+    // etapa 40 (IBCS): barras ordenadas numa cor só (antes, rosca com 5 matizes sem significado); "não informado" no fim, em cinza
+    var canaisCfg = buildRankBarConfig(canais.map(function(c){ return c.chave; }), canais.map(function(c){ return c[metric]; }), function(v){ return fmtMetric(v, metric); },
+      {label:metricNoun(), neutro:function(l){ return l === agg.NAO_INFORMADO; }});
     canaisCfg.options.onClick = function(evt, els){
-      if(els && els.length && canais[els[0].index]) drillToLancamentos({canal: canais[els[0].index].chave});
+      var c = els && els.length ? canais[canaisCfg.ordem[els[0].index]] : null;
+      if(c) drillToLancamentos({canal: c.chave});
     };
     upsertChart('chart-canais', canaisCfg);
     if(tableCanais) tableCanais.innerHTML = fieldTableHtml('Canal do reembolso', canais, 'canal');
@@ -9630,17 +10263,22 @@ function vAplicar(dados, fonte){
   if(vendas.ano == null || anosDados.indexOf(vendas.ano) < 0 || !vendas.dia){
     vSetDia(vendas.ref);
   }
+  var vPend = periodoVendasPendente || recorteForca;
   if(vendas.paramsPendentes){
     var pp = vendas.paramsPendentes;
     vendas.paramsPendentes = null;
     vApplyParams(pp.params, pp.routeId, true);
-  } else if(periodoVendasPendente){
-    // entrou em Vendas/Pedidos antes de as vendas chegarem: adota o período de trabalho agora, se o ano veio
+    // período próprio do endereço (mes=, ano=…) vira o de trabalho, como numa tela já carregada
+    if(!recorteForca && vRotaAtual() && hashTemPeriodo('vendas', pp.params)){ var pv = periodoDaPagina('vendas'); if(pv) periodo = {ano:pv.ano, mes:pv.mes, origem:'vendas'}; vPend = false; }
+  }
+  if(vPend){
+    // entrou em Vendas/Pedidos antes de as vendas chegarem: adota o período de trabalho (ou do recorte) agora, se o ano veio
     periodoVendasPendente = false;
-    if(vRotaAtual()) vAdotarPeriodo();
+    if(vRotaAtual()){ vAdotarPeriodo(); recorteForca = recorteSessao = false; }
   }
   // CSV importado ou base do Drive recebida com Fontes de dados aberta
   renderFontesSeVisivel();
+  try{ paraAgirAtualizar(); } catch(e){}   // Para agir › Filas de vendas já com a base carregada, sem abrir a tela
 }
 
 function vSetDia(d){
@@ -9954,7 +10592,8 @@ function vSubtitulo(routeId){
     : per === 'semana' ? 'Semana de ' + vSemanaLabel(vendas.semIni)
     : per === 'tudo' ? 'Todos os pedidos'
     : vMesNome(vendas.mes) + ' ' + vendas.ano;
-  return txt + ' · Nuvemshop, pela data do pedido · pedidos até ' + fmtDate(vendas.ref) + ' ' + vHora(vendas.ref);
+  // cabeçalho único (etapa 40): o quê · de onde · período; a data dos dados vai para o "Dados até" do topo
+  return (routeId === 'pedidos' ? 'Pedidos' : 'Faturamento e pedidos de venda') + ' · Nuvemshop, pela data do pedido · ' + txt;
 }
 
 /* ---- Telas ---- */
@@ -10010,15 +10649,12 @@ function vSyncVazio(pagina){
   return false;
 }
 
-function vDeltaHtml(cur, base, ctx){
-  if(!ctx) return '<span>sem base completa para comparar</span>';
-  var pct = (cur != null && base != null && base !== 0) ? cur / base - 1 : null;
-  if(pct == null) return '<span>sem base para comparar</span><span class="delta-ctx">' + escapeHtml(ctx) + '</span>';
-  if(Math.abs(pct) < 0.0005) pct = 0; // −0,0% vira "="
-  // vendas subindo = verde; caindo = vermelho (o contrário dos reembolsos). Seta e sinal repetem a informação.
-  var cls = pct > 0 ? 'delta-good' : pct < 0 ? 'delta-bad' : 'delta-flat';
-  var arrow = pct > 0 ? '▲' : pct < 0 ? '▼' : '=';
-  return '<span class="delta ' + cls + '"><span aria-hidden="true">' + arrow + '</span>' + fmtPctSigned(pct) + '</span><span class="delta-ctx">' + escapeHtml(ctx) + infoTip('v_comp') + '</span>';
+// variação de Vendas (etapa 40: notação IBCS, Δ absoluto · Δ%, cor pela polaridade; vendas sobem = bom por padrão)
+function vDeltaHtml(cur, base, ctx, fmt, polaridade){
+  if(!ctx) return ibcsLinha('vs período anterior', ibcsSemCmp('sem base completa para comparar'));
+  var rot = String(ctx).replace(/^vs\.? /, 'vs ');
+  if(cur == null || base == null || base === 0) return ibcsLinha(rot, ibcsSemCmp('sem base para comparar'));
+  return ibcsLinha(rot, ibcsDeltaHtml(cur, base, {fmt:fmt, polaridade:polaridade || 'sobe-bom'}) + infoTip('v_comp'));
 }
 
 function vSyncAbas(){
@@ -10122,26 +10758,36 @@ function vRenderKpis(per, r, b){
   var nome = per.tipo === 'mes' ? 'do mês' : per.tipo === 'semana' ? 'da semana' : 'do dia';
   setKpiLabel('vk-fat-label', 'Faturamento ' + nome + ' (R$)', 'v_fat');
   countTo(document.getElementById('vk-fat-value'), r.faturamento, fmtValor);
-  document.getElementById('vk-fat-sub').innerHTML = vDeltaHtml(r.faturamento, b && b.faturamento, ctx);
+  document.getElementById('vk-fat-sub').innerHTML = vDeltaHtml(r.faturamento, b && b.faturamento, ctx, fmtValor, 'faturamento');
   setKpiLabel('vk-ped-label', 'Pedidos de venda', 'v_ped');
   countTo(document.getElementById('vk-ped-value'), r.pedidos, fmtQtd);
-  document.getElementById('vk-ped-sub').innerHTML = vDeltaHtml(r.pedidos, b && b.pedidos, ctx);
+  document.getElementById('vk-ped-sub').innerHTML = vDeltaHtml(r.pedidos, b && b.pedidos, ctx, fmtQtd, 'pedidos');
   setKpiLabel('vk-ticket-label', 'Ticket médio de venda', 'v_ticket');
   countTo(document.getElementById('vk-ticket-value'), r.ticket || 0, fmtValor);
-  document.getElementById('vk-ticket-sub').innerHTML = vDeltaHtml(r.ticket, b && b.ticket, ctx);
+  document.getElementById('vk-ticket-sub').innerHTML = vDeltaHtml(r.ticket, b && b.ticket, ctx, fmtValor, 'ticket');
   setKpiLabel('vk-liq-label', 'Líquido estimado da venda (R$)', 'v_liq');
   countTo(document.getElementById('vk-liq-value'), r.liquido, fmtValor);
   var fatComFin = r.faturamento - r.fatSemFin;
-  document.getElementById('vk-liq-sub').innerHTML = !r.faturamento ? '<span>sem vendas no período</span>'
+  // linha de comparação como nos outros cartões (correção etapa 40). Com pedido aguardando Nuvem Pago em qualquer dos dois
+  // períodos o líquido fica incompleto, então não se compara ("sem base para comparar")
+  var liqCmp = !r.faturamento ? '' : vDeltaHtml(r.liquido, r.semFin || !b || b.semFin ? null : b.liquido, ctx, fmtValor, 'liquido');
+  document.getElementById('vk-liq-sub').innerHTML = liqCmp + (!r.faturamento ? '<span>sem vendas no período</span>'
     : !fatComFin ? '<span>' + vPedidosTxt(r.semFin) + ' aguardando Nuvem Pago</span>'
     : '<span>' + fmtPct(r.liquido / fatComFin) + ' do faturamento</span><span class="delta-ctx">' +
-      (r.semFin ? vPedidosTxt(r.semFin) + ' aguardando Nuvem Pago' : 'após taxas, juros e estornos') + '</span>';
+      (r.semFin ? vPedidosTxt(r.semFin) + ' aguardando Nuvem Pago' : 'após taxas, juros e estornos') + '</span>');
   var serie = vSeries();
-  function sp(id, campo, cor){ upsertChart(id, buildSparklineConfig(serie.map(function(x){ return x ? (x[campo] == null ? null : x[campo]) : null; }), getCss(cor))); }
-  sp('vk-fat-spark', 'faturamento', '--kpi-impacto');
-  sp('vk-ped-spark', 'pedidos', '--kpi-volume');
-  sp('vk-ticket-spark', 'ticket', '--kpi-ticket');
-  sp('vk-liq-spark', 'liquido', '--kpi-repr');
+  // etapa 40 (correção): mesma sparkline em SVG dos cartões do Início/Devoluções/Nuvem Pago — último ponto marcado e
+  // rotulado à direita, em espaço reservado, sem cobrir a linha. O slot mantém o id do antigo canvas.
+  var serieTit = vendas.aba === 'mes' ? 'por mês de ' + vendas.ano : vendas.aba === 'semana' ? 'nas últimas 12 semanas' : 'nos últimos 14 dias';
+  function sp(id, campo, rotulo, fmt){
+    var el = document.getElementById(id);
+    if(el) el.innerHTML = ibcsSparkHtml(serie.map(function(x){ return x ? (x[campo] == null ? null : x[campo]) : null; }), fmt, rotulo + ' ' + serieTit);
+  }
+  sp('vk-fat-spark', 'faturamento', 'Faturamento', fmtValor);
+  sp('vk-ped-spark', 'pedidos', 'Pedidos', fmtQtd);
+  sp('vk-ticket-spark', 'ticket', 'Ticket médio', fmtValor);
+  sp('vk-liq-spark', 'liquido', 'Líquido estimado', fmtValor);
+  Array.prototype.forEach.call(document.querySelectorAll('#vendas-kpis > .kpi-card'), function(c){ c.classList.add('ibcs-kpi'); });
 }
 
 // tabela por forma de pagamento (mês ou dia)
@@ -10188,9 +10834,15 @@ function vRenderAbaMes(per, lista, r){
     dias.push({d:d, ini:ini, decorrido: d <= info.decorridos, r:vResumo(vEntre(ini, new Date(ano, mes, d + 1)))});
   }
   var media = info.decorridos ? r.faturamento / info.decorridos : null;
+  // IBCS (etapa 40): mês em andamento → os dias que faltam aparecem hachurados na média diária (a mesma conta da projeção
+  // de fechamento, realizado ÷ dias corridos × dias do mês); meta do dia = meta mensal ÷ dias do mês (vsMetaPeriodo)
+  var andamentoMes = info.status === 'andamento' && media != null;
+  var metaDia = vsMetaPeriodo(vsMetas().faturamento, 'dia', info.nDias);
   var cfg = buildComboConfig({
     labels: dias.map(function(x){ return pad2(x.d); }),
-    barLabel:'Faturamento no dia', barData: dias.map(function(x){ return x.decorrido ? x.r.faturamento : null; }), barColor:getCss('--metric-valor'),
+    barLabel:'Faturamento no dia', barData: dias.map(function(x){ return x.decorrido ? x.r.faturamento : null; }), barColor:getCss('--dv-ac'),
+    fcLabel:'Projeção (média diária)', fcData: andamentoMes ? dias.map(function(x){ return x.decorrido ? null : media; }) : null,
+    metaLabel:'Meta do dia', metaValue: metaDia ? metaDia.verde : null,
     avgLabel:'Média diária (dias corridos)', avgValue: media, valueFormatter: fmtValor
   });
   cfg.options.plugins.tooltip.callbacks.afterBody = function(items){
@@ -10204,11 +10856,10 @@ function vRenderAbaMes(per, lista, r){
       return '<tr><td><button type="button" class="link-cell" data-v-dia="' + isoDate(x.ini) + '">' + V_DOW_CURTO[x.ini.getDay()] + ' ' + vDiaCurto(x.ini) + '</button></td><td class="num">' + fmtQtd(x.r.pedidos) + '</td><td class="num">' + fmtValor(x.r.faturamento) + '</td><td class="num">' + (x.r.ticket == null ? '—' : fmtValor(x.r.ticket)) + '</td><td class="num">' + fmtValor(x.r.liquido) + '</td></tr>';
     }).join('') + '</tbody></table>';
 
+  // etapa 40 (IBCS): barras horizontais ordenadas numa cor só, com rótulo direto (valor · % do faturamento), no lugar da rosca
   var meios = vMeiosLinhas(lista);
-  var cores = ['--kpi-ticket', '--kpi-impacto', '--kpi-volume', '--kpi-repr', '--text-muted'].map(getCss);
-  var cfgMeio = buildDoughnutConfig(meios.map(function(x){ return x.meio; }), meios.map(function(x){ return x.r.faturamento; }),
-    meios.map(function(x){ return cores[V_MEIOS.indexOf(x.meio)]; }), fmtValor);
-  cfgMeio.options.plugins.legend.position = 'bottom';   // coluna estreita: legenda embaixo deixa a rosca maior
+  var cfgMeio = buildRankBarConfig(meios.map(function(x){ return x.meio; }), meios.map(function(x){ return x.r.faturamento; }), fmtValor,
+    {label:'Faturamento', neutro:function(l){ return /^outr/i.test(l); }});
   upsertChart('v-chart-meio', cfgMeio);
   document.getElementById('v-table-meio').innerHTML = vTabelaMeios(lista, r);
 
@@ -11066,8 +11717,10 @@ function vsSemHtml(s, carga){
   return '<span class="vs-sem vs-sem-' + s + '">' + t + (carga ? '<span class="sr-only"> em relação à mediana dos últimos 6 meses</span>' : '<span class="sr-only"> em relação à meta</span>') + '</span>';
 }
 // diferença em pontos percentuais (ou relativa) contra a base, com a cor certa para "menor é melhor"
-function vsDeltaHtml(cur, base, pct, menorMelhor, ctx){
+// etapa 40: com fmt (indicador que não é percentual), mostra também o Δ absoluto (ibcsDeltaHtml); percentuais já saem em p.p.
+function vsDeltaHtml(cur, base, pct, menorMelhor, ctx, fmt){
   if(cur == null || base == null || !ctx) return '';
+  if(!pct && fmt && base) return ibcsDeltaHtml(cur, base, {fmt:fmt, polaridade:menorMelhor ? 'sobe-ruim' : 'sobe-bom'});
   var d = pct ? cur - base : (base ? cur / base - 1 : null);
   if(d == null) return '';
   if(Math.abs(d) < (pct ? 0.0005 : 0.0005)) d = 0;
@@ -11084,17 +11737,24 @@ function vsMini(label, def, valor, sub, sem){
 // metas nos cartões de faturamento, pedidos e ticket (mês: projeção do fechamento contra a meta)
 function vsRenderMetaCartoes(per, r){
   var metas = vsMetas(), dm = vDiasNoMes(per.ini.getFullYear(), per.ini.getMonth());
-  function linha(id, valor, meta, fmt, rotulo){
+  // etapa 40 (IBCS): linha "vs meta" com o Δ absoluto · Δ% e o bullet de 8px (realizado sólido, projeção hachurada, meta
+  // em traço). A conta é a mesma de antes: valor = projeção (mês/semana em andamento) ou realizado; ac = realizado.
+  function linha(id, valor, meta, fmt, rotulo, ac){
     var el = document.getElementById(id);
     if(!el) return;
     // ticket é média: a meta mensal vale para semana e dia sem escala (só faturamento e pedidos são proporcionais aos dias)
     var mp = rotulo === 'ticket' ? meta : vsMetaPeriodo(meta, per.tipo, dm);
     if(valor == null || !mp){ el.innerHTML = ''; return; }
-    // dia ainda em andamento (o do último pedido): sem semáforo, só o realizado até agora contra a meta do dia
-    if(per.tipo === 'dia' && per.parcial && rotulo !== 'ticket'){ el.innerHTML = '<span class="vs-meta-txt">até agora ' + fmt(valor) + ' · meta do dia ' + fmt(mp.verde) + infoTip('vs_meta') + '</span>'; return; }
-    var s = vsSemaforoMeta(valor, mp);
-    if(rotulo === 'ticket') rotulo = '';
-    el.innerHTML = vsSemHtml(s) + '<span class="vs-meta-txt">' + escapeHtml(rotulo) + fmt(valor) + ' · meta ' + fmt(mp.verde) + infoTip('vs_meta') + '</span>';
+    if(ac == null) ac = valor;
+    // dia ainda em andamento (o do último pedido): sem semáforo nem Δ, só o realizado até agora contra a meta do dia
+    if(per.tipo === 'dia' && per.parcial && rotulo !== 'ticket'){
+      el.innerHTML = '<span class="vs-meta-txt">até agora ' + fmt(valor) + ' · meta do dia ' + fmt(mp.verde) + infoTip('vs_meta') + '</span>' +
+        '<div class="v-meta-bullet">' + ibcsBulletHtml({ac:ac, pl:mp.verde, fmt:fmt, rotuloAc:'até agora', rotuloPl:'meta do dia'}) + '</div>';
+      return;
+    }
+    var s = vsSemaforoMeta(valor, mp), proj = rotulo === 'projeção ';
+    el.innerHTML = ibcsLinha(proj ? 'projeção vs meta' : 'vs meta', vsSemHtml(s) + ibcsDeltaHtml(valor, mp.verde, {fmt:fmt, polaridade:'sobe-bom'}) + infoTip('vs_meta')) +
+      '<div class="v-meta-bullet">' + ibcsBulletHtml({ac:ac, pl:mp.verde, fc:proj ? valor : null, fmt:fmt, rotuloFc:'projeção ' + ibcsFmtCurto(valor, fmt)}) + '</div>';
   }
   var proj = function(v){
     if(per.tipo === 'mes' && per.info && per.info.status === 'andamento' && per.info.decorridos) return v / per.info.decorridos * dm;
@@ -11102,9 +11762,9 @@ function vsRenderMetaCartoes(per, r){
     return v;
   };
   var andamento = (per.tipo === 'mes' && per.info && per.info.status === 'andamento') || (per.tipo === 'semana' && per.info && per.info.andamento);
-  linha('vk-fat-meta', proj(r.faturamento), metas.faturamento, fmtValor, andamento ? 'projeção ' : '');
-  linha('vk-ped-meta', proj(r.pedidos), metas.pedidos, fmtQtd, andamento ? 'projeção ' : '');
-  linha('vk-ticket-meta', r.ticket, metas.ticket, fmtValor, 'ticket');
+  linha('vk-fat-meta', proj(r.faturamento), metas.faturamento, fmtValor, andamento ? 'projeção ' : '', r.faturamento);
+  linha('vk-ped-meta', proj(r.pedidos), metas.pedidos, fmtQtd, andamento ? 'projeção ' : '', r.pedidos);
+  linha('vk-ticket-meta', r.ticket, metas.ticket, fmtValor, 'ticket', r.ticket);
 }
 
 // faixa dos indicadores-chave (topo de todas as áreas)
@@ -11118,15 +11778,21 @@ function vsRenderChave(per, lista, base){
   function carga(c, maior, pct){ return vsSemaforoCarga(i[c], med[c], maior, pct); }
   vendas._vsInd = i; vendas._vsSemCancDepois = carga('cancDepois', false, true);
   var semPecas = !vsCat().skus.length;
-  function ctxHtml(){ return ctx ? '<span class="delta-ctx">' + escapeHtml(ctx) + '</span>' : ''; }
-  function sub(c, pct, menor){
+  // vs-ref: no celular a referência sobe para uma linha própria e o Δ fica embaixo (CSS ≤560px, etapa 41)
+  // no celular o texto encurta ("MoM · 1–11/out"): duas versões, o CSS mostra uma só
+  function ctxHtml(){
+    if(!ctx) return '';
+    var curto = ctx.replace(/vs\. dias (\d+)–(\d+) de (\S+)/, function(m, a, b, mes){ return a + '–' + b + '/' + mes.slice(0, 3).toLowerCase(); });
+    return '<span class="delta-ctx vs-ref">' + (curto !== ctx ? '<span class="vs-ref-l">' + escapeHtml(ctx) + '</span><span class="vs-ref-c">' + escapeHtml(curto) + '</span>' : escapeHtml(ctx)) + '</span>';
+  }
+  function sub(c, pct, menor, fmt){
     if(semPecas && /^(pecasPorPedido|precoPeca)$/.test(c[1])) return '<span class="delta-ctx">aguardando os produtos dos pedidos</span>';
-    var d = vsDeltaHtml(i[c[1]], bi && bi[c[1]], pct, menor, ctx);
+    var d = vsDeltaHtml(i[c[1]], bi && bi[c[1]], pct, menor, ctx, fmt);
     return vsSemHtml(c[0], true) + d + (d ? ctxHtml() : '');
   }
   el.innerHTML =
-    vsMini('Peças por pedido', 'vs_pecas_ped', i.pecasPorPedido == null ? '—' : fmtDec1(i.pecasPorPedido), sub([carga('pecasPorPedido', true, false), 'pecasPorPedido'], false, false), carga('pecasPorPedido', true, false)) +
-    vsMini('Preço médio por peça', 'vs_preco_peca', i.precoPeca == null ? '—' : fmtValor(i.precoPeca), sub([carga('precoPeca', true, false), 'precoPeca'], false, false), carga('precoPeca', true, false)) +
+    vsMini('Peças por pedido', 'vs_pecas_ped', i.pecasPorPedido == null ? '—' : fmtDec1(i.pecasPorPedido), sub([carga('pecasPorPedido', true, false), 'pecasPorPedido'], false, false, fmtDec1), carga('pecasPorPedido', true, false)) +
+    vsMini('Preço médio por peça', 'vs_preco_peca', i.precoPeca == null ? '—' : fmtValor(i.precoPeca), sub([carga('precoPeca', true, false), 'precoPeca'], false, false, fmtValor), carga('precoPeca', true, false)) +
     vsMini('% de desconto', 'vs_desc', fmtPctOrDash(i.pctDesconto), sub([carga('pctDesconto', false, true), 'pctDesconto'], true, true), carga('pctDesconto', false, true)) +
     vsMini('Aprovação de pagamento', 'vs_aprov', fmtPctOrDash(i.aprovacao), sub([carga('aprovacao', true, true), 'aprovacao'], true, false), carga('aprovacao', true, true)) +
     vsMini('% de clientes recorrentes', 'vs_recorr', fmtPctOrDash(cli.pctRecorrentes) + ((vendas.anos || []).some(function(a){ return a < (vendas.anoServidor || vendas.ano); }) ? '<span class="delta-ctx">considera só as compras de ' + (vendas.anoServidor || vendas.ano) + '</span>' : ''),
@@ -11155,6 +11821,7 @@ function vsSetSec(sec){
   if(trocou) vsEstado().sel = null;
   renderVendas();
   if(trocou) replayClass(document.getElementById('vsec-' + sec), 'is-entering', 900);
+  if(trocou && currentRoute().id === 'vendas'){ syncNavAtivo(); syncNavThumb(true); }   // Filas acende o item do Para agir (etapa 41)
 }
 
 // navegação do período dentro das áreas (fora da Visão geral as setas da semana e do dia ficam na linha do período)
@@ -11656,6 +12323,7 @@ function vsRender(per, lista, r, b){
   if(cnt){ cnt.hidden = !nf; cnt.textContent = nf > 99 ? '99+' : String(nf); cnt.setAttribute('aria-hidden', 'true'); }
   var cntSr = document.getElementById('vsec-filas-sr');
   if(cntSr) cntSr.textContent = nf ? ', ' + fmtQtd(nf) + ' pendências' : '';
+  paraAgirAtualizar();   // Para agir › Filas de vendas (etapa 41)
   vsSyncSecs();
   var sec = vendas.sec || 'geral';
   if(sec === 'geral'){ vsRenderGeral(per, lista, base, r, b, chave); if(vendas.aba === 'semana') vsRenderHeat(); }
@@ -12200,7 +12868,7 @@ function opSetAba(aba){
 function opSubtitulo(){
   if(!oper.dados) return 'Pedidos e notas fiscais de venda da AJD (AfterClick)';
   var ps = oper.dados.peds, ini = ps.length ? ps[0].criado : '', fim = ps.length ? ps[ps.length - 1].criado : '';
-  return 'AJD (AfterClick) · ' + vPedidosTxt(ps.length) + ', de ' + opDataTxt(ini).slice(0, 10) + ' a ' + opDataTxt(fim).slice(0, 10) +
+  return 'Pedidos e notas fiscais de venda · AJD (AfterClick) · ' + vPedidosTxt(ps.length) + ', de ' + opDataTxt(ini).slice(0, 10) + ' a ' + opDataTxt(fim).slice(0, 10) +
     (oper.aba === 'pago' || oper.aba === 'tempo' ? ' · SLA de faturamento: ' + opDiasTxt(OPR_SLA_DIAS) + ' da criação do pedido' : '');
 }
 
@@ -12525,6 +13193,7 @@ function syncNavPago(){
   el.hidden = !n;
   el.classList.toggle('is-desatualizado', !!(n && velho));
   el.title = n ? vPedidosTxt(n) + ' pagos sem nota fiscal há mais de ' + OPR_SLA_DIAS + ' dias úteis' + (velho ? ' · dados de ' + opDmTxt(velho) + ': a extensão pode estar parada' : '') : '';
+  paraAgirAtualizar();
 }
 
 // coluna "AJD · NF" da Lista de pedidos
@@ -12735,14 +13404,18 @@ function npAplicar(r){
   lista.forEach(function(m){ anos[m.rec.getFullYear()] = true; });
   np.anos = Object.keys(anos).map(Number).sort();
   if(np.ano == null || np.anos.indexOf(np.ano) < 0){ np.ano = np.fim ? np.fim.getFullYear() : new Date().getFullYear(); np.mes = np.fim ? np.fim.getMonth() : 0; }
+  var nPend = npPeriodoPendente || recorteForca;
   if(np.paramsPendentes){
     var pp = np.paramsPendentes;
     np.paramsPendentes = null;
     npApplyParams(pp);
-  } else if(npPeriodoPendente){
-    npPeriodoPendente = false;
-    if(currentRoute().id === 'nuvem-pago') npAdotarPeriodo();
+    if(!recorteForca && currentRoute().id === 'nuvem-pago' && hashTemPeriodo('nuvempago', pp)){ var pn = periodoDaPagina('nuvem-pago'); if(pn) periodo = {ano:pn.ano, mes:pn.mes, origem:'nuvempago'}; nPend = false; }
   }
+  if(nPend){
+    npPeriodoPendente = false;
+    if(currentRoute().id === 'nuvem-pago'){ npAdotarPeriodo(); recorteForca = recorteSessao = false; }
+  }
+  paraAgirAtualizar();   // Para agir › A liberar (etapa 41)
 }
 
 /* ===================== Exportar para Excel (etapa 38) =====================
@@ -12859,19 +13532,39 @@ function expTela(){
   });
   expBaixar(itens, expArquivo([tituloPagina()]));
 }
+// onde o botão entra (correção da etapa 40): no cabeçalho, alinhado ao título — o .panel-header do quadro, o cabeçalho dos
+// cartões do Início (.apx-cab/.apx-tab-cab), o .panel-header mais perto da tabela (quadros lado a lado) ou o título da
+// seção logo antes do quadro (.in-head, ex.: Ponte do período). Sem nenhum deles: barra no canto do quadro (.exp-barra).
+function expCabecalho(painel, tabela){
+  var cab = painel.querySelector(':scope > .panel-header, :scope > .apx-cab, :scope > .apx-tab-cab');
+  if(cab) return cab;
+  for(var el = tabela.parentElement; el && el !== painel; el = el.parentElement){
+    var h = el.querySelector(':scope > .panel-header');
+    if(h) return h;
+  }
+  var ant = painel.previousElementSibling;
+  return ant && ant.classList.contains('in-head') ? ant : null;
+}
+var EXP_ICONE = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" focusable="false"><path d="M8 2.5v7.5M4.75 6.75 8 10l3.25-3.25M3 13.5h10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 // acrescenta os botões que faltam (chamado pelo observador, com no máximo uma passada por quadro de animação)
 var expAgendado = false;
 function expEnfeitar(){
   expAgendado = false;
   Array.prototype.forEach.call(document.querySelectorAll('.page .panel'), function(painel){
+    if(painel._expBtn && painel._expBtn.isConnected) return;
     if(painel.querySelector(':scope > .panel-header .exp-btn, :scope > .exp-barra .exp-btn')) return;
-    var temTabela = Array.prototype.some.call(painel.querySelectorAll('table.data-table'), function(t){ return t.closest('.panel') === painel; });
-    if(!temTabela) return;
+    var tabela = Array.prototype.filter.call(painel.querySelectorAll('table.data-table'), function(t){ return t.closest('.panel') === painel; })[0];
+    if(!tabela) return;
     var b = document.createElement('button');
-    b.type = 'button'; b.className = 'btn btn-sm btn-ghost exp-btn'; b.textContent = 'Exportar';
+    b.type = 'button'; b.className = 'btn btn-sm btn-ghost exp-btn'; b.innerHTML = EXP_ICONE + '<span>Exportar</span>';
     b.setAttribute('aria-label', 'Exportar "' + expTituloPainel(painel) + '" para Excel');
-    var cab = painel.querySelector(':scope > .panel-header');
-    if(cab) cab.appendChild(b);
+    b._expPainel = painel; painel._expBtn = b;
+    var cab = expCabecalho(painel, tabela);
+    if(cab){
+      // botão antigo de um quadro que já saiu da tela (o título ficou, o quadro foi redesenhado)
+      Array.prototype.forEach.call(cab.querySelectorAll(':scope > .exp-btn'), function(x){ if(x._expPainel && !x._expPainel.isConnected) x.remove(); });
+      cab.appendChild(b);
+    }
     else { var barra = document.createElement('div'); barra.className = 'exp-barra'; barra.appendChild(b); painel.insertBefore(barra, painel.firstChild); }
   });
   var pag = document.querySelector('.page:not([hidden])'), bt = document.getElementById('btn-exp-tela');
@@ -12891,7 +13584,7 @@ function expAgendar(){ if(!expAgendado){ expAgendado = true; setTimeout(expEnfei
   document.addEventListener('click', function(e){
     var b = e.target.closest && e.target.closest('.exp-btn, #btn-exp-tela');
     if(!b) return;
-    if(b.id === 'btn-exp-tela') expTela(); else expPainel(b.closest('.panel'));
+    if(b.id === 'btn-exp-tela') expTela(); else expPainel(b._expPainel && b._expPainel.isConnected ? b._expPainel : b.closest('.panel'));
   });
   expAgendar();
 })();
@@ -12917,6 +13610,13 @@ var at = {aba:'visao', per:'tudo', dados:null, carregando:false, erro:null, carr
 function atHoje(){ var d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
 function atData(s){ if(!s) return null; var p = String(s).split('-'); return p.length === 3 ? new Date(+p[0], +p[1] - 1, +p[2]) : null; }
 function atDias(a, b){ return Math.round((b - a) / 864e5); }
+// dias úteis depois de a até b (inclusive), sem sábado, domingo e AT_FERIADOS; negativo se b < a
+function atDiasUteis(a, b){
+  if(b < a) return -atDiasUteis(b, a);
+  var n = 0, d = new Date(a.getFullYear(), a.getMonth(), a.getDate() + 1);
+  for(; d <= b; d.setDate(d.getDate() + 1)){ var w = d.getDay(); if(w !== 0 && w !== 6 && AT_FERIADOS.indexOf(isoDate(d)) < 0) n++; }
+  return n;
+}
 function atPct(a, b){ return b ? a / b : null; }
 function atSoma(lista, f){ return lista.reduce(function(s, x){ return s + (f(x) || 0); }, 0); }
 function atSit(st){ return '<span class="v-sit ' + (AT_ST_CLASSE[st] || '') + '">' + AT_ST_NOME[st] + '</span>'; }
@@ -12938,7 +13638,7 @@ function carregarAtacado(forcar){
     if(err && err.code === 'senha_necessaria'){ pedirSenha('Seu acesso mudou. Entre novamente para continuar.'); return; }
     at.erro = err && err.message ? err.message : String(err);
     if(at.dados) toast('Não foi possível atualizar o Atacado. ' + at.erro);
-  }).then(function(){ at.carregando = false; renderAtacadoSeVisivel(); });
+  }).then(function(){ at.carregando = false; renderAtacadoSeVisivel(); if(typeof paraAgirAtualizar === 'function') paraAgirAtualizar(); });
 }
 
 function atPreparar(r){
@@ -13269,24 +13969,24 @@ function atChequesAbertos(){
   var hoje = atHoje();
   return at.dados.cheques.filter(function(c){ return c.st === 'disp' || c.st === 'proc' || c.st === 'pend'; }).map(function(c){
     var ref = c.st === 'proc' ? (c.dep || c.venc) : c.venc;
-    var atraso = ref ? atDias(ref, hoje) : null;
+    var atraso = ref ? atDiasUteis(ref, hoje) : null;   // regra da loja: 3 dias ÚTEIS (decisão de 11/11/2026)
     var x = Object.assign({}, c);
-    x.diasVenc = c.venc ? atDias(hoje, c.venc) : null;   // >0 a vencer, <0 vencido
+    x.diasVenc = c.venc ? atDias(hoje, c.venc) : null;   // >0 a vencer, <0 vencido (corridos)
+    x.vencUteis = c.venc && c.venc < hoje ? atDiasUteis(hoje, c.venc) : null;   // <0: dias úteis de atraso
     x.alerta = atraso != null && atraso > AT_TOLERANCIA_DIAS;
     return x;
   });
 }
-function atFaixa(dias){
+function atFaixa(dias, uteis){
   if(dias == null) return 'sem data';
-  if(dias < -AT_TOLERANCIA_DIAS) return 'Vencido há mais de 3 dias';
-  if(dias < 0) return 'Vencido até 3 dias';
+  if(dias < 0) return uteis != null && uteis < -AT_TOLERANCIA_DIAS ? 'Vencido há mais de 3 dias úteis' : 'Vencido até 3 dias úteis';
   if(dias <= 7) return '0–7 dias';
   if(dias <= 30) return '8–30 dias';
   if(dias <= 60) return '31–60 dias';
   if(dias <= 90) return '61–90 dias';
   return 'Mais de 90 dias';
 }
-var AT_FAIXAS = ['Vencido há mais de 3 dias', 'Vencido até 3 dias', '0–7 dias', '8–30 dias', '31–60 dias', '61–90 dias', 'Mais de 90 dias', 'sem data'];
+var AT_FAIXAS = ['Vencido há mais de 3 dias úteis', 'Vencido até 3 dias úteis', '0–7 dias', '8–30 dias', '31–60 dias', '61–90 dias', 'Mais de 90 dias', 'sem data'];
 
 /* ---- Endereço ---- */
 function atBuildHash(){
@@ -13301,10 +14001,10 @@ function atApplyParams(p){
 }
 function atSubtitulo(){
   if(!at.dados) return 'Caixa do atacado (Sisplan) e cheques da planilha financeira';
-  var cob = atCobertura(), partes = [];
+  // cabeçalho único (etapa 40): o quê · de onde · período; as datas de leitura vão para o "Dados até" do topo
+  var cob = atCobertura(), partes = ['Caixa e cheques do atacado · Sisplan e planilha financeira'];
   partes.push(at.per === 'tudo' ? 'Todo o período' : vMesNome(+at.per.slice(5) - 1) + ' ' + at.per.slice(0, 4));
   if(cob) partes.push('caixa de ' + fmtDate(cob.ini) + ' a ' + fmtDate(cob.fim));
-  if(at.dados.lidoEm) partes.push('cheques lidos ' + fmtDateTime(at.dados.lidoEm));
   return partes.join(' · ');
 }
 
@@ -13315,8 +14015,10 @@ function renderAtacadoSeVisivel(){
   renderAtacado();
 }
 
+// etapa 40: mesmo desenho do KPI card IBCS (.ibcs-kpi). O Atacado ainda não tem meta nem período de comparação, por isso
+// o cartão não mostra Δ nem bullet (não se inventa referência); a cor de destaque sem significado saiu.
 function atKpi(rotulo, valor, sub, cor){
-  return '<div class="kpi-card" style="--kpi-accent:var(' + (cor || '--kpi-ticket') + ')"><div class="kpi-label">' + rotulo + '</div><div class="kpi-value">' + valor + '</div><div class="kpi-sub">' + (sub || '') + '</div></div>';
+  return '<div class="kpi-card ibcs-kpi"><div class="kpi-label">' + rotulo + '</div><div class="kpi-value">' + valor + '</div><div class="kpi-sub">' + (sub || '') + '</div></div>';
 }
 function atPainel(titulo, meta, corpo, largo){
   return '<div class="panel' + (largo ? ' panel-wide' : '') + '"><div class="panel-header"><div class="panel-title">' + titulo + '</div>' + (meta ? '<div class="panel-meta">' + meta + '</div>' : '') + '</div>' + corpo + '</div>';
@@ -13417,9 +14119,9 @@ function atTelaVisao(){
     var comDado = valores.filter(function(v){ return v != null; });
     upsertChart('at-chart-dias', buildComboConfig({labels:labels, barLabel:'Faturamento líquido', barData:valores, barColor:getCss('--chart-ink'),
       avgValue:comDado.length ? atSoma(comDado, function(v){ return v; }) / comDado.length : null, avgLabel:'Média por dia com relatório', valueFormatter:fmtValor}));
-    var cores = [getCss('--chart-accent'), getCss('--chart-ink'), getCss('--chart-ink-2'), getCss('--chart-ink-3'), getCss('--text-muted')];
+    // etapa 40 (IBCS): barras já ordenadas numa cor só (antes, 5 tons por posição, cor sem significado)
     upsertChart('at-chart-mix', {type:'bar', fmtAria:fmtValor,
-      data:{labels:mix.map(function(x){ return x.k; }), datasets:[{label:'Valor', data:mix.map(function(x){ return x.v; }), backgroundColor:mix.map(function(_, i){ return cores[Math.min(i, cores.length - 1)]; }), borderRadius:6, maxBarThickness:22}]},
+      data:{labels:mix.map(function(x){ return x.k; }), datasets:[{label:'Valor', data:mix.map(function(x){ return x.v; }), backgroundColor:getCss('--dv-ac'), borderRadius:6, maxBarThickness:22}]},
       options:{indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:function(c){ return fmtValor(c.parsed.x) + ' · ' + fmtPctOrDash(atPct(c.parsed.x, totMix)); }}}},
         scales:{x:{grid:{color:getCss('--chart-grid')}, ticks:yTicks(fmtValor), beginAtZero:true}, y:{grid:{display:false}, ticks:{color:getCss('--text-secondary')}}}}});
   }};
@@ -13444,15 +14146,15 @@ function atTelaCarteira(){
   var w = d.wallets, cx = d.caixa;
   var html = '<div class="kpi-grid">' +
     atKpi('Cheques em mãos a vencer', fmtValor(soma(emMaos)), fmtQtd(conta(emMaos)) + ' cheques', '--kpi-ticket') +
-    atKpi('Vencidos e não depositados', fmtValor(soma(vencNaoDep)), fmtQtd(conta(vencNaoDep)) + ' cheques · mais de 3 dias do vencimento', '--kpi-impacto') +
-    atKpi('Depositados sem compensar', fmtValor(soma(depSemComp)), fmtQtd(conta(depSemComp)) + ' há mais de 3 dias · ' + fmtValor(soma(function(c){ return c.st === 'proc' && !c.alerta; })) + ' dentro do prazo', '--kpi-volume') +
+    atKpi('Vencidos e não depositados', fmtValor(soma(vencNaoDep)), fmtQtd(conta(vencNaoDep)) + ' cheques · mais de 3 dias úteis do vencimento', '--kpi-impacto') +
+    atKpi('Depositados sem compensar', fmtValor(soma(depSemComp)), fmtQtd(conta(depSemComp)) + ' há mais de 3 dias úteis · ' + fmtValor(soma(function(c){ return c.st === 'proc' && !c.alerta; })) + ' dentro do prazo', '--kpi-volume') +
     atKpi('Cheques devolvidos', fmtValor(atSoma(dev, function(c){ return c.valor; })), fmtQtd(dev.length) + ' cheques · taxa 12 meses ' + fmtPctOrDash(taxaDev), '--kpi-impacto') +
     atKpi('Maquininhas a receber', cx && cx.walletsReceber != null ? fmtValor(cx.walletsReceber) : '—', w && w.atualizado ? 'planilha atualizada em ' + escapeHtml(w.atualizado) : 'aba WALLETS', '--kpi-repr') +
     atKpi('Dinheiro em caixa', cx && cx.dinheiro != null ? fmtValor(cx.dinheiro) : '—', 'aba DINHEIRO', '--kpi-repr') +
     '</div>';
   // aging
   var faixas = {}; AT_FAIXAS.forEach(function(f){ faixas[f] = {n:0, v:0}; });
-  abertos.forEach(function(c){ var f = atFaixa(c.diasVenc); faixas[f].n++; faixas[f].v += c.valor; });
+  abertos.forEach(function(c){ var f = atFaixa(c.diasVenc, c.vencUteis); faixas[f].n++; faixas[f].v += c.valor; });
   var totAb = atSoma(abertos, function(c){ return c.valor; });
   // concentração por emitente
   var porEmit = {};
@@ -13552,8 +14254,8 @@ function atTelaFilas(){
     return atPainel(titulo + ' <span class="v-sit at-fila-n ' + (n ? 'is-cancelado' : 'is-venda') + '">' + fmtQtd(n) + '</span>', meta, '<div class="at-fila">' + corpo + '</div>', true);
   };
   var html = '<div class="panels-grid">' +
-    bloco('Cheques vencidos e não depositados', 'em mãos há mais de 3 dias depois do vencimento · ' + fmtValor(atSoma(f1, function(c){ return c.valor; })), f1.length, atTabela(cabCheque, f1.map(linhaCheque), 'Nenhum cheque vencido parado.')) +
-    bloco('Cheques depositados e não compensados', 'mais de 3 dias desde o depósito · ' + fmtValor(atSoma(f2, function(c){ return c.valor; })), f2.length, atTabela(cabCheque, f2.map(linhaCheque), 'Nenhum depósito atrasado.')) +
+    bloco('Cheques vencidos e não depositados', 'em mãos há mais de 3 dias úteis depois do vencimento · ' + fmtValor(atSoma(f1, function(c){ return c.valor; })), f1.length, atTabela(cabCheque, f1.map(linhaCheque), 'Nenhum cheque vencido parado.')) +
+    bloco('Cheques depositados e não compensados', 'mais de 3 dias úteis desde o depósito · ' + fmtValor(atSoma(f2, function(c){ return c.valor; })), f2.length, atTabela(cabCheque, f2.map(linhaCheque), 'Nenhum depósito atrasado.')) +
     bloco('Cheques a depositar nos próximos 7 dias', fmtValor(atSoma(f3, function(c){ return c.valor; })), f3.length, atTabela(cabCheque, f3.map(linhaCheque), 'Nenhum cheque vence nos próximos 7 dias.')) +
     bloco('Clientes com cheque devolvido e cheque em aberto', 'risco de nova devolução · ' + fmtValor(atSoma(f4, function(c){ return c.valor; })), f4.length, atTabela(cabCheque, f4.map(linhaCheque), 'Nenhum.')) +
     bloco('Vendas com desconto fora do padrão', 'diferente de 0% e 10% · período selecionado', f5.length, atTabela([{t:'Venda'}, {t:'Data'}, {t:'Cliente'}, {t:'Vendedora'}, {t:'Desconto', num:true}, {t:'Líquido', num:true}],
@@ -13608,7 +14310,7 @@ function atTrocarPlanilha(){
 document.addEventListener('click', function(e){
   var el = e.target.closest && e.target.closest('#at-root [data-at-aba], #at-root [data-at-per], #at-root [data-at-acao]');
   if(!el) return;
-  if(el.dataset.atAba){ at.aba = el.dataset.atAba; renderAtacado(); atFocar('[data-at-aba="' + at.aba + '"]'); pulseContent(); return; }
+  if(el.dataset.atAba){ at.aba = el.dataset.atAba; renderAtacado(); atNavAtivo(); atFocar('[data-at-aba="' + at.aba + '"]'); pulseContent(); return; }
   if(el.dataset.atPer){ at.per = el.dataset.atPer; renderAtacado(); atFocar('[data-at-per="' + at.per + '"]'); pulseContent(); return; }
   if(el.dataset.atAcao === 'atualizar'){ at.erro = null; at.sinc.feito = false; carregarAtacado(true); return; }
   if(el.dataset.atAcao === 'planilha'){ atTrocarPlanilha(); return; }
@@ -13626,8 +14328,10 @@ document.addEventListener('keydown', function(e){
   else if(e.key === 'End') n = AT_ABAS.length - 1;
   if(n < 0) return;
   e.preventDefault();
-  at.aba = AT_ABAS[n]; renderAtacado(); atFocar('[data-at-aba="' + at.aba + '"]'); pulseContent();
+  at.aba = AT_ABAS[n]; renderAtacado(); atNavAtivo(); atFocar('[data-at-aba="' + at.aba + '"]'); pulseContent();
 });
+// item ativo do menu acompanha a aba (Filas acende "Filas do atacado" no Para agir, etapa 41); protegido para o teste isolado do bloco
+function atNavAtivo(){ if(typeof syncNavAtivo === 'function'){ syncNavAtivo(); if(typeof syncNavThumb === 'function') syncNavThumb(true); } }
 
 function npLimpar(){
   np.linhas = null; np.versao = null; np.erro = null; np.consolidando = null; np.checkedAt = null;
@@ -13743,8 +14447,9 @@ function npAdotarPeriodo(){
 function npSubtitulo(){
   if(!np.linhas) return 'Extratos do Nuvem Pago (saldo disponível)';
   var cob = 'extratos de ' + fmtDate(np.inicio) + ' a ' + fmtDate(np.fim);
-  if(np.aba === 'liberar') return 'Vendas pagas desde ' + fmtDate(np.inicio) + ' × ' + cob;
-  return vMesNome(np.mes) + ' ' + np.ano + ' · pelo dia de recebimento · ' + cob;
+  // cabeçalho único (etapa 40): o quê · de onde · período
+  if(np.aba === 'liberar') return 'Vendas pagas ainda não liberadas · Nuvemshop × extrato do Nuvem Pago · desde ' + fmtDate(np.inicio) + ' · ' + cob;
+  return (np.aba === 'conciliacao' ? 'Conciliação dos recebimentos' : 'Recebimentos') + ' · extrato do Nuvem Pago, pelo dia de recebimento · ' + vMesNome(np.mes) + ' ' + np.ano + ' · ' + cob;
 }
 
 /* ---- Telas ---- */
@@ -13869,6 +14574,30 @@ function npRenderKpis(r){
   setKpiLabel('npk-transf-label', 'Transferido para o banco', 'np_transf');
   countTo(document.getElementById('npk-transf-value'), r.transferido, fmtValor);
   document.getElementById('npk-transf-sub').innerHTML = '<span>' + fmtQtd(r.transferencia.n) + (r.transferencia.n === 1 ? ' transferência' : ' transferências') + '</span><span class="delta-ctx">sem a tarifa: ' + fmtValor(-r.transferencia.bruto) + '</span>';
+  npRenderKpisIbcs(r);
+}
+// etapa 40 (IBCS): variação "vs mês anterior" (o mesmo npResumo do mês de antes, que já aparece nos cartões de mês) só
+// quando os dois meses estão completos no extrato; senão diz por quê. Polaridade: líquido sobe = bom; taxas e saídas
+// sobem = ruim; transferido é neutro. Sparkline: os meses do ano até o escolhido.
+function npRenderKpisIbcs(r){
+  var per = npPeriodoAtual(), pIni = new Date(np.ano, np.mes - 1, 1), rb = null, motivo = '';
+  if(per.parcial) motivo = 'mês ainda aberto (extrato até ' + vDiaCurto(np.fim) + ')';
+  else if(per.desde || !np.inicio || np.inicio > pIni) motivo = 'extratos só desde ' + (np.inicio ? fmtDate(np.inicio) : '—');
+  else rb = npResumo(npEntre(pIni, per.ini));
+  var serie = [];
+  for(var m = 0; m <= np.mes; m++){
+    var mi = npMesInfo(np.ano, m), rm = npResumo(npEntre(mi.ini, mi.fim));
+    serie.push(rm.n ? rm : null);
+  }
+  function aplicar(id, cur, base, pol, campo, titulo){
+    var sub = document.getElementById(id + '-sub');
+    if(sub) sub.innerHTML += '<div class="ibcs-deltas">' + ibcsLinha('vs mês anterior', rb ? ibcsDeltaHtml(cur, base, {fmt:fmtValor, polaridade:pol}) : ibcsSemCmp(motivo)) + '</div>';
+    ibcsSparkNoCartao(id + '-value', serie.map(function(x){ return x ? campo(x) : null; }), fmtValor, titulo + ' por mês de ' + np.ano);
+  }
+  aplicar('npk-vendas', r.venda.liquido, rb && rb.venda.liquido, 'liquido', function(x){ return x.venda.liquido; }, 'Líquido liberado');
+  aplicar('npk-custo', r.custoVendas, rb && rb.custoVendas, 'custo', function(x){ return x.custoVendas; }, 'Taxas e juros');
+  aplicar('npk-saidas', -r.saidas, rb && -rb.saidas, 'estorno', function(x){ return -x.saidas; }, 'Estornos e chargebacks');
+  aplicar('npk-transf', r.transferido, rb && rb.transferido, 'transferido', function(x){ return x.transferido; }, 'Transferido');
 }
 
 function npRenderMovimento(per, lista, r){
@@ -13882,9 +14611,11 @@ function npRenderMovimento(per, lista, r){
   }
   var cfg = buildComboConfig({
     labels: dias.map(function(x){ return pad2(x.d); }),
-    barLabel:'Resultado do dia', barData: dias.map(function(x){ return x.coberto ? x.r.resultado : null; }), barColor:getCss('--metric-valor'),
+    barLabel:'Resultado do dia', barData: dias.map(function(x){ return x.coberto ? x.r.resultado : null; }), barColor:getCss('--dv-ac'),
     valueFormatter: fmtValor
   });
+  // IBCS (etapa 40): dia com resultado negativo em --dv-bad; a forma (barra abaixo do zero) e o sinal no tooltip repetem o sinal
+  cfg.data.datasets[0].backgroundColor = dias.map(function(x){ return x.coberto && x.r.resultado < 0 ? getCss('--dv-bad') : getCss('--dv-ac'); });
   cfg.options.plugins.tooltip.callbacks.afterBody = function(items){
     var x = items.length ? dias[items[0].dataIndex] : null;
     return x && x.r.n ? 'vendas ' + fmtValor(x.r.venda.liquido) + ' · estornos e contestações ' + fmtValor(x.r.saidas) : '';
@@ -14333,6 +15064,8 @@ function npSetAba(aba){
   var trocou = np.aba !== aba;
   np.aba = aba;
   renderNuvemPagoSeVisivel();
+  // etapa 40: título e item ativo do menu acompanham a aba (Conciliação tem item próprio no menu)
+  if(trocou && currentRoute().id === 'nuvem-pago'){ syncPageTitle(); syncNavAtivo(); syncNavThumb(true); }
   if(trocou){ var shown = document.getElementById('nptab-' + aba); replayClass(shown && shown.closest('.page'), 'is-entering', 900); }
 }
 
@@ -15027,10 +15760,11 @@ function dvJanelaTxt(){
   return '';
 }
 function dvSubtitulo(){
-  if(!devol.sols) return 'Casos de devolução e troca exportados da AfterClick';
+  if(!devol.sols) return 'Casos de devolução · AfterClick';
   var ativos = devol.sols.filter(function(o){ return DV_ATIVAS.indexOf(o.etapa) >= 0; }).length;
   var ult = devol.sols.length ? devol.sols[devol.sols.length - 1].criada : null;
-  return 'AfterClick · ' + dvSolTxt(devol.sols.length) + ' · ' + fmtQtd(ativos) + ' em andamento' +
+  // cabeçalho único (etapa 40): o quê · de onde · recorte (a janela das abas entra depois, em renderPageSub)
+  return 'Casos de devolução · AfterClick · ' + dvSolTxt(devol.sols.length) + ' · ' + fmtQtd(ativos) + ' em andamento' +
     (ult ? ' · último aberto em ' + fmtDate(ult) + ' ' + vHora(ult) : '') + (devol.ultimaLeitura ? ' · export de ' + fmtDate(devol.ultimaLeitura) : '');
 }
 
@@ -15114,14 +15848,12 @@ function renderDevolucoes(){
   syncUrl();
 }
 
-// devoluções subindo = vermelho (o contrário das vendas)
-function dvDeltaHtml(cur, base, ctx){
-  var pct = (cur != null && base) ? cur / base - 1 : null;
-  if(pct == null) return '<span>sem base para comparar</span>' + (ctx ? '<span class="delta-ctx">' + escapeHtml(ctx) + '</span>' : '');
-  if(Math.abs(pct) < 0.0005) pct = 0;
-  var cls = pct > 0 ? 'delta-bad' : pct < 0 ? 'delta-good' : 'delta-flat';
-  var arrow = pct > 0 ? '▲' : pct < 0 ? '▼' : '=';
-  return '<span class="delta ' + cls + '"><span aria-hidden="true">' + arrow + '</span>' + fmtPctSigned(pct) + '</span><span class="delta-ctx">' + escapeHtml(ctx) + '</span>';
+// devoluções subindo = vermelho (o contrário das vendas). Etapa 40: notação IBCS (Δ absoluto · Δ%) e polaridade por KPI
+// (padrão "sobe-ruim"; recebidas e encerradas são fluxo de trabalho, sem juízo: "neutro")
+function dvDeltaHtml(cur, base, ctx, polaridade){
+  var rot = ctx ? String(ctx).replace(/^vs\.? /, 'vs ') : 'vs período anterior';
+  if(cur == null || !base) return ibcsLinha(rot, ibcsSemCmp('sem base para comparar'));
+  return ibcsLinha(rot, ibcsDeltaHtml(cur, base, {fmt:fmtQtd, polaridade:polaridade || 'sobe-ruim'}));
 }
 // pílulas dos quatro eixos e dos alertas: o mesmo componente (.v-sit) e as mesmas cores em todas as telas
 function dvEtapaHtml(id){ return '<span class="v-sit dv-etapa is-' + id + '">' + escapeHtml(dvEtapaLabel(id)) + '</span>'; }
@@ -15166,6 +15898,7 @@ function syncNavFilas(){
   el.textContent = n ? fmtQtd(n) : '';
   el.hidden = !n;
   el.title = n ? dvSolTxt(n) + ' em filas críticas' : '';
+  paraAgirAtualizar();
 }
 
 function dvRenderFila(){
@@ -15454,21 +16187,26 @@ function dvRenderRitmo(){
   var ult = n >= 2 ? baldes[n - 2] : baldes[n - 1], ant = n >= 3 ? baldes[n - 3] : null;
   var nome = {dia:['Ontem', 'vs. anteontem'], semana:['Semana passada', 'vs. semana anterior'], mes:['Mês passado', 'vs. mês anterior']}[devol.ritmo];
   var ctx = ant ? nome[1] + ' (' + ant.nome + ')' : '';
-  function kpi(id, label, def, v, b, fmt, sub){
+  // etapa 40 (IBCS): Δ absoluto · Δ% com a polaridade de cada KPI (abertos e peças pioram ao subir; recebidas e encerradas
+  // são fluxo de trabalho, sem juízo) e sparkline dos períodos completos, terminando no período do cartão
+  var completos = n >= 2 ? baldes.slice(0, n - 1) : baldes;
+  function kpi(id, label, def, v, b, fmt, sub, pol, campo){
     setKpiLabel(id + '-label', label, def);
     countTo(document.getElementById(id + '-value'), v || 0, fmt);
-    document.getElementById(id + '-sub').innerHTML = sub != null ? sub : dvDeltaHtml(v, b, ctx);
+    document.getElementById(id + '-sub').innerHTML = sub != null ? sub : dvDeltaHtml(v, b, ctx, pol);
+    ibcsSparkNoCartao(id + '-value', completos.map(function(x){ return typeof campo === 'function' ? campo(x) : x.r[campo]; }), fmt, label + ' por ' + ({dia:'dia', semana:'semana', mes:'mês'})[devol.ritmo]);
   }
   var u = ult ? ult.r : dvContar(dvHoje(), dvHoje()), a = ant ? ant.r : null;
   document.getElementById('dv-ritmo-periodo').innerHTML = ult ? '<strong>' + escapeHtml(nome[0] + ' · ' + ult.nome) + '</strong>' : '';
-  kpi('dk-abertas', 'Casos abertos', 'dv_abertas', u.abertas, a && a.abertas, fmtQtd);
+  kpi('dk-abertas', 'Casos abertos', 'dv_abertas', u.abertas, a && a.abertas, fmtQtd, null, 'devolucao', 'abertas');
   var subAb = document.getElementById('dk-abertas-sub');
-  subAb.innerHTML += '<span class="delta-ctx">' + fmtQtd(u.validas) + ' válidos (' + fmtQtd(u.trocas) + (u.trocas === 1 ? ' troca' : ' trocas') + ') · ' + fmtQtd(u.cancDepois) + ' cancelados depois</span>';
-  kpi('dk-pecas', 'Peças devolvidas', 'dv_pecas', u.pecas, a && a.pecas, fmtQtd);
-  kpi('dk-recebidas', 'Recebidas na loja', 'dv_recebidas', u.recebidas, a && a.recebidas, fmtQtd);
+  subAb.innerHTML += '<div class="ibcs-d-meta">' + fmtQtd(u.validas) + ' válidos (' + fmtQtd(u.trocas) + (u.trocas === 1 ? ' troca' : ' trocas') + ') · ' + fmtQtd(u.cancDepois) + ' cancelados depois</div>';
+  kpi('dk-pecas', 'Peças devolvidas', 'dv_pecas', u.pecas, a && a.pecas, fmtQtd, null, 'devolucao', 'pecas');
+  kpi('dk-recebidas', 'Recebidas na loja', 'dv_recebidas', u.recebidas, a && a.recebidas, fmtQtd, null, 'recebidas', 'recebidas');
   var controle = devol.inicio ? 'controle de status desde ' + fmtDate(devol.inicio) : 'controle de status ainda não começou';
   kpi('dk-encerradas', 'Encerradas', 'dv_encerradas', u.encerradas, a && a.encerradas, fmtQtd,
-    devol.inicio && ult && ult.fim > vAddDias(devol.inicio, 1) ? null : '<span>' + escapeHtml(controle) + '</span>');
+    devol.inicio && ult && ult.fim > vAddDias(devol.inicio, 1) ? null : '<span>' + escapeHtml(controle) + '</span>', 'encerradas',
+    function(x){ return devol.inicio && x.fim > vAddDias(devol.inicio, 1) ? x.r.encerradas : null; });
 
   var cfg = buildComboConfig({
     labels: baldes.map(function(x){ return x.label; }),
@@ -15791,12 +16529,17 @@ function dvRenderPecas(){
       '</tbody></table>' +
       '<div class="empty-note">"Sinais de uso" aparece como motivo na AfterClick, mas é achado da conferência: fica num grupo próprio, fora dos motivos da cliente.</div>'
     : '<div class="empty-note">Nenhuma devolução no período.</div>';
+  // etapa 40 (IBCS): Pareto horizontal (ordenado, numa cor só, com % acumulado) no lugar da rosca de 9 cores; as cores de
+  // status (vermelho/âmbar) deixam de ser cor de categoria. "Sinais de uso" e "sem motivo" ficam no fim, em cinza.
   var gs = DV_GRUPOS.filter(function(g){ return grupos[g.id]; });
-  var gCfg = buildDoughnutConfig(gs.map(function(g){ return g.label; }), gs.map(function(g){ return grupos[g.id]; }), gs.map(function(g){ return getCss(g.cor); }), fmtQtd);
-  // fatia → Casos daquele grupo de motivo, abertos na mesma janela
+  var gCfg = buildRankBarConfig(gs.map(function(g){ return g.id === 'uso' ? 'Sinais de uso' : g.label; }), gs.map(function(g){ return grupos[g.id]; }), fmtQtd,
+    {label:'Peças', pareto:true, neutro:function(l){ return /sinais de uso|sem motivo|sem grupo|outro/i.test(l); }});
+  // barra → Casos daquele grupo de motivo, abertos na mesma janela (gCfg.ordem leva da barra ao grupo original)
   gCfg.options.onClick = function(evt, els){
-    if(els && els.length && gs[els[0].index]) dvIrParaCasos({grupo:gs[els[0].index].id, jan:devol.pecas.janela});
+    var g = els && els.length ? gs[gCfg.ordem[els[0].index]] : null;
+    if(g) dvIrParaCasos({grupo:g.id, jan:devol.pecas.janela});
   };
+  gCfg.options.onHover = function(evt, els){ if(evt.native && evt.native.target) evt.native.target.style.cursor = els && els.length ? 'pointer' : 'default'; };
   upsertChart('dv-chart-grupos', gCfg);
 
   // tamanhos (todos os produtos devolvidos)
@@ -17498,14 +18241,11 @@ function inKpi(accent, label, defKey, valor, sub, cls){
     '<div class="kpi-value">' + valor + '</div><div class="kpi-sub">' + sub + '</div></div>';
 }
 // variação contra a base; ruimSobe = quando o número sobe é ruim (estornos, reembolsos)
-function inDelta(cur, base, ctx, ruimSobe){
+// etapa 40: notação IBCS (ibcsDeltaHtml); ruimSobe aceita também o nome da polaridade; fmt (opcional) liga o Δ absoluto
+function inDelta(cur, base, ctx, ruimSobe, fmt){
   var pct = (cur != null && base != null && base !== 0) ? cur / base - 1 : null;
   if(pct == null) return '<span>sem base para comparar</span><span class="delta-ctx">' + escapeHtml(ctx) + '</span>';
-  if(Math.abs(pct) < 0.0005) pct = 0;
-  var bom = ruimSobe ? pct < 0 : pct > 0;
-  var cls = pct === 0 ? 'delta-flat' : bom ? 'delta-good' : 'delta-bad';
-  var arrow = pct > 0 ? '▲' : pct < 0 ? '▼' : '=';
-  return '<span class="delta ' + cls + '"><span aria-hidden="true">' + arrow + '</span>' + fmtPctSigned(pct) + '</span><span class="delta-ctx">' + escapeHtml(ctx) + infoTip('in_comp') + '</span>';
+  return ibcsDeltaHtml(cur, base, {fmt:fmt, polaridade:ruimSobe, soPct:!fmt}) + '<span class="delta-ctx">' + escapeHtml(ctx) + infoTip('in_comp') + '</span>';
 }
 function inSemBase(motivo){ return '<span>sem comparação</span><span class="delta-ctx">' + escapeHtml(motivo) + '</span>'; }
 
@@ -18112,32 +18852,44 @@ function apxJanela(C){
   return x;
 }
 // variação no canto do cartão (a mesma regra de inDelta: abaixo de 0,05% conta como estável)
-function apxDelta(cur, base){
-  var pct = (cur != null && base != null && base !== 0) ? cur / base - 1 : null;
-  if(pct == null) return '';
-  if(Math.abs(pct) < 0.0005) pct = 0;
-  var cls = pct === 0 ? 'delta-flat' : pct > 0 ? 'delta-good' : 'delta-bad', txt = fmtPctSigned(pct);
-  return '<span class="delta apx-delta ' + cls + '"><span aria-hidden="true">' + (pct > 0 ? '▲' : pct < 0 ? '▼' : '=') + '</span><span class="sr-only">' + (pct > 0 ? 'alta de ' : pct < 0 ? 'queda de ' : 'estável, ') + '</span>' + txt + '</span>';
+// etapa 40: recebe a polaridade do KPI (antes "alta = bom" valia para tudo) e mostra Δ absoluto · Δ% (fmt do KPI)
+function apxDelta(cur, base, polaridade, fmt){
+  if(cur == null || base == null || base === 0) return '';
+  return ibcsDeltaHtml(cur, base, {fmt:fmt, polaridade:polaridade, cls:'apx-delta'});
 }
 function apxVazio(titulo, texto){ return '<div class="apx-vazio" role="status"><strong>' + escapeHtml(titulo) + '</strong>' + (texto ? '<div>' + texto + '</div>' : '') + '</div>'; }
 
 /* ---- Linha 1: três cartões ---- */
-function apxKpi(id, titulo, def, valor, cur, base, A, copia){
-  var cmp = A.b ? A.ctx : 'sem comparação' + (A.motivo ? ': ' + A.motivo : '');
-  return '<article class="kpi-card apx-kpi" aria-labelledby="apx-' + id + '-t">' +
-    '<div class="apx-kpi-cab"><h3 class="apx-kpi-t" id="apx-' + id + '-t">' + escapeHtml(titulo) + '</h3>' + (def ? infoTip(def) : '') + (A.b ? apxDelta(cur, base) : '') + '</div>' +
-    '<div class="kpi-value">' + valor + '</div>' +
-    '<div class="apx-kpi-pe"><span class="apx-cmp">' + escapeHtml(cmp) + '</span>' +
-    '<button type="button" class="apx-kebab" data-apx-kebab="' + id + '" data-apx-foco="keb-' + id + '" data-apx-copia="' + escapeHtml(copia) + '" aria-label="Mais opções: ' + escapeHtml(titulo) + '" aria-haspopup="menu" aria-expanded="false" aria-controls="apx-menu">' + APX_ICO.kebab + '</button></div></article>';
+// etapa 40: KPI card IBCS (ibcsKpiHtml) — valor, Δ absoluto · Δ% contra a base do recorte (rotulada: "vs 30 dias
+// anteriores"…), com a polaridade do KPI, e sparkline do recorte com o último ponto rotulado. Sem meta aqui: a meta de
+// faturamento é mensal e fica no cartão "Faturamento total" ao lado (não se inventa meta para janelas móveis).
+function apxKpi(id, titulo, def, valor, cur, base, A, copia, fmt, polaridade, serie){
+  var kebab = '<button type="button" class="apx-kebab" data-apx-kebab="' + id + '" data-apx-foco="keb-' + id + '" data-apx-copia="' + escapeHtml(copia) + '" aria-label="Mais opções: ' + escapeHtml(titulo) + '" aria-haspopup="menu" aria-expanded="false" aria-controls="apx-menu">' + APX_ICO.kebab + '</button>';
+  return ibcsKpiHtml({id:'apx-' + id, rotulo:titulo, def:def, valor:valor, fmt:fmt, polaridade:polaridade, cls:'apx-kpi', tituloCls:'apx-kpi-t',
+    cmp:{atual:cur, base:A.b && base != null ? base : null, rotulo:A.ctx ? String(A.ctx).replace(/^vs\.? /, 'vs ') : 'vs período anterior',
+      motivo:A.b ? 'sem base para comparar' : 'sem comparação' + (A.motivo ? ': ' + A.motivo : '')},
+    serie:serie, serieTitulo:titulo + ' ao longo do recorte', pe:'<span class="apx-cmp"></span>' + kebab});
+}
+// série da sparkline dos cartões do Início (etapa 40): o recorte em fatias — horas (24 horas), dias (até 62 dias) ou meses —,
+// cada fatia com o mesmo vResumo do cartão. Só desenho: o número do cartão não muda.
+function apxSerie(C){
+  if(C.apxSerie) return C.apxSerie;
+  var A = apxJanela(C), ini = A.ini, fim = A.fim, dias = (fim - ini) / 864e5, cortes = [], x, y;
+  if(dias <= 1.01){ for(var h = 0; h < 24; h++){ x = new Date(ini.getTime() + h * 36e5); cortes.push([x, new Date(x.getTime() + 36e5)]); } }
+  else if(dias <= 62){ for(x = vInicioDia(ini); x < fim; x = vAddDias(x, 1)){ y = vAddDias(x, 1); cortes.push([x < ini ? ini : x, y > fim ? fim : y]); } }
+  else { for(x = new Date(ini.getFullYear(), ini.getMonth(), 1); x < fim; x = y){ y = new Date(x.getFullYear(), x.getMonth() + 1, 1); cortes.push([x < ini ? ini : x, y > fim ? fim : y]); } }
+  C.apxSerie = cortes.map(function(c){ return vResumo(A.lista.filter(function(p){ return p.data >= c[0] && p.data < c[1]; })); });
+  return C.apxSerie;
 }
 function apxKpis(C, est){
   if(est) return ['Faturamento', 'Pedidos', 'Ticket médio'].map(function(t){
-    return '<article class="kpi-card apx-kpi"><div class="apx-kpi-cab"><h3 class="apx-kpi-t">' + t + '</h3></div><div class="kpi-value">—</div><div class="apx-kpi-pe"><span class="apx-cmp">aguardando as vendas</span></div></article>';
+    return '<article class="kpi-card apx-kpi ibcs-kpi"><div class="ibcs-kpi-cab"><h3 class="apx-kpi-t">' + t + '</h3></div><div class="kpi-value">—</div><div class="ibcs-deltas"><div class="ibcs-d"><span class="ibcs-d-sem">aguardando as vendas</span></div></div></article>';
   }).join('');
-  var A = apxJanela(C), r = A.r, b = A.b;
-  return apxKpi('fat', 'Faturamento', 'v_fat', fmtValor(r.faturamento), r.faturamento, b && b.faturamento, A, fmtValor(r.faturamento)) +
-    apxKpi('ped', 'Pedidos', 'v_ped', fmtQtd(r.pedidos), r.pedidos, b && b.pedidos, A, fmtQtd(r.pedidos)) +
-    apxKpi('tkt', 'Ticket médio', 'v_ticket', r.ticket == null ? '—' : fmtValor(r.ticket), r.ticket, b && b.ticket, A, r.ticket == null ? '—' : fmtValor(r.ticket));
+  var A = apxJanela(C), r = A.r, b = A.b, S = apxSerie(C);
+  var s = function(campo){ return S.map(function(x){ return x[campo] == null ? null : x[campo]; }); };
+  return apxKpi('fat', 'Faturamento', 'v_fat', fmtValor(r.faturamento), r.faturamento, b && b.faturamento, A, fmtValor(r.faturamento), fmtValor, 'faturamento', s('faturamento')) +
+    apxKpi('ped', 'Pedidos', 'v_ped', fmtQtd(r.pedidos), r.pedidos, b && b.pedidos, A, fmtQtd(r.pedidos), fmtQtd, 'pedidos', s('pedidos')) +
+    apxKpi('tkt', 'Ticket médio', 'v_ticket', r.ticket == null ? '—' : fmtValor(r.ticket), r.ticket, b && b.ticket, A, r.ticket == null ? '—' : fmtValor(r.ticket), fmtValor, 'ticket', s('ticket'));
 }
 
 /* ---- Linha 2a: Faturamento total (mês ou ano do último dia do recorte) ---- */
@@ -18853,8 +19605,87 @@ function sinoItens(){
   var ord = {critical:0, warning:1};
   return it.sort(function(a, b){ return ord[a.nivel] - ord[b.nivel]; });
 }
+/* ---- Para agir (etapa 41): contagem em cada atalho de fila do menu ----
+   Reaproveita as contas que já existem: Vendas = vsContarFilas (a mesma do contador da aba Filas, calculada ao abrir Vendas);
+   Pago e não faturado = opPagoCalc().fora (a do nav-pago-count); Devoluções = dvCasosCriticos (a do nav-filas-count) e,
+   para NF, os casos da fila "nf"; Nuvem Pago = npLiberar().faltando (pagos já fora do prazo e sem crédito no extrato);
+   Atacado = cheques das filas de ação de atTelaFilas (vencidos parados, depósito sem compensar, cliente com cheque
+   devolvido, status Pendente), sem repetir. null = dado não carregado (some); 0 = cinza; > 0 = destaque. */
+var paCacheDv = null, paCacheLib = null, paCacheAt = null;
+function paContagens(){
+  var c = {vendas:null, pago:null, devol:null, nf:null, liberar:null, atacado:null};
+  // Filas de vendas: mesma conta e mesma chave de cache da aba Filas (vsCalcFilas), com o período corrente de Vendas; sem abrir a tela
+  try{ if(vendas.pedidos && vendas.ref && vendas.ano != null && vendas.dia) c.vendas = vsContarFilas(vsCalcFilas(vPeriodoAtual())); } catch(e){}
+  try{ if(oper && oper.dados) c.pago = opPagoCalc().fora; } catch(e){}
+  try{
+    if(devol && devol.sols){
+      var dia = dvHoje().getTime(), k = paCacheDv;
+      if(!k || k.sols !== devol.sols || k.nf !== devol.nf || k.ped !== vendas.pedidos || k.dia !== dia || k.versao !== devol.versao){
+        dvDerivar();
+        var F = dvMontarFilas(dvHoje()), fnf = DV_FILAS.find(function(f){ return f.id === 'nf'; });
+        k = paCacheDv = {sols:devol.sols, nf:devol.nf, ped:vendas.pedidos, dia:dia, versao:devol.versao,
+          devol:dvCasosCriticos(F), nfN:fnf && !dvFilaIndisp(fnf) && F.nf ? F.nf.length : null};
+      }
+      c.devol = k.devol; c.nf = k.nfN;
+    }
+  } catch(e){}
+  // paraAgirAtualizar roda a cada applyRoute: as contas mais pesadas ficam em cache (mudam só com a base ou com o dia)
+  var diaChave = new Date().toDateString();
+  try{
+    if(np && np.linhas && np.inicio && np.fim && vendas.pedidos){
+      var kl = paCacheLib;
+      if(!kl || kl.l !== np.linhas || kl.p !== vendas.pedidos || kl.f !== +np.fim || kl.d !== diaChave) kl = paCacheLib = {l:np.linhas, p:vendas.pedidos, f:+np.fim, d:diaChave, n:npLiberar().faltando.length};
+      c.liberar = kl.n;
+    }
+  } catch(e){}
+  try{
+    if(at && at.dados){
+      var ka = paCacheAt;
+      if(!ka || ka.a !== at.dados || ka.d !== diaChave){
+        var abertos = atChequesAbertos(), devEmit = {}, n = 0;
+        at.dados.cheques.forEach(function(x){ if(x.st === 'dev') devEmit[(x.emit || '').toLowerCase()] = 1; });
+        abertos.forEach(function(x){
+          if((x.st === 'disp' && x.alerta) || (x.st === 'proc' && x.alerta) || x.st === 'pend' || devEmit[(x.emit || '').toLowerCase()]) n++;
+        });
+        ka = paCacheAt = {a:at.dados, d:diaChave, n:n};
+      }
+      c.atacado = ka.n;
+    }
+  } catch(e){}
+  return c;
+}
+var PA_TITULOS = {
+  vendas:function(n){ return fmtQtd(n) + ' pendências nas filas de vendas (pendentes, cancelados pagos, recusados recorrentes, produtos com problema)'; },
+  pago:function(n){ return vPedidosTxt(n) + ' pagos sem nota fiscal há mais de ' + OPR_SLA_DIAS + ' dias úteis'; },
+  devol:function(n){ return dvSolTxt(n) + ' em filas críticas'; },
+  nf:function(n){ return dvSolTxt(n) + ' com NF de devolução pendente ou fora do prazo'; },
+  liberar:function(n){ return vPedidosTxt(n) + ' pagos, já fora do prazo e ainda sem crédito no extrato do Nuvem Pago'; },
+  atacado:function(n){ return fmtQtd(n) + (n === 1 ? ' cheque' : ' cheques') + ' nas filas do atacado (vencidos, depósito sem compensar, cliente com devolvido, pendente)'; }
+};
+function paraAgirAtualizar(){
+  var c = paContagens();
+  Object.keys(c).forEach(function(k){
+    var el = document.getElementById('pa-n-' + k);
+    if(!el) return;
+    // contagem desconhecida (dado ainda não carregado): "–", e não vazio, que pareceria "nada pendente"
+    var n = c[k], txt = n == null ? '–' : fmtQtd(n), tit = n == null ? 'Abra a tela para calcular' : '';
+    if(n != null){ try{ tit = n ? PA_TITULOS[k](n) : 'Nada pendente'; } catch(e){ tit = ''; } }
+    // base da AJD parada: o item do Para agir repete o aviso do contador antigo (Pago e não faturado)
+    var velho = null;
+    if(k === 'pago' && n){ try{ velho = oper.dados ? opDesatualizado() : null; if(velho) tit += ' · dados de ' + opDmTxt(velho) + ': a extensão pode estar parada'; } catch(e){} }
+    el.classList.toggle('is-desatualizado', !!velho);
+    // só escreve quando muda (o observador dos contadores do menu dispara o sino, que chama esta função de novo)
+    if(el.textContent !== txt) el.textContent = txt;
+    if(el.hidden) el.hidden = false;
+    el.classList.toggle('is-desconhecido', n == null);
+    if(el.title !== tit) el.title = tit;
+    el.classList.toggle('is-zero', n === 0);
+  });
+}
+
 var sinoCache = null;
 function sinoAtualizar(){
+  try{ paraAgirAtualizar(); } catch(e){}
   var btn = document.getElementById('btn-sino');
   if(!btn || !isDashboardVisible()) return;
   var itens = sinoCache = sinoItens(), lidas = sinoLidas();
@@ -18879,7 +19710,7 @@ function sinoRender(){
 var NAV_GRUPO_KEY = 'painel_menu_grupo_v1';
 var navGruposIniciado = false;
 function navGrupoAbrir(g, salvar){
-  Array.prototype.forEach.call(document.querySelectorAll('#sidebar .nav-grupo'), function(x){
+  Array.prototype.forEach.call(document.querySelectorAll('#sidebar .nav-grupo:not(.nav-grupo-fixo)'), function(x){
     var on = x === g;
     x.classList.toggle('is-fechado', !on);
     x.querySelector('.nav-grupo-btn').setAttribute('aria-expanded', on ? 'true' : 'false');
@@ -18889,7 +19720,8 @@ function navGrupoAbrir(g, salvar){
   syncNavThumb(false);
 }
 function navGruposAbrirAtual(){
-  var a = document.querySelector('#sidebar .side-link.active'), g = a ? a.closest('.nav-grupo') : null;
+  // item ativo no Para agir (grupo fixo, sempre aberto): não mexe no acordeão
+  var a = document.querySelector('#sidebar .side-link.active'), g = a ? a.closest('.nav-grupo:not(.nav-grupo-fixo)') : null;
   if(g){ if(g.classList.contains('is-fechado') || !navGruposIniciado) navGrupoAbrir(g, true); }
   else if(!navGruposIniciado){
     var k = ''; try{ k = localStorage.getItem(NAV_GRUPO_KEY) || ''; } catch(e){}
@@ -18899,7 +19731,7 @@ function navGruposAbrirAtual(){
 }
 // contadores dos itens somados no título do grupo fechado
 function syncNavGrupos(){
-  Array.prototype.forEach.call(document.querySelectorAll('#sidebar .nav-grupo'), function(g){
+  Array.prototype.forEach.call(document.querySelectorAll('#sidebar .nav-grupo:not(.nav-grupo-fixo)'), function(g){
     var soma = 0;
     Array.prototype.forEach.call(g.querySelectorAll('.nav-count'), function(c){ if(!c.hidden && c.textContent) soma += parseInt(c.textContent.replace(/\D/g, ''), 10) || 0; });
     var n = g.querySelector('.nav-grupo-n'), mostra = soma > 0 && g.classList.contains('is-fechado');
@@ -19289,7 +20121,7 @@ function boot(){
   tt.titleFont = { family:"'Inter', system-ui, sans-serif", weight:'600', size:12 };
   tt.bodyFont = { family:"'Inter', system-ui, sans-serif", size:12 };
   tt.titleMarginBottom = 6;
-  Chart.register(crosshairPlugin, centerTextPlugin);
+  Chart.register(crosshairPlugin, centerTextPlugin, ibcsRotuloPlugin);
   // tooltip desliza entre os pontos em vez de saltar; realce de hover curto
   if(motionOK()){
     tt.animation = { duration:220, easing:'easeOutCubic' };
